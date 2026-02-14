@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="author" content="tan91">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/fonts.css">
+    <style>
+        :root { --bg-dark: #121212; --bg-panel: #1e1e1e; --border-color: #333; --accent: #ff6b00; --danger: #ef4444; --success: #22c55e; --warning: #f59e0b; --text-main: #e0e0e0; --text-dim: #737373; }
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Noto Sans SC', sans-serif; }
+        .font-eng { font-family: 'Chakra Petch', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .sidebar-item { border-left: 2px solid transparent; transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { background: rgba(255, 107, 0, 0.05); border-left-color: var(--accent); color: white; }
+        .sidebar-item.active .icon { color: var(--accent); }
+        .admin-card { background: var(--bg-panel); border: 1px solid var(--border-color); position: relative; }
+        .data-table { width: 100%; border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; }
+        .data-table th { background: #151515; border-bottom: 1px solid #333; padding: 0.75rem 1rem; text-align: left; color: #666; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500; white-space: nowrap; }
+        .data-table td { border-bottom: 1px solid #2a2a2a; padding: 0.6rem 1rem; vertical-align: middle; }
+        .data-table tr:hover td { background: rgba(255,255,255,0.02); }
+        .tag { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 500; font-family: 'JetBrains Mono', monospace; }
+        .tag-high { background: #450a0a; color: #f87171; border: 1px solid #ef444455; }
+        .tag-medium { background: #422006; color: #fbbf24; border: 1px solid #f59e0b55; }
+        .tag-low { background: #14532d; color: #4ade80; border: 1px solid #22c55e55; }
+        .tag-ip { background: #1f2420; color: #86efac; border: 1px solid #22c55e33; }
+        .tab-btn { padding: 0.5rem 1rem; border: 1px solid #333; background: transparent; color: #888; font-size: 0.75rem; transition: all 0.2s; }
+        .tab-btn:hover { color: white; border-color: #555; }
+        .tab-btn.active { color: var(--accent); border-color: var(--accent); background: rgba(255,107,0,0.1); }
+        .btn-sm { font-size: 0.7rem; padding: 0.25rem 0.5rem; border: 1px solid #333; background: transparent; color: #888; transition: all 0.2s; }
+        .btn-sm:hover { border-color: #ff6b00; color: #ff6b00; }
+        .btn-danger-sm { font-size: 0.7rem; padding: 0.25rem 0.5rem; border: 1px solid #ef4444; background: transparent; color: #ef4444; transition: all 0.2s; }
+        .btn-danger-sm:hover { background: #ef4444; color: white; }
+        .btn-success-sm { font-size: 0.7rem; padding: 0.25rem 0.5rem; border: 1px solid #22c55e; background: transparent; color: #22c55e; transition: all 0.2s; }
+        .btn-success-sm:hover { background: #22c55e; color: black; }
+        .risk-card { border-left: 3px solid transparent; transition: all 0.2s; }
+        .risk-card.high { border-left-color: #ef4444; }
+        .risk-card.medium { border-left-color: #f59e0b; }
+        .risk-card.low { border-left-color: #22c55e; }
+        .detail-panel { background: #151515; border-top: 1px solid #222; display: none; }
+        .detail-panel.open { display: block; }
+        .ip-badge { background: #222; border: 1px solid #333; padding: 2px 6px; font-size: 0.7rem; color: #86efac; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden selection:bg-[#ff6b00] selection:text-black">
+
+    <aside class="w-48 bg-[#161616] border-r border-[#333] flex flex-col z-20 shadow-xl">
+        <div class="h-16 flex items-center px-6 border-b border-[#333]">
+            <div class="bg-[#ff6b00] text-black font-black text-xl px-2 py-0.5 font-eng tracking-tighter mr-3">TG</div>
+            <span class="font-bold text-gray-300 tracking-wider text-sm">管理中枢</span>
+        </div>
+        <nav class="flex-1 py-6 space-y-1 font-mono text-xs overflow-y-auto">
+            <a href="/admin/admin.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⌂</span> 概览</a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-4">赛事核心</p>
+            <a href="/admin/admin-contests.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚑</span> 比赛管理</a>
+            <a href="/admin/admin-question-bank.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">☷</span> 题库</a>
+            <a href="/admin/admin-users.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">웃</span> 用户管理</a>
+            <a href="/admin/admin-teams.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">◈</span> 队伍管理</a>
+            <a href="/admin/admin-organizations.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🏢</span> 组织管理</a>
+            <a href="/admin/admin-data-import.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">📥</span> 数据导入</a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-6">运维监控</p>
+            <a href="/admin/admin-docker.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🐳</span> docker实例管理</a>
+            <a href="/admin/admin-anti-cheat.html" class="sidebar-item active flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🛡️</span> 防作弊系统</a>
+            <a href="/admin/admin-logs.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚠</span> 系统日志</a>
+            <a href="/admin/admin-settings.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚙</span> 系统设置</a>
+        </nav>
+        <div class="p-4 border-t border-[#333]">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-[#333] rounded-full flex items-center justify-center text-[#ff6b00] font-bold">A</div>
+                <div><p class="text-xs text-white font-bold">超级管理员</p><p class="text-[10px] text-green-500">● 连接稳定</p></div>
+            </div>
+        </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col min-w-0 bg-[#121212]">
+        <header class="h-16 bg-[#161616] border-b border-[#333] flex items-center justify-between px-8 z-10">
+            <div class="flex items-center gap-4 text-xs font-mono">
+                <span class="text-gray-500">位置:</span><span class="text-[#ff6b00]">运维监控</span><span class="text-gray-600">/</span><span class="text-white">防作弊系统</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="/home.html" class="font-mono text-xs font-bold border border-gray-500 text-gray-400 px-4 py-2 hover:border-white hover:text-white transition-all uppercase tracking-wider">← 返回前台</a>
+                <button id="logout-btn" class="font-mono text-xs font-bold border border-[#ff6b00] text-[#ff6b00] px-4 py-2 hover:bg-[#ff6b00] hover:text-black transition-all uppercase tracking-wider">Logout_离线</button>
+            </div>
+        </header>
+
+        <main class="flex-1 flex flex-col pt-6 px-8 relative overflow-y-auto">
+            
+            <div class="admin-card flex flex-col" style="height: calc(100vh - 160px);">
+                <!-- 顶部工具栏 -->
+                <div class="p-4 border-b border-[#333] bg-[#1a1a1a] flex justify-between items-center flex-shrink-0">
+                    <h2 class="text-sm font-bold text-white tracking-wider">ANTI_CHEAT_SYSTEM</h2>
+                    <div class="flex gap-2 items-center">
+                        <select id="contestFilter" class="bg-[#111] border border-[#333] text-xs px-3 py-1.5 text-white outline-none font-mono">
+                            <option value="">全部比赛</option>
+                        </select>
+                        <button onclick="loadData()" class="bg-[#333] border border-[#333] text-xs text-gray-300 px-4 py-1.5 hover:text-white">刷新</button>
+                    </div>
+                </div>
+
+                <!-- Tab 导航 -->
+                <div class="flex gap-2 p-4 border-b border-[#333] bg-[#1a1a1a] flex-shrink-0">
+                    <button class="tab-btn active" data-tab="suspicious" onclick="switchTab('suspicious')">
+                        ⚠️ 可疑记录 <span id="suspicious-count" class="ml-1 text-[#ff6b00]">0</span>
+                    </button>
+                    <button class="tab-btn" data-tab="banned" onclick="switchTab('banned')">
+                        🚫 已封禁队伍 <span id="banned-count" class="ml-1 text-[#ff6b00]">0</span>
+                    </button>
+                    <button class="tab-btn" data-tab="ip-search" onclick="switchTab('ip-search')">
+                        🔍 IP查询
+                    </button>
+                </div>
+
+                <!-- 内容区 -->
+                <div class="flex-1 overflow-y-auto bg-[#1e1e1e] p-4">
+                    
+                    <!-- 可疑记录 Tab -->
+                    <div id="tab-suspicious" class="tab-content">
+                        <div class="flex gap-2 mb-4">
+                            <button onclick="filterRisk('')" class="filter-btn tab-btn active" data-risk="">全部</button>
+                            <button onclick="filterRisk('high')" class="filter-btn tab-btn" data-risk="high">🔴 高风险</button>
+                            <button onclick="filterRisk('medium')" class="filter-btn tab-btn" data-risk="medium">🟡 中风险</button>
+                        </div>
+                        <div id="suspicious-list" class="space-y-3">
+                            <div class="text-gray-500 text-center py-8 font-mono text-sm">加载中...</div>
+                        </div>
+                    </div>
+
+                    <!-- 已封禁队伍 Tab -->
+                    <div id="tab-banned" class="tab-content hidden">
+                        <div id="banned-list" class="space-y-2">
+                            <div class="text-gray-500 text-center py-8 font-mono text-sm">加载中...</div>
+                        </div>
+                    </div>
+
+                    <!-- IP查询 Tab -->
+                    <div id="tab-ip-search" class="tab-content hidden">
+                        <div class="admin-card p-4 mb-4 bg-[#1a1a1a]">
+                            <div class="flex gap-3">
+                                <input type="text" id="ip-input" placeholder="输入IP地址查询..." 
+                                       class="flex-1 bg-[#111] border border-[#333] px-4 py-2 text-sm text-white outline-none font-mono focus:border-[#ff6b00]">
+                                <button onclick="searchIP()" class="bg-[#ff6b00] text-black font-bold text-xs px-6 py-2 hover:bg-[#ff8533]">查询</button>
+                            </div>
+                        </div>
+                        <div id="ip-result" class="hidden"></div>
+                    </div>
+
+                </div>
+
+                <div class="p-3 border-t border-[#333] flex justify-between items-center bg-[#1a1a1a] text-xs font-mono text-gray-500 flex-shrink-0">
+                    <span>🛡️ 防作弊系统 - 维护比赛公平</span>
+                    <span id="last-update">最后更新: --</span>
+                </div>
+            </div>
+
+            <footer class="py-1 border-t border-[#333] flex items-center justify-center flex-shrink-0 mt-auto">
+                <div class="flex items-center justify-center gap-4 text-xs flex-wrap">
+                    <div class="flex items-center gap-1">
+                        <div class="bg-[#ff6b00] text-black font-black px-1.5 py-0.5 font-eng tracking-tighter">TG</div>
+                        <span class="text-gray-500">天格后台管理系统</span>
+                    </div>
+                    <span class="text-white font-mono">Copyright © 2021-present tan91. All Rights Reserved.</span>
+                    <a href="https://github.com/NUDTTAN91" target="_blank" class="text-[#ff6b00] hover:text-white transition-colors"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg></a>
+                    <a href="https://blog.csdn.net/ZXW_NUDT" target="_blank" class="text-[#ff6b00] hover:text-white transition-colors"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></a>
+                </div>
+            </footer>
+
+        </main>
+    </div>
+
+    <!-- 队伍IP轨迹弹窗 -->
+    <div id="ip-track-modal" class="fixed inset-0 bg-black bg-opacity-80 z-50 hidden flex items-center justify-center">
+        <div class="admin-card w-full max-w-2xl max-h-[80vh] overflow-auto">
+            <div class="p-4 border-b border-[#333] flex justify-between items-center sticky top-0 bg-[#1e1e1e]">
+                <h3 class="font-bold text-white text-sm">队伍IP轨迹</h3>
+                <button onclick="closeIPTrackModal()" class="text-gray-500 hover:text-white text-xl">✕</button>
+            </div>
+            <div id="ip-track-content" class="p-4"></div>
+        </div>
+    </div>
+
+    <script>
+        function parseJwt(token) { try { const base64Url = token.split('.')[1]; const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/'); const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')); return JSON.parse(jsonPayload); } catch (e) { return null; } }
+        const token = localStorage.getItem('tg_token');
+        if (!token) { window.location.href = '/login.html'; } else { const payload = parseJwt(token); if (!payload || payload.role !== 'super') { window.location.href = '/home.html'; } }
+        document.getElementById('logout-btn').addEventListener('click', () => { localStorage.removeItem('tg_token'); window.location.href = '/login.html'; });
+
+        let currentRiskFilter = '';
+        let suspiciousData = [];
+        let bannedData = [];
+        let ws = null;
+        let wsConnected = false;
+        let lastUpdateTime = new Date();
+
+        async function init() {
+            await loadContests();
+            await loadData();
+            initWebSocket();
+            // 每秒更新时间显示
+            setInterval(updateTimeDisplay, 1000);
+        }
+
+        function updateTimeDisplay() {
+            const footer = document.getElementById('last-update');
+            if (footer) {
+                const statusIcon = wsConnected 
+                    ? '<span class="text-green-500">● 实时连接中</span>'
+                    : '<span class="text-red-500">● 连接断开</span>';
+                // 显示当前实时时间
+                footer.innerHTML = `${statusIcon} | ${new Date().toLocaleTimeString('zh-CN')}`;
+            }
+        }
+
+        function initWebSocket() {
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${wsProtocol}//${location.host}/api/admin/anti-cheat/ws?token=${token}`);
+            
+            ws.onopen = () => {
+                console.log('[AntiCheat WS] 连接成功');
+                wsConnected = true;
+                lastUpdateTime = new Date();
+            };
+            
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'suspicious' && data.record) {
+                        handleNewSuspiciousRecord(data.record);
+                    }
+                } catch (e) {
+                    console.error('[AntiCheat WS] 解析消息失败:', e);
+                }
+            };
+            
+            ws.onclose = () => {
+                console.log('[AntiCheat WS] 连接关闭，5秒后重连');
+                wsConnected = false;
+                setTimeout(initWebSocket, 5000);
+            };
+            
+            ws.onerror = (e) => {
+                console.error('[AntiCheat WS] 连接错误:', e);
+                wsConnected = false;
+            };
+        }
+
+        function updateConnectionStatus(connected) {
+            wsConnected = connected;
+            lastUpdateTime = new Date();
+        }
+
+        function handleNewSuspiciousRecord(record) {
+            // 添加到列表开头
+            suspiciousData.unshift(record);
+            document.getElementById('suspicious-count').textContent = suspiciousData.length;
+            
+            // 重新渲染
+            renderSuspicious();
+            
+            // 显示通知提示
+            showNotification(record);
+            
+            // 更新时间
+            lastUpdateTime = new Date();
+        }
+
+        function showNotification(record) {
+            // 创建通知元素
+            const notif = document.createElement('div');
+            notif.className = 'fixed top-20 right-4 z-50 admin-card p-4 animate-pulse';
+            notif.style.cssText = 'background: #1a1a1a; border-left: 3px solid ' + (record.riskLevel === 'high' ? '#ef4444' : '#f59e0b') + ';';
+            
+            const typeIcon = record.type === 'same_ip_diff_team' ? '🌐' : record.type === 'same_wrong_flag' ? '🚩' : record.type === 'same_team_multi_ip' ? '📍' : record.type === 'login_ip_change' ? '🔑' : '⚠️';
+            
+            notif.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <span class="text-xl">${typeIcon}</span>
+                    <div>
+                        <p class="text-sm text-white font-bold">新的可疑记录</p>
+                        <p class="text-xs text-gray-400 mt-1">${record.description}</p>
+                    </div>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-gray-500 hover:text-white ml-4">✕</button>
+                </div>
+            `;
+            document.body.appendChild(notif);
+            
+            // 5秒后自动移除
+            setTimeout(() => notif.remove(), 5000);
+        }
+
+        async function loadContests() {
+            try {
+                const res = await fetch('/api/admin/contests', { headers: { 'Authorization': 'Bearer ' + token } });
+                if (res.ok) {
+                    const data = await res.json();
+                    const contests = data.contests || data || [];
+                    const select = document.getElementById('contestFilter');
+                    contests.forEach(c => {
+                        const opt = document.createElement('option');
+                        opt.value = c.id;
+                        opt.textContent = c.name;
+                        select.appendChild(opt);
+                    });
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadData() {
+            const contestId = document.getElementById('contestFilter').value;
+            await Promise.all([loadSuspicious(contestId), loadBanned(contestId)]);
+            lastUpdateTime = new Date();
+        }
+
+        async function loadSuspicious(contestId) {
+            try {
+                let url = '/api/admin/anti-cheat/suspicious';
+                if (contestId) url += '?contestId=' + contestId;
+                const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+                if (res.ok) {
+                    suspiciousData = await res.json();
+                    document.getElementById('suspicious-count').textContent = suspiciousData.length;
+                    renderSuspicious();
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function renderSuspicious() {
+            const container = document.getElementById('suspicious-list');
+            let filtered = suspiciousData;
+            if (currentRiskFilter) filtered = suspiciousData.filter(r => r.riskLevel === currentRiskFilter);
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="text-gray-500 text-center py-8 font-mono text-sm">暂无可疑记录</div>';
+                return;
+            }
+
+            container.innerHTML = filtered.map((record, idx) => {
+                const tagClass = record.riskLevel === 'high' ? 'tag-high' : record.riskLevel === 'medium' ? 'tag-medium' : 'tag-low';
+                const riskText = record.riskLevel === 'high' ? '高风险' : record.riskLevel === 'medium' ? '中风险' : '低风险';
+                const typeIcon = record.type === 'same_ip_diff_team' ? '🌐' : record.type === 'same_wrong_flag' ? '🚩' : record.type === 'same_team_multi_ip' ? '📍' : record.type === 'login_ip_change' ? '🔑' : '⚠️';
+                
+                return `
+                <div class="admin-card risk-card ${record.riskLevel}" style="background: #1a1a1a;">
+                    <div class="p-4 cursor-pointer flex justify-between items-start" onclick="toggleDetails(${idx})">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-3 mb-2">
+                                <span class="text-lg">${typeIcon}</span>
+                                <span class="tag ${tagClass}">${riskText}</span>
+                                <span class="text-xs text-gray-500 font-mono">${record.contestName || ''}</span>
+                                ${record.challengeName ? `<span class="text-xs text-gray-500 font-mono">· ${record.challengeName}</span>` : ''}
+                            </div>
+                            <p class="text-sm text-gray-300">${record.description}</p>
+                        </div>
+                        <span class="text-gray-500 text-sm" id="arrow-${idx}">▼</span>
+                    </div>
+                    <div id="details-${idx}" class="detail-panel p-4">
+                        ${renderDetails(record)}
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function renderDetails(record) {
+            if (!record.details || record.details.length === 0) return '<p class="text-gray-500 text-sm font-mono">无详细数据</p>';
+            return `<div class="space-y-2">${record.details.map(d => `
+                <div class="bg-[#111] border-l-2 border-[#ff6b00] p-3 flex justify-between items-center text-sm">
+                    <div class="flex items-center gap-4">
+                        <span class="text-gray-300 font-mono">${d.teamName || '-'}</span>
+                        ${d.userName ? `<span class="text-gray-500 text-xs">by ${d.userName}</span>` : ''}
+                        ${d.ipAddress ? `<span class="ip-badge">${d.ipAddress}</span>` : ''}
+                    </div>
+                    <div class="flex items-center gap-3">
+                        ${d.isCorrect !== undefined ? `<span class="${d.isCorrect ? 'text-green-500' : 'text-red-500'} text-xs">${d.isCorrect ? '✓ 正确' : '✗ 错误'}</span>` : ''}
+                        <span class="text-gray-500 text-xs font-mono">${formatTime(d.submittedAt)}</span>
+                        ${d.teamId ? `
+                            <button onclick="event.stopPropagation();showIPTrack(${d.teamId}, '${record.contestId}')" class="btn-sm">IP轨迹</button>
+                            <button onclick="event.stopPropagation();banTeam(${d.teamId}, ${record.contestId})" class="btn-danger-sm">封禁</button>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('')}</div>`;
+        }
+
+        function toggleDetails(idx) {
+            const el = document.getElementById('details-' + idx);
+            const arrow = document.getElementById('arrow-' + idx);
+            el.classList.toggle('open');
+            arrow.textContent = el.classList.contains('open') ? '▲' : '▼';
+        }
+
+        async function loadBanned(contestId) {
+            try {
+                let url = '/api/admin/anti-cheat/banned-teams';
+                if (contestId) url += '?contestId=' + contestId;
+                const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+                if (res.ok) {
+                    bannedData = await res.json();
+                    document.getElementById('banned-count').textContent = bannedData.length;
+                    renderBanned();
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function renderBanned() {
+            const container = document.getElementById('banned-list');
+            if (bannedData.length === 0) {
+                container.innerHTML = '<div class="text-gray-500 text-center py-8 font-mono text-sm">暂无封禁队伍</div>';
+                return;
+            }
+            container.innerHTML = bannedData.map(team => `
+                <div class="admin-card p-4 flex justify-between items-center" style="background: #1a1a1a;">
+                    <div>
+                        <span class="text-red-500 mr-2">🚫</span>
+                        <span class="text-white font-medium">${team.teamName}</span>
+                        <span class="text-gray-500 text-xs ml-3 font-mono">${team.contestName}</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs text-gray-500 font-mono">${formatTime(team.bannedAt)}</span>
+                        <button onclick="showIPTrack(${team.teamId}, '${team.contestId}')" class="btn-sm">IP轨迹</button>
+                        <button onclick="unbanTeam(${team.teamId}, ${team.contestId})" class="btn-success-sm">解除封禁</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function searchIP() {
+            const ip = document.getElementById('ip-input').value.trim();
+            if (!ip) return alert('请输入IP地址');
+            const contestId = document.getElementById('contestFilter').value;
+            let url = `/api/admin/anti-cheat/ip-analysis?ip=${encodeURIComponent(ip)}`;
+            if (contestId) url += '&contestId=' + contestId;
+            try {
+                const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+                if (res.ok) { const data = await res.json(); renderIPResult(data); }
+            } catch (e) { console.error(e); }
+        }
+
+        function renderIPResult(data) {
+            const container = document.getElementById('ip-result');
+            container.classList.remove('hidden');
+            if (data.teams.length === 0) {
+                container.innerHTML = '<div class="admin-card p-4 text-gray-500 text-center font-mono text-sm" style="background:#1a1a1a;">未找到该IP的提交记录</div>';
+                return;
+            }
+            const isRisky = data.teams.length > 1;
+            container.innerHTML = `
+                <div class="admin-card ${isRisky ? 'risk-card high' : ''}" style="background: #1a1a1a;">
+                    <div class="p-4 border-b border-[#333]">
+                        <div class="flex items-center gap-3">
+                            <span class="ip-badge text-sm">${data.ipAddress}</span>
+                            <span class="text-gray-500 text-xs font-mono">共 ${data.totalCount} 次提交</span>
+                            ${isRisky ? '<span class="tag tag-high">⚠️ 多队伍使用</span>' : ''}
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-xs text-gray-500 mb-3 uppercase font-mono">使用该IP的队伍 (${data.teams.length})</p>
+                        <div class="space-y-2">
+                            ${data.teams.map(t => `
+                                <div class="bg-[#111] border-l-2 border-[#ff6b00] p-3 flex justify-between items-center">
+                                    <div>
+                                        <span class="text-white">${t.teamName}</span>
+                                        <span class="text-gray-500 text-xs ml-3 font-mono">${t.submitCount}次提交 · ${t.correctCount}次正确</span>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-xs text-gray-500 font-mono">最后: ${formatTime(t.lastSubmitAt)}</span>
+                                        <button onclick="showIPTrack(${t.teamId})" class="btn-sm">IP轨迹</button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>`;
+        }
+
+        async function showIPTrack(teamId, contestId) {
+            let url = `/api/admin/anti-cheat/team/${teamId}/ip-track`;
+            if (contestId) url += '?contestId=' + contestId;
+            try {
+                const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+                if (res.ok) { const data = await res.json(); renderIPTrack(data); document.getElementById('ip-track-modal').classList.remove('hidden'); }
+            } catch (e) { console.error(e); }
+        }
+
+        function renderIPTrack(data) {
+            const container = document.getElementById('ip-track-content');
+            container.innerHTML = `
+                <div class="mb-4">
+                    <span class="text-white font-medium">${data.teamName}</span>
+                    <span class="text-gray-500 text-xs ml-2 font-mono">共使用 ${data.ipRecords.length} 个IP</span>
+                </div>
+                ${data.ipRecords.length === 0 ? '<p class="text-gray-500 font-mono text-sm">暂无IP记录</p>' : `
+                    <div class="space-y-2">
+                        ${data.ipRecords.map(r => `
+                            <div class="bg-[#111] border-l-2 border-[#ff6b00] p-3 flex justify-between items-center">
+                                <div>
+                                    <span class="ip-badge">${r.ipAddress}</span>
+                                    <span class="text-gray-500 text-xs ml-3 font-mono">${r.submitCount}次提交</span>
+                                </div>
+                                <div class="text-xs text-gray-500 font-mono">${formatTime(r.firstSeen)} ~ ${formatTime(r.lastSeen)}</div>
+                            </div>
+                        `).join('')}
+                    </div>`}`;
+        }
+
+        function closeIPTrackModal() { document.getElementById('ip-track-modal').classList.add('hidden'); }
+
+        async function banTeam(teamId, contestId) {
+            if (!confirm('确定要封禁该队伍吗？')) return;
+            try {
+                const res = await fetch('/api/admin/anti-cheat/ban', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ teamId, contestId })
+                });
+                if (res.ok) { alert('封禁成功'); loadData(); } else { alert('封禁失败'); }
+            } catch (e) { alert('操作失败'); }
+        }
+
+        async function unbanTeam(teamId, contestId) {
+            if (!confirm('确定要解除该队伍的封禁吗？')) return;
+            try {
+                const res = await fetch('/api/admin/anti-cheat/unban', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ teamId, contestId })
+                });
+                if (res.ok) { alert('解封成功'); loadData(); } else { alert('解封失败'); }
+            } catch (e) { alert('操作失败'); }
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+            document.getElementById('tab-' + tab).classList.remove('hidden');
+        }
+
+        function filterRisk(level) {
+            currentRiskFilter = level;
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.risk === level));
+            renderSuspicious();
+        }
+
+        function formatTime(str) {
+            if (!str) return '-';
+            const d = new Date(str);
+            return d.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+        }
+
+        document.getElementById('contestFilter').addEventListener('change', loadData);
+        init();
+    </script>
+
+</body>
+</html>

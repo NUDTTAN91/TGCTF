@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TG GLOBAL MONITOR // 全球态势感知</title>
+    <script src="/assets/js/tailwind.min.js"></script>
+    <script src="/assets/js/chart.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=JetBrains+Mono:wght@400;700&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0c10;
+            --panel: #141416;
+            --accent: #ff6b00;
+            --border: #2a2a2a;
+            --text-main: #e0e0e0;
+            --text-dim: #777;
+            --gold: #ffd700;
+            --silver: #c0c0c0;
+            --bronze: #cd7f32;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --info: #3b82f6;
+        }
+        body { background-color: var(--bg); color: var(--text-main); font-family: 'Noto Sans SC', sans-serif; overflow: hidden; }
+        .font-eng { font-family: 'Chakra Petch', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* 顶部栏 */
+        .header {
+            height: 80px; display: flex; align-items: center; justify-content: space-between;
+            padding: 0 40px; background: #0f0f12; border-bottom: 2px solid var(--accent);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+        }
+        .title { font-size: 2.5rem; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; color: white; white-space: nowrap; overflow: hidden; }
+        .timer { font-size: 2.5rem; font-weight: bold; color: var(--accent); font-family: 'Chakra Petch'; }
+
+        /* 通用面板 */
+        .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 4px; display: flex; flex-direction: column; overflow: hidden; }
+        .panel-header {
+            padding: 12px 20px; background: #1a1a1d; border-bottom: 1px solid var(--border);
+            font-family: 'Chakra Petch', sans-serif; font-weight: bold; font-size: 1.1rem; color: #aaa;
+            display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
+        }
+        .panel-content { flex: 1; min-height: 0; overflow: hidden; }
+
+        /* 左侧排行榜表格 */
+        .rank-container { flex: 1; overflow: hidden; position: relative; }
+        .rank-table { width: 100%; border-collapse: collapse; }
+        .rank-row { 
+            border-bottom: 1px solid #222; transition: opacity 0.5s; 
+            height: 60px;
+        } 
+        .rank-row td { padding: 0 15px; vertical-align: middle; }
+        
+        /* 排名徽章 */
+        .rank-badge { 
+            width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-family: 'Chakra Petch'; border-radius: 4px; background: #222; color: #888;
+        }
+        .r-1 .rank-badge { background: var(--gold); color: black; box-shadow: 0 0 10px rgba(255,215,0,0.3); }
+        .r-2 .rank-badge { background: var(--silver); color: black; }
+        .r-3 .rank-badge { background: var(--bronze); color: black; }
+
+        /* 翻页进度条 */
+        .page-indicator { height: 4px; background: #222; width: 100%; position: absolute; bottom: 0; left: 0; }
+        .page-progress { height: 100%; background: var(--accent); width: 0%; transition: width 10s linear; }
+
+        /* 趋势图 */
+        .chart-container { position: relative; flex: 1; min-height: 0; width: 100%; padding: 10px; }
+
+        /* 底部情报流布局 */
+        .feed-grid { display: grid; grid-template-columns: 50% 50%; flex: 1; min-height: 0; overflow: hidden; }
+        .feed-col { padding: 0; overflow-y: auto; border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+        .feed-col:last-child { border-right: none; }
+        .feed-content { flex: 1; overflow-y: auto; }
+
+        /* 战报条目 - 使用表格布局 */
+        .feed-table { width: 100%; border-collapse: collapse; }
+        .feed-table tr { border-bottom: 1px dashed #222; animation: fadeIn 0.5s; }
+        .feed-table tr:last-child { border-bottom: none; }
+        .feed-table td { padding: 10px 8px; font-size: 0.85rem; vertical-align: middle; }
+        .feed-table .col-tag { width: 60px; }
+        .feed-table .col-time { text-align: right; white-space: nowrap; }
+        
+        /* 标签样式 */
+        .tag { padding: 2px 6px; border-radius: 2px; font-size: 0.75rem; font-weight: bold; font-family: 'JetBrains Mono'; white-space: nowrap; display: inline-block; }
+        .tag-1st { background: rgba(255, 215, 0, 0.2); color: #ffd700; border: 1px solid #ffd700; animation: pulse 2s infinite; }
+        .tag-2nd { background: rgba(192, 192, 192, 0.2); color: #c0c0c0; border: 1px solid #c0c0c0; }
+        .tag-3rd { background: rgba(205, 127, 50, 0.2); color: #cd7f32; border: 1px solid #cd7f32; }
+        .tag-solve { background: rgba(0, 255, 0, 0.1); color: #4dff88; border: 1px solid #4dff88; }
+        .tag-try { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid #3b82f6; }
+        .tag-ban { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444; }
+        .tag-cheat { background: rgba(239, 68, 68, 0.3); color: #f87171; border: 1px solid #ef4444; animation: pulse 2s infinite; }
+        .tag-sys { background: #333; color: #aaa; border: 1px solid #555; }
+
+        /* 滚动条 */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden">
+
+    <!-- 1. 顶部 Header -->
+    <header class="header shrink-0 z-20">
+        <div class="w-1/4 text-gray-500 font-mono text-sm">TG_CTF_PLATFORM // MONITOR</div>
+        <div class="w-1/2 text-center">
+            <div id="contest-name" class="title font-eng">TG GLOBAL MONITOR</div>
+        </div>
+        <div class="w-1/4 text-right flex items-center justify-end gap-4">
+            <span id="timer-label" class="text-xs text-gray-500 font-mono tracking-widest uppercase">Time Remaining</span>
+            <div id="timer" class="timer">--:--:--</div>
+        </div>
+    </header>
+
+    <!-- 2. 主内容区 (Grid) - 固定高度为视窗高度减header -->
+    <main class="grid grid-cols-12 gap-4 p-4 bg-[#0b0c10] overflow-hidden" style="height: calc(100vh - 80px);">
+        
+        <!-- 左侧：自动翻页排行榜 (25%) -->
+        <div class="col-span-3 panel relative h-full">
+            <div class="panel-header">
+                <span>实时排名 (Live Ranking)</span>
+                <div class="flex items-center gap-2">
+                    <button id="pause-btn" onclick="togglePause()" class="text-xs px-2 py-1 border border-[#444] hover:border-[#ff6b00] text-gray-400 hover:text-[#ff6b00] transition font-mono">▶ AUTO</button>
+                    <span class="text-xs text-[#ff6b00]" id="page-info">PAGE 1/1</span>
+                </div>
+            </div>
+            
+            <div class="rank-container" id="rank-container">
+                <table class="rank-table">
+                    <tbody id="rank-body">
+                        <!-- JS 填充 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 翻页进度条 -->
+            <div class="page-indicator"><div class="page-progress" id="page-progress"></div></div>
+        </div>
+
+        <!-- 右侧：图表 + 动态 (75%) - 固定高度比例 -->
+        <div class="col-span-9 flex flex-col gap-4 h-full overflow-hidden">
+            
+            <!-- 上半部分：得分趋势图 (50% 高度) -->
+            <div class="panel" style="flex: 1; min-height: 0;">
+                <div class="panel-header">
+                    <span>得分趋势 (Top 5 Trend)</span>
+                    <span class="text-xs text-gray-500">Auto-Refresh: 30s</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 下半部分：综合情报流 (50% 高度) -->
+            <div class="panel" style="flex: 1; min-height: 0; max-height: 50%; overflow: hidden;">
+                <div class="panel-header">
+                    <span>战场情报 (Intel Feed)</span>
+                    <span id="connection-status" class="text-xs text-green-500 animate-pulse">● Connected</span>
+                </div>
+                
+                <div class="feed-grid">
+                    
+                    <!-- 左分栏：高光时刻 (Top 3 Solves) -->
+                    <div class="feed-col bg-[#111]">
+                        <div class="p-2 text-xs text-gray-500 border-b border-[#222] font-mono bg-[#161616] flex-shrink-0">★ 高光时刻 (First Bloods)</div>
+                        <div id="highlight-feed" class="feed-content">
+                            <!-- 动态填充 -->
+                        </div>
+                    </div>
+
+                    <!-- 右分栏：实时流水 (Live Stream) -->
+                    <div class="feed-col">
+                        <div class="p-2 text-xs text-gray-500 border-b border-[#222] font-mono bg-[#161616] flex-shrink-0">>> 实时流水 (Live Stream)</div>
+                        <div id="live-feed" class="feed-content">
+                            <!-- 动态填充 -->
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <script>
+        // === 配置 ===
+        const urlParams = new URLSearchParams(window.location.search);
+        const contestId = urlParams.get('id');
+        const token = localStorage.getItem('tg_token');
+
+        if (!contestId) {
+            document.body.innerHTML = '<div class="flex items-center justify-center h-screen text-2xl text-red-500 font-mono">ERROR: Contest ID not specified</div>';
+        }
+
+        // === 全局数据 ===
+        let allTeams = [];
+        let currentPage = 0;
+        let pageSize = 10;
+        let trendChart = null;
+        let contestStatus = 'pending'; // pending / running / ended / paused
+        let startRemainingSeconds = 0; // 开始倒计时
+        let endRemainingSeconds = 0;   // 结束倒计时
+        let contestStartTime = null;   // 比赛开始时间
+        let contestEndTime = null;     // 比赛结束时间
+        let dataLoaded = false; // 数据是否已加载
+
+        // === 倒计时 ===
+        function formatTime(seconds) {
+            if (seconds <= 0) return '00:00:00';
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = Math.floor(seconds % 60);
+            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function updateTimer() {
+            // 数据未加载完成前不操作
+            if (!dataLoaded) return;
+            
+            const timerEl = document.getElementById('timer');
+            const labelEl = document.getElementById('timer-label');
+            
+            if (contestStatus === 'pending') {
+                // 比赛未开始，显示开始倒计时
+                labelEl.textContent = 'Starts In';
+                timerEl.style.color = '#facc15'; // 黄色
+                if (startRemainingSeconds > 0) {
+                    startRemainingSeconds--;
+                    timerEl.textContent = formatTime(startRemainingSeconds);
+                } else {
+                    // 开始倒计时结束，前端主动切换到 running 状态
+                    contestStatus = 'running';
+                    // 根据结束时间计算剩余秒数
+                    if (contestEndTime) {
+                        const now = new Date();
+                        const end = new Date(contestEndTime);
+                        endRemainingSeconds = Math.max(0, Math.floor((end - now) / 1000));
+                    }
+                    timerEl.textContent = formatTime(endRemainingSeconds);
+                    labelEl.textContent = 'Time Remaining';
+                    timerEl.style.color = '#ff6b00';
+                    // 后台刷新数据
+                    loadMonitorData();
+                }
+            } else if (contestStatus === 'running') {
+                // 比赛进行中，显示结束倒计时
+                labelEl.textContent = 'Time Remaining';
+                timerEl.style.color = '#ff6b00'; // 橙色
+                if (endRemainingSeconds > 0) {
+                    endRemainingSeconds--;
+                    timerEl.textContent = formatTime(endRemainingSeconds);
+                } else {
+                    timerEl.textContent = '00:00:00';
+                    labelEl.textContent = 'Ended';
+                    timerEl.style.color = '#666';
+                }
+            } else if (contestStatus === 'ended') {
+                timerEl.textContent = '00:00:00';
+                labelEl.textContent = 'Ended';
+                timerEl.style.color = '#666';
+            } else if (contestStatus === 'paused') {
+                labelEl.textContent = 'Paused';
+                timerEl.style.color = '#f97316'; // 橙色
+            }
+        }
+        setInterval(updateTimer, 1000);
+
+        // === 1. 自动翻页排行榜逻辑 ===
+        const rowHeight = 60;
+
+        function renderRankPage() {
+            const container = document.getElementById('rank-container');
+            const tbody = document.getElementById('rank-body');
+            const pageInfo = document.getElementById('page-info');
+            const progressBar = document.getElementById('page-progress');
+
+            if (allTeams.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-gray-500 py-8">暂无数据</td></tr>';
+                pageInfo.innerText = 'PAGE 0/0';
+                return;
+            }
+
+            const containerHeight = container.clientHeight;
+            // 根据容器高度自适应计算每页数量
+            pageSize = Math.max(Math.floor(containerHeight / rowHeight), 1);
+            const totalPages = Math.ceil(allTeams.length / pageSize);
+            
+            const start = currentPage * pageSize;
+            const end = start + pageSize;
+            const pageData = allTeams.slice(start, end);
+
+            tbody.innerHTML = '';
+            pageData.forEach(t => {
+                const rankClass = t.rank === 1 ? 'r-1' : (t.rank === 2 ? 'r-2' : (t.rank === 3 ? 'r-3' : ''));
+                const scoreColor = t.rank <= 3 ? 'text-[#ff6b00]' : 'text-gray-400';
+                const maxScore = allTeams[0]?.totalScore || 1;
+                
+                // 头像显示：有头像用头像，无则用队名首字母
+                const avatarHtml = t.avatar 
+                    ? `<img src="${t.avatar}" class="w-full h-full object-cover">`
+                    : `<span class="text-sm font-bold ${t.rank <= 3 ? 'text-black' : 'text-gray-400'}">${t.teamName[0].toUpperCase()}</span>`;
+                const avatarBg = t.rank === 1 ? 'bg-[#ffd700]' : (t.rank === 2 ? 'bg-[#c0c0c0]' : (t.rank === 3 ? 'bg-[#cd7f32]' : 'bg-[#222]'));
+                
+                tbody.innerHTML += `
+                <tr class="rank-row ${rankClass}">
+                    <td class="w-16 text-center"><div class="rank-badge">${t.rank}</div></td>
+                    <td>
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 ${avatarBg} rounded-sm border border-[#333] flex items-center justify-center overflow-hidden flex-shrink-0">
+                                ${avatarHtml}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="font-bold text-white text-lg truncate">${escapeHtml(t.teamName)}</div>
+                                <div class="w-full bg-[#222] h-1.5 mt-1 rounded overflow-hidden">
+                                    <div class="bg-gray-600 h-full" style="width: ${(t.totalScore/maxScore)*100}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-right">
+                        <div class="${scoreColor} font-mono font-bold text-xl">${t.totalScore}</div>
+                        <div class="text-xs text-gray-600">${t.solveCount} Solved</div>
+                    </td>
+                </tr>`;
+            });
+
+            pageInfo.innerText = `PAGE ${currentPage + 1} / ${totalPages}`;
+
+            progressBar.style.transition = 'none';
+            progressBar.style.width = '0%';
+            setTimeout(() => {
+                progressBar.style.transition = 'width 10s linear';
+                progressBar.style.width = '100%';
+            }, 50);
+
+            currentPage++;
+            if (currentPage >= totalPages) currentPage = 0;
+        }
+
+        // 翻页由init()启动
+        // setInterval(renderRankPage, 10000);
+
+        window.addEventListener('resize', () => {
+            currentPage = 0;
+            renderRankPage();
+        });
+
+        // === 2. 趋势图 ===
+        const colors = [
+            '#ffd700', '#c0c0c0', '#cd7f32', '#ef4444', '#3b82f6',
+            '#a855f7', '#22c55e', '#f97316', '#06b6d4', '#ec4899'
+        ];
+        const lineWidths = [3, 3, 3, 2, 2];
+
+        function initTrendChart() {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            Chart.defaults.color = '#666';
+            Chart.defaults.font.family = 'JetBrains Mono';
+
+            trendChart = new Chart(ctx, {
+                type: 'line',
+                data: { labels: [], datasets: [] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { 
+                            position: 'bottom',
+                            labels: { color: '#888', font: { size: 10 }, boxWidth: 10 } 
+                        } 
+                    },
+                    scales: {
+                        x: { grid: { color: '#222' }, ticks: { color: '#666' } },
+                        y: { grid: { color: '#222' }, ticks: { color: '#666' } }
+                    },
+                    animation: { duration: 500 }
+                }
+            });
+        }
+
+        async function loadTrendData() {
+            try {
+                const res = await fetch(`/api/contests/${contestId}/scoreboard/trend`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                
+                if (!data.labels || data.labels.length === 0) return;
+
+                trendChart.data.labels = data.labels;
+                trendChart.data.datasets = (data.teams || []).map((team, i) => ({
+                    label: team.name,
+                    data: team.scores,
+                    borderColor: colors[i % colors.length],
+                    borderWidth: lineWidths[i] || 1,
+                    tension: 0.3,
+                    pointRadius: 0
+                }));
+                trendChart.update();
+            } catch (e) {
+                console.error('Load trend error:', e);
+            }
+        }
+
+        // === 3. 加载综合数据 ===
+        async function loadMonitorData() {
+            try {
+                const res = await fetch(`/api/contests/${contestId}/monitor`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) {
+                    document.getElementById('connection-status').innerHTML = '<span class="text-red-500">● Disconnected</span>';
+                    return;
+                }
+                const data = await res.json();
+                document.getElementById('connection-status').innerHTML = '<span class="text-green-500 animate-pulse">● Connected</span>';
+
+                // 更新比赛信息
+                if (data.contest) {
+                    document.getElementById('contest-name').textContent = data.contest.name || 'TG GLOBAL MONITOR';
+                    fitTitle(); // 自动调整标题字号
+                    document.title = `${data.contest.name} // MONITOR`;
+                    contestStatus = data.contest.status || 'pending';
+                    startRemainingSeconds = data.contest.startRemainingSeconds || 0;
+                    endRemainingSeconds = data.contest.endRemainingSeconds || 0;
+                    contestStartTime = data.contest.startTime || null;
+                    contestEndTime = data.contest.endTime || null;
+                    dataLoaded = true; // 标记数据已加载
+                    updateTimer(); // 立即更新显示
+                }
+
+                // 更新排行榜
+                const newTeams = data.rankings || [];
+                // 只有队伍数量变化时才重置页码
+                if (allTeams.length !== newTeams.length && allTeams.length > 0) {
+                    currentPage = 0;
+                }
+                allTeams = newTeams;
+
+                // 更新解题流水
+                renderSolvesFeed(data.solves || [], data.events || []);
+
+            } catch (e) {
+                console.error('Load monitor data error:', e);
+                document.getElementById('connection-status').innerHTML = '<span class="text-red-500">● Error</span>';
+            }
+        }
+
+        // === 4. 渲染解题流水 ===
+        function renderSolvesFeed(solves, events = []) {
+            const highlightFeed = document.getElementById('highlight-feed');
+            const liveFeed = document.getElementById('live-feed');
+
+            // 高光时刻：一二三血
+            const bloods = solves.filter(s => s.bloodRank <= 3);
+            if (bloods.length > 0) {
+                highlightFeed.innerHTML = '<table class="feed-table">' + bloods.map(s => {
+                    let tagClass = '', rowClass = '', teamColor = '';
+                    let tagText = '';
+                    if (s.bloodRank === 1) {
+                        tagClass = 'tag-1st'; rowClass = 'bg-yellow-900 bg-opacity-10'; tagText = '1ST'; teamColor = 'text-[#ffd700]';
+                    } else if (s.bloodRank === 2) {
+                        tagClass = 'tag-2nd'; rowClass = 'bg-gray-800 bg-opacity-20'; tagText = '2ND'; teamColor = 'text-[#c0c0c0]';
+                    } else if (s.bloodRank === 3) {
+                        tagClass = 'tag-3rd'; rowClass = 'bg-orange-900 bg-opacity-10'; tagText = '3RD'; teamColor = 'text-[#cd7f32]';
+                    }
+                    const solveTimeHtml = s.solveTime ? `<span class="text-gray-400 text-xs">用时 ${s.solveTime}</span>` : '';
+                    return `<tr class="${rowClass}">
+                        <td class="col-tag"><span class="tag ${tagClass}">${tagText}</span></td>
+                        <td><span class="font-bold ${teamColor}">${escapeHtml(s.teamName)}</span> <span class="text-gray-500">拿下</span> <span class="text-[#ff6b00]">${escapeHtml(s.challengeName)}</span> ${solveTimeHtml}</td>
+                        <td class="col-time text-gray-600 text-xs font-mono">${s.solvedAt}</td>
+                    </tr>`;
+                }).join('') + '</table>';
+            } else {
+                highlightFeed.innerHTML = '<div class="text-center text-gray-500 py-8 text-sm">暂无一血记录</div>';
+            }
+
+            // 实时流水：解题 + 尝试 + 封禁等事件
+            const allItems = [];
+            
+            // 解题记录
+            solves.forEach(s => {
+                let tagClass = 'tag-solve';
+                let tagText = 'SOLVED';
+                if (s.bloodRank === 1) { tagClass = 'tag-1st'; tagText = '1ST'; }
+                else if (s.bloodRank === 2) { tagClass = 'tag-2nd'; tagText = '2ND'; }
+                else if (s.bloodRank === 3) { tagClass = 'tag-3rd'; tagText = '3RD'; }
+                
+                const solveTimeHtml = s.solveTime ? `<span class="text-gray-500 text-xs">用时 ${s.solveTime}</span>` : '';
+                allItems.push({
+                    time: s.solvedAt,
+                    html: `<tr>
+                        <td class="col-tag"><span class="tag ${tagClass}">${tagText}</span></td>
+                        <td><span class="text-gray-300 font-bold">${escapeHtml(s.teamName)}</span> <span class="text-gray-500">解出</span> <span class="text-gray-400">${escapeHtml(s.challengeName)}</span> ${solveTimeHtml}</td>
+                        <td class="col-time text-gray-600 text-xs font-mono">${s.solvedAt}</td>
+                    </tr>`
+                });
+            });
+            
+            // 其他事件（尝试解题、封禁等）
+            events.forEach(e => {
+                let html = '';
+                if (e.type === 'attempt') {
+                    html = `<tr>
+                        <td class="col-tag"><span class="tag tag-try">TRY</span></td>
+                        <td><span class="text-cyan-400 font-bold">[${escapeHtml(e.userName || e.teamName)}]</span> <span class="text-gray-400">尝试解题</span> <span class="text-orange-400 font-bold">[${escapeHtml(e.challengeName)}]</span></td>
+                        <td class="col-time text-gray-600 text-xs font-mono">${e.time}</td>
+                    </tr>`;
+                } else if (e.type === 'ban') {
+                    html = `<tr class="bg-red-900 bg-opacity-10">
+                        <td class="col-tag"><span class="tag tag-ban">BAN</span></td>
+                        <td><span class="text-red-400 font-bold">${escapeHtml(e.teamName)}</span> <span class="text-gray-500">已被封禁</span></td>
+                        <td class="col-time text-gray-600 text-xs font-mono">${e.time}</td>
+                    </tr>`;
+                } else if (e.type === 'cheat') {
+                    html = `<tr class="bg-red-900 bg-opacity-20">
+                        <td class="col-tag"><span class="tag tag-cheat">CHEAT</span></td>
+                        <td><span class="text-red-400 font-bold">${escapeHtml(e.teamName)}</span> <span class="text-gray-500">因作弊被封禁</span></td>
+                        <td class="col-time text-gray-600 text-xs font-mono">${e.time}</td>
+                    </tr>`;
+                }
+                if (html) {
+                    allItems.push({ time: e.time, html });
+                }
+            });
+            
+            if (allItems.length > 0) {
+                // 按时间倒序排列，最新的在前面
+                allItems.sort((a, b) => b.time.localeCompare(a.time));
+                liveFeed.innerHTML = '<table class="feed-table">' + allItems.map(item => item.html).join('') + '</table>';
+            } else {
+                liveFeed.innerHTML = '<div class="text-center text-gray-500 py-8 text-sm">暂无记录</div>';
+            }
+        }
+
+        // === WebSocket 实时更新 ===
+        let ws = null;
+        let wsReconnectTimer = null;
+
+        function connectWebSocket() {
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${wsProtocol}//${location.host}/api/contests/${contestId}/monitor/ws?token=${encodeURIComponent(token)}`;
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                document.getElementById('connection-status').innerHTML = '<span class="text-green-500 animate-pulse">● Live</span>';
+            };
+            
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('[Monitor WS] Received data:', data);
+                    console.log('[Monitor WS] Events:', data.events);
+                    if (data.type === 'update') {
+                        // 更新排行榜
+                        if (data.rankings) {
+                            const newTeams = data.rankings;
+                            if (allTeams.length !== newTeams.length && allTeams.length > 0) {
+                                currentPage = 0;
+                            }
+                            allTeams = newTeams;
+                            renderRankPage();
+                        }
+                        // 更新解题流水
+                        if (data.solves || data.events) {
+                            renderSolvesFeed(data.solves || [], data.events || []);
+                        }
+                        // 直接更新趋势图（不再发请求）
+                        if (data.trend && data.trend.labels && data.trend.labels.length > 0) {
+                            trendChart.data.labels = data.trend.labels;
+                            trendChart.data.datasets = (data.trend.teams || []).map((team, i) => ({
+                                label: team.name,
+                                data: team.scores,
+                                borderColor: colors[i % colors.length],
+                                borderWidth: lineWidths[i] || 1,
+                                tension: 0.3,
+                                pointRadius: 0
+                            }));
+                            trendChart.update();
+                        }
+                    }
+                } catch (e) {
+                    console.error('WebSocket message parse error:', e);
+                }
+            };
+            
+            ws.onclose = () => {
+                console.log('WebSocket disconnected, reconnecting in 5s...');
+                document.getElementById('connection-status').innerHTML = '<span class="text-yellow-500">● Reconnecting</span>';
+                wsReconnectTimer = setTimeout(connectWebSocket, 5000);
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+        }
+
+        // === 工具函数 ===
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
+
+        // 自动调整标题字号 - 只有超出容器时才缩小
+        function fitTitle() {
+            const titleEl = document.getElementById('contest-name');
+            
+            // 先重置为最大字号
+            titleEl.style.fontSize = '2.5rem';
+            
+            // 等DOM更新后检测
+            setTimeout(() => {
+                const container = titleEl.parentElement;
+                let fontSize = 40;
+                
+                // 只有当内容宽度超出容器时才缩小
+                while (titleEl.scrollWidth > container.clientWidth && fontSize > 18) {
+                    fontSize -= 2;
+                    titleEl.style.fontSize = fontSize + 'px';
+                }
+            }, 0);
+        }
+
+        // === 初始化 ===
+        let pageInterval = null;
+        let isPaused = false;
+
+        function togglePause() {
+            const btn = document.getElementById('pause-btn');
+            const progressBar = document.getElementById('page-progress');
+            
+            if (isPaused) {
+                // 恢复自动翻页
+                isPaused = false;
+                btn.textContent = '▶ AUTO';
+                btn.classList.remove('text-[#ff6b00]', 'border-[#ff6b00]');
+                btn.classList.add('text-gray-400', 'border-[#444]');
+                pageInterval = setInterval(renderRankPage, 10000);
+                // 重新启动进度条
+                progressBar.style.transition = 'none';
+                progressBar.style.width = '0%';
+                setTimeout(() => {
+                    progressBar.style.transition = 'width 10s linear';
+                    progressBar.style.width = '100%';
+                }, 50);
+            } else {
+                // 暂停自动翻页
+                isPaused = true;
+                btn.textContent = '■ PAUSE';
+                btn.classList.remove('text-gray-400', 'border-[#444]');
+                btn.classList.add('text-[#ff6b00]', 'border-[#ff6b00]');
+                clearInterval(pageInterval);
+                pageInterval = null;
+                // 暂停进度条
+                const currentWidth = progressBar.offsetWidth / progressBar.parentElement.offsetWidth * 100;
+                progressBar.style.transition = 'none';
+                progressBar.style.width = currentWidth + '%';
+            }
+        }
+        
+        async function init() {
+            initTrendChart();
+            
+            // 先加载数据
+            await loadMonitorData();
+            
+            // 数据加载后立即渲染（无论有无数据都要渲染）
+            renderRankPage();
+            
+            // 启动自动翻页
+            if (!pageInterval) {
+                pageInterval = setInterval(renderRankPage, 10000);
+            }
+            
+            await loadTrendData();
+            
+            // 连接WebSocket实时更新
+            connectWebSocket();
+            
+            // 备用轮询（WebSocket断开时保证数据更新）
+            setInterval(loadMonitorData, 60000);
+            setInterval(loadTrendData, 60000);
+        }
+
+        if (contestId) {
+            init();
+        }
+    </script>
+
+</body>
+</html>

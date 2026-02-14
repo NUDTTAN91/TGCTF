@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="author" content="tan91">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=JetBrains+Mono:wght@400;700&family=Noto+Sans+SC:wght@100;400;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #050505;
+            --accent: #ff6b00; /* 核心战术橙 */
+            --text-main: #e0e0e0;
+        }
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Noto Sans SC', sans-serif; overflow: hidden; }
+        .font-eng { font-family: 'Chakra Petch', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        
+        /* === 1. 背景层：Canvas 矩阵雨 === */
+        #matrix-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -2;
+            opacity: 0.25;
+        }
+
+        /* === 2. 装饰层：战术 HUD 四角 === */
+        .hud-corner {
+            position: fixed;
+            width: 40px;
+            height: 40px;
+            border: 2px solid rgba(255, 107, 0, 0.4);
+            z-index: 10;
+        }
+        .tl { top: 20px; left: 20px; border-right: 0; border-bottom: 0; }
+        .tr { top: 20px; right: 20px; border-left: 0; border-bottom: 0; }
+        .bl { bottom: 20px; left: 20px; border-right: 0; border-top: 0; }
+        .br { bottom: 20px; right: 20px; border-left: 0; border-top: 0; }
+
+        /* === 3. 装饰层：暗角晕影 === */
+        .vignette {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, transparent 50%, #000 100%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* === 4. 文字特效：单色战术故障 (Mono Glitch) === */
+        .glitch-text {
+            position: relative;
+            color: white;
+        }
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-dark);
+        }
+        .glitch-text::before {
+            left: 2px;
+            text-shadow: -1px 0 #ff6b00;
+            clip-path: inset(44% 0 61% 0);
+            animation: glitch-anim-1 3s infinite linear alternate-reverse;
+        }
+        .glitch-text::after {
+            left: -2px;
+            text-shadow: 1px 0 #555;
+            clip-path: inset(20% 0 30% 0);
+            animation: glitch-anim-2 2.5s infinite linear alternate-reverse;
+        }
+        @keyframes glitch-anim-1 {
+            0% { clip-path: inset(20% 0 80% 0); }
+            20% { clip-path: inset(60% 0 1% 0); }
+            40% { clip-path: inset(40% 0 60% 0); }
+            60% { clip-path: inset(80% 0 5% 0); }
+            80% { clip-path: inset(10% 0 70% 0); }
+            100% { clip-path: inset(30% 0 50% 0); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip-path: inset(10% 0 60% 0); }
+            20% { clip-path: inset(80% 0 5% 0); }
+            40% { clip-path: inset(30% 0 20% 0); }
+            60% { clip-path: inset(15% 0 80% 0); }
+            80% { clip-path: inset(55% 0 10% 0); }
+            100% { clip-path: inset(40% 0 30% 0); }
+        }
+
+        /* === 5. 按钮特效：斜切 (Skewed) === */
+        .btn-skew {
+            transform: skewX(-15deg);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-skew:hover {
+            transform: skewX(-15deg) translateY(-4px);
+            box-shadow: 0 10px 30px rgba(255, 107, 0, 0.2);
+        }
+        .btn-content {
+            transform: skewX(15deg);
+        }
+
+        /* 淡入动画 */
+        .fade-in { opacity: 0; animation: fadeIn 1.5s forwards; }
+        .delay-1 { animation-delay: 0.5s; }
+        .delay-2 { animation-delay: 1s; }
+        @keyframes fadeIn { to { opacity: 1; } }
+    </style>
+</head>
+<body class="h-screen flex flex-col relative selection:bg-[#ff6b00] selection:text-black">
+
+    <!-- 背景组合 -->
+    <canvas id="matrix-canvas"></canvas>
+    <div class="vignette"></div>
+
+    <!-- 战术 HUD 边角 -->
+    <div class="hud-corner tl"></div>
+    <div class="hud-corner tr"></div>
+    <div class="hud-corner bl"></div>
+    <div class="hud-corner br"></div>
+    
+    <!-- 顶部状态栏 -->
+    <header class="absolute top-0 w-full p-8 flex justify-between items-center z-20">
+        <div class="flex items-center gap-2 text-xs font-mono text-gray-500 tracking-widest">
+            <span class="w-2 h-2 bg-[#ff6b00] animate-pulse"></span>
+            <span class="scramble-text" data-value="SYSTEM_READY">LOADING...</span>
+        </div>
+        <div class="text-xs font-mono text-gray-600 tracking-[0.2em] border-r-2 border-[#ff6b00] pr-3">
+            EST. 2020
+        </div>
+    </header>
+
+    <!-- 核心视觉区域 -->
+    <main class="flex-grow flex flex-col justify-center items-center text-center z-10 px-4 relative">
+        
+        <!-- 顶部标签 -->
+        <div class="mb-10 fade-in">
+            <div class="inline-block border border-[#ff6b00] bg-[#ff6b00] bg-opacity-10 text-[#ff6b00] px-4 py-1 text-xs font-bold font-eng tracking-[0.3em] backdrop-blur-sm">
+                TG // SECURITY
+            </div>
+        </div>
+
+        <!-- 主标题 -->
+        <div class="relative mb-6 fade-in">
+            <h1 class="glitch-text text-8xl md:text-[11rem] font-black leading-none tracking-tighter" data-text="天格">
+                天格
+            </h1>
+            <div class="text-[#ff6b00] text-6xl md:text-8xl absolute -top-4 -right-6 md:-right-10 animate-pulse font-black">.</div>
+        </div>
+
+        <!-- 核心精神 -->
+        <div class="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-12 text-xl md:text-3xl text-gray-300 font-light tracking-[0.6em] mb-12 fade-in delay-1">
+            <span class="hover:text-white transition-colors cursor-default">天道酬勤</span>
+            <span class="hidden md:inline-block w-12 h-px bg-gradient-to-r from-transparent via-[#ff6b00] to-transparent"></span>
+            <span class="hover:text-white transition-colors cursor-default">格物致知</span>
+        </div>
+
+        <!-- 解码特效文字：整句解码 -->
+        <p class="h-6 text-xs font-mono tracking-widest mb-16 max-w-md mx-auto fade-in delay-1">
+            > <span class="scramble-text text-[#ff6b00]" data-value="INITIATING_NETWORK_PROTOCOL...">ENCRYPTED_DATA_STREAM</span>
+        </p>
+
+        <!-- 按钮组 -->
+        <div class="flex flex-col md:flex-row gap-8 w-full max-w-2xl px-6 fade-in delay-2">
+            
+            <!-- 登录按钮 -->
+            <a href="login.html" class="flex-1 btn-skew bg-[#ff6b00] border border-[#ff6b00]">
+                <div class="btn-content py-5 flex items-center justify-center gap-3 text-black font-bold font-mono uppercase tracking-widest text-base">
+                    <span>Login_接入系统</span>
+                </div>
+            </a>
+
+            <!-- 注册按钮 -->
+            <a href="register.html" class="flex-1 btn-skew border border-gray-600 hover:border-white bg-black bg-opacity-60 backdrop-blur-sm transition-colors">
+                <div class="btn-content py-5 flex items-center justify-center gap-3 text-gray-300 hover:text-white font-bold font-mono uppercase tracking-widest text-base">
+                    <span>Register_注册代号</span>
+                </div>
+            </a>
+        </div>
+
+    </main>
+
+    <footer class="absolute bottom-6 w-full text-center z-20">
+        <p class="text-base text-white font-bold font-mono tracking-[0.2em] uppercase mb-2" style="text-shadow: 0 0 10px rgba(255,255,255,0.5), 0 0 20px rgba(255,255,255,0.3);">
+            Copyright © 2021-present tan91. All Rights Reserved.
+        </p>
+        <div class="flex justify-center gap-3">
+            <a href="https://github.com/NUDTTAN91" target="_blank" class="px-3 py-1 bg-[#1a1a1a] border border-[#ff6b00] text-[#ff6b00] hover:bg-[#ff6b00] hover:text-black transition-colors text-[10px] font-mono flex items-center gap-1">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                GitHub
+            </a>
+            <a href="https://blog.csdn.net/ZXW_NUDT" target="_blank" class="px-3 py-1 bg-[#1a1a1a] border border-[#ff6b00] text-[#ff6b00] hover:bg-[#ff6b00] hover:text-black transition-colors text-[10px] font-mono flex items-center gap-1">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                Blog
+            </a>
+        </div>
+    </footer>
+
+    <!-- JS 特效 -->
+    <script>
+        // 已登录检查：如果有token则跳转到home
+        if (localStorage.getItem('tg_token')) {
+            window.location.href = '/home.html';
+        }
+
+        // 1. 矩阵代码雨
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        const chars = '0123456789ABCDEFTG<>[]';
+        const fontSize = 14;
+        const columns = canvas.width / fontSize;
+        const drops = [];
+
+        for (let i = 0; i < columns; i++) {
+            drops[i] = 1;
+        }
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(5, 5, 5, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#ff6b00'; 
+            ctx.font = fontSize + 'px "JetBrains Mono"';
+
+            for (let i = 0; i < drops.length; i++) {
+                const text = chars.charAt(Math.floor(Math.random() * chars.length));
+                ctx.globalAlpha = Math.random() * 0.5 + 0.1; 
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+            ctx.globalAlpha = 1.0; 
+        }
+        setInterval(drawMatrix, 35);
+
+        // 2. 文字黑客解码特效
+        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_#@&";
+        document.querySelectorAll(".scramble-text").forEach(element => {
+            let iterations = 0;
+            const targetText = element.dataset.value;
+            const interval = setInterval(() => {
+                element.innerText = targetText
+                    .split("")
+                    .map((letter, index) => {
+                        if(index < iterations) return targetText[index];
+                        return letters[Math.floor(Math.random() * 36)];
+                    })
+                    .join("");
+                
+                if(iterations >= targetText.length) clearInterval(interval);
+                
+                iterations += 1/2; // 控制解码速度
+            }, 50);
+        });
+    </script>
+
+    <style>
+        @keyframes fadeIn { to { opacity: 1; } }
+    </style>
+
+</body>
+</html>

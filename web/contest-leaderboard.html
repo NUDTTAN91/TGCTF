@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TG CTF - 战态感知排行榜</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0a0a;
+            --bg-card: #141414;
+            --accent: #ff6b00;
+            --text-main: #e0e0e0;
+            --text-dim: #555;
+            --gold: #ffd700;
+            --silver: #c0c0c0;
+            --bronze: #cd7f32;
+            --success: #22c55e;
+            --danger: #ef4444;
+        }
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Noto Sans SC', sans-serif; overflow-x: hidden; }
+        .font-eng { font-family: 'Chakra Petch', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* 顶部导航 */
+        .nav-link { position: relative; color: #666; transition: 0.3s; }
+        .nav-link:hover, .nav-link.active { color: white; }
+        .nav-link.active::after { content: ''; position: absolute; bottom: -24px; left: 0; width: 100%; height: 2px; background: var(--accent); box-shadow: 0 -5px 10px var(--accent); }
+
+        /* === 1. Top 3 卡片 (仅战队榜) === */
+        .rank-card {
+            background: #111; border: 1px solid #333; position: relative; overflow: hidden;
+            display: flex; flex-direction: column; align-items: center; padding: 20px;
+            transition: all 0.3s; clip-path: polygon(20px 0, 100% 0, 100% 100%, 0 100%, 0 20px);
+        }
+        .rank-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5); border-color: #555; }
+        
+        .rank-1 { border-top: 4px solid var(--gold); background: linear-gradient(180deg, rgba(255, 215, 0, 0.05) 0%, #111 100%); }
+        .rank-1 .rank-num { color: var(--gold); text-shadow: 0 0 20px rgba(255, 215, 0, 0.5); }
+        
+        .rank-2 { border-top: 4px solid var(--silver); background: linear-gradient(180deg, rgba(192, 192, 192, 0.05) 0%, #111 100%); }
+        .rank-2 .rank-num { color: var(--silver); }
+        
+        .rank-3 { border-top: 4px solid var(--bronze); background: linear-gradient(180deg, rgba(205, 127, 50, 0.05) 0%, #111 100%); }
+        .rank-3 .rank-num { color: var(--bronze); }
+
+        .avatar-glow { width: 80px; height: 80px; border-radius: 50%; border: 2px solid #333; padding: 2px; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: bold; background: #000; z-index: 10; font-family: 'Chakra Petch', sans-serif; overflow: hidden; }
+        .avatar-glow img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .rank-1 .avatar-glow { border-color: var(--gold); box-shadow: 0 0 15px rgba(255, 215, 0, 0.3); color: var(--gold); }
+        .rank-2 .avatar-glow { border-color: var(--silver); color: var(--silver); }
+        .rank-3 .avatar-glow { border-color: var(--bronze); color: var(--bronze); }
+        
+        /* === 2. 趋势图容器 === */
+        .chart-container {
+            background: #111; border: 1px solid #333; padding: 20px; position: relative;
+        }
+        .chart-corner { position: absolute; width: 10px; height: 10px; border: 2px solid var(--accent); }
+        .c-tl { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
+        .c-tr { top: -1px; right: -1px; border-left: 0; border-bottom: 0; }
+        .c-bl { bottom: -1px; left: -1px; border-right: 0; border-top: 0; }
+        .c-br { bottom: -1px; right: -1px; border-left: 0; border-top: 0; }
+
+        /* === 3. 排行榜表格 === */
+        .rank-table { width: 100%; text-align: left; border-collapse: separate; border-spacing: 0 4px; }
+        .rank-table th {
+            font-family: 'Chakra Petch', sans-serif; font-size: 0.75rem; color: #666; font-weight: bold;
+            padding: 12px 20px; text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .rank-row { background: rgba(255,255,255,0.02); transition: 0.2s; }
+        .rank-row:hover { background: rgba(255,255,255,0.05); transform: scale(1.005); box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        .rank-row td { padding: 16px 20px; border: 1px solid transparent; }
+        .rank-row:hover td:first-child { border-left: 2px solid var(--accent); }
+
+        /* 排名数字 */
+        .rank-badge { font-family: 'Chakra Petch', sans-serif; font-weight: 900; font-size: 1.2rem; color: #444; width: 40px; text-align: center; }
+        .rank-badge-1 { color: var(--gold); }
+        .rank-badge-2 { color: var(--silver); }
+        .rank-badge-3 { color: var(--bronze); }
+        
+        /* 趋势箭头 */
+        .trend-up { color: var(--success); font-size: 0.7rem; }
+        .trend-down { color: var(--danger); font-size: 0.7rem; }
+        .trend-flat { color: #444; font-size: 0.7rem; }
+
+        /* 进度条 */
+        .progress-bar-bg { width: 100px; height: 4px; background: #222; border-radius: 2px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background: var(--accent); }
+
+        /* 个人榜前三高亮 */
+        .solo-top-1 { border-left: 4px solid var(--gold) !important; background: linear-gradient(90deg, rgba(255,215,0,0.05), transparent) !important; }
+        .solo-top-2 { border-left: 4px solid var(--silver) !important; background: linear-gradient(90deg, rgba(192,192,192,0.05), transparent) !important; }
+        .solo-top-3 { border-left: 4px solid var(--bronze) !important; background: linear-gradient(90deg, rgba(205,127,50,0.05), transparent) !important; }
+
+        /* 我的队伍高亮 */
+        .my-team { background: rgba(255, 107, 0, 0.05) !important; border-left: 2px solid var(--accent) !important; }
+        .my-team td:first-child { border-left: 2px solid var(--accent) !important; }
+
+        /* 滚动条 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+        .hidden-section { display: none; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col relative">
+
+    <!-- 顶部导航 -->
+    <header class="h-20 border-b border-[#333] bg-[#0a0a0a] bg-opacity-95 backdrop-blur sticky top-0 z-50">
+        <div class="container mx-auto px-6 h-full flex items-center justify-between">
+            <div class="flex items-center gap-10">
+                <a href="/home.html" class="text-2xl font-black font-eng text-white tracking-tighter hover:text-[#ff6b00] transition">TG <span class="text-[#ff6b00]">/</span> HUB</a>
+                <nav class="hidden md:flex gap-8 font-mono text-xs font-bold text-gray-500">
+                    <a href="javascript:void(0)" onclick="goToChallenges()" class="nav-link">靶场中心</a>
+                    <a href="#" class="nav-link active">战态感知 (RANK)</a>
+                </nav>
+            </div>
+            
+            <!-- 右侧控制 -->
+            <div class="flex items-center gap-6">
+                <!-- 切换榜单类型 -->
+                <div class="flex items-center gap-3 bg-[#111] px-3 py-1.5 border border-[#333] rounded-sm">
+                    <span class="text-[10px] text-gray-500 font-mono">榜单类型</span>
+                    <div class="flex gap-2">
+                        <button id="btn-team" onclick="switchRank('team')" class="text-xs font-bold text-black bg-[#ff6b00] px-3 py-0.5 font-mono transition">战队榜</button>
+                        <button id="btn-solo" onclick="switchRank('solo')" class="text-xs font-bold text-gray-500 hover:text-white px-3 py-0.5 font-mono transition">个人榜</button>
+                    </div>
+                </div>
+                <!-- 搜索 -->
+                <input type="text" id="search-input" placeholder="搜索..." oninput="filterRanking()" class="bg-black border border-[#333] text-xs text-white px-3 py-1.5 w-48 outline-none font-mono focus:border-[#ff6b00] transition">
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="container mx-auto px-6 py-12">
+        
+        <!-- 头部标题 -->
+        <div class="flex justify-between items-end mb-12">
+            <div>
+                <h1 id="rank-title" class="text-4xl font-black text-white font-eng tracking-wide mb-2">TEAM RANKING</h1>
+                <p id="contest-subtitle" class="text-xs text-gray-500 font-mono">比赛名称 // LEADERBOARD</p>
+            </div>
+            <!-- 自动刷新（隐藏显示） -->
+        </div>
+
+        <!-- ================================== -->
+        <!-- 战队榜 (TEAM RANK) - 带领奖台 -->
+        <!-- ================================== -->
+        <div id="section-team">
+            
+            <!-- Top 3 领奖台 -->
+            <div id="top3-podium" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 items-end">
+                <!-- 动态填充 -->
+            </div>
+
+            <!-- 趋势图 -->
+            <div class="chart-container mb-12">
+                <div class="chart-corner c-tl"></div><div class="chart-corner c-tr"></div><div class="chart-corner c-bl"></div><div class="chart-corner c-br"></div>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-sm font-bold text-gray-400 font-mono uppercase">Top 5 Score Trend</h3>
+                    <div id="chart-legend" class="flex gap-4 text-[10px] font-mono text-gray-500">
+                        <!-- 动态填充图例 -->
+                    </div>
+                </div>
+                <div class="h-64 w-full"><canvas id="teamChart"></canvas></div>
+            </div>
+
+            <!-- 排名表格 -->
+            <div class="bg-[#111] border border-[#333] p-1">
+                <table class="rank-table">
+                    <thead><tr><th class="w-20 text-center">Rank</th><th>Team Name</th><th class="w-32 text-right">Solved</th><th class="w-48">Progress</th><th class="w-40 text-right">Score</th></tr></thead>
+                    <tbody id="team-ranking-body">
+                        <!-- 动态填充 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ================================== -->
+        <!-- 个人榜 (SOLO RANK) - 无领奖台，纯列表 -->
+        <!-- ================================== -->
+        <div id="section-solo" class="hidden-section">
+            
+            <div class="bg-[#111] border border-[#333] p-1">
+                <table class="rank-table">
+                    <thead>
+                        <tr><th class="w-20 text-center">Rank</th><th>User</th><th class="w-48">Team</th><th class="w-32 text-right">Solved</th><th class="w-40 text-right">Score</th></tr>
+                    </thead>
+                    <tbody id="solo-ranking-body">
+                        <!-- 动态填充 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="border-t border-[#333] bg-[#0a0a0a] py-6 mt-12">
+        <div class="container mx-auto px-6 text-center">
+            <p class="text-[10px] text-[#444] font-mono tracking-widest">
+                Copyright © 2021-present tan91. All Rights Reserved.
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        const token = localStorage.getItem('tg_token');
+        let contestId = null;
+        let contestData = null;
+        let teamScoreboard = [];
+        let soloScoreboard = [];
+        let myTeamId = null;
+        let myUserId = null;
+        let teamChart = null;
+        let refreshCountdown = 5;
+        let currentRankType = 'team';
+
+        // JWT解析
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) { return null; }
+        }
+
+        // 权限检查
+        if (!token) {
+            window.location.href = '/login.html';
+        }
+        
+        // 验证 token 是否有效（重置密码后会失效）
+        async function validateToken() {
+            try {
+                const resp = await fetch('/api/profile', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (resp.status === 401) {
+                    localStorage.removeItem('tg_token');
+                    localStorage.removeItem('tg_must_change_password');
+                    window.location.href = '/login.html';
+                }
+            } catch (e) {
+                console.error('Token validation failed', e);
+            }
+        }
+        validateToken();
+        
+        // 检查是否需要强制修改密码（防绕过）
+        if (localStorage.getItem('tg_must_change_password') === 'true') {
+            alert('请先修改密码后再访问系统');
+            window.location.href = '/change-password.html';
+        }
+        
+        const payload = parseJwt(token);
+        if (!payload) {
+            window.location.href = '/login.html';
+        } else {
+            myUserId = payload.sub;
+        }
+
+        // 获取比赛ID
+        const urlParams = new URLSearchParams(window.location.search);
+        contestId = urlParams.get('id');
+        if (!contestId) {
+            alert('未指定比赛ID');
+            window.location.href = '/contests.html';
+        }
+
+        // 跳转回题目页（根据比赛模式跳转到对应页面）
+        function goToChallenges() {
+            const page = contestData && contestData.mode === 'awd-f' ? 'contest-challenges-awdf.html' : 'contest-challenges.html';
+            window.location.href = `/${page}?id=${contestId}`;
+        }
+
+        // 初始化
+        async function init() {
+            await loadContest();
+            await loadMyTeam();
+            await loadTeamScoreboard();
+            await loadSoloScoreboard();
+            await loadScoreTrend();
+            renderTeamRanking();
+            startRefreshCountdown();
+        }
+
+        // 加载比赛信息
+        async function loadContest() {
+            try {
+                const res = await fetch(`/api/contests/${contestId}`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    contestData = await res.json();
+                    document.getElementById('contest-subtitle').textContent = `${contestData.name} // LEADERBOARD`;
+                    document.title = `TG CTF - ${contestData.name} 排行榜`;
+                }
+            } catch (e) {
+                console.error('Load contest error:', e);
+            }
+        }
+
+        // 获取我的队伍ID
+        async function loadMyTeam() {
+            try {
+                const res = await fetch(`/api/contests/${contestId}/solves`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    myTeamId = data.teamId;
+                }
+            } catch (e) {
+                console.error('Load my team error:', e);
+            }
+        }
+
+        // 加载战队排行榜
+        async function loadTeamScoreboard() {
+            try {
+                const res = await fetch(`/api/contests/${contestId}/scoreboard`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    teamScoreboard = await res.json() || [];
+                }
+            } catch (e) {
+                console.error('Load team scoreboard error:', e);
+            }
+        }
+
+        // 加载个人排行榜
+        async function loadSoloScoreboard() {
+            try {
+                const res = await fetch(`/api/contests/${contestId}/scoreboard/solo`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    soloScoreboard = await res.json() || [];
+                }
+            } catch (e) {
+                console.error('Load solo scoreboard error:', e);
+            }
+        }
+
+        // 加载分数趋势
+        async function loadScoreTrend() {
+            try {
+                const res = await fetch(`/api/contests/${contestId}/scoreboard/trend`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    const trendData = await res.json();
+                    // 确保数据有效才使用，否则用排行榜数据生成
+                    if (trendData && trendData.labels && trendData.labels.length > 0 && trendData.teams && trendData.teams.length > 0) {
+                        renderTrendChart(trendData);
+                    } else {
+                        renderTrendChart(null);
+                    }
+                } else {
+                    // API返回错误，使用排行榜数据生成简单图表
+                    renderTrendChart(null);
+                }
+            } catch (e) {
+                console.error('Load trend error:', e);
+                // 网络错误，使用排行榜数据生成
+                renderTrendChart(null);
+            }
+        }
+
+        // 渲染战队排行榜
+        function renderTeamRanking() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const filtered = teamScoreboard.filter(t => 
+                !searchTerm || t.teamName.toLowerCase().includes(searchTerm)
+            );
+
+            // Top 3 领奖台（支持不足1-3队显示）
+            const podiumDiv = document.getElementById('top3-podium');
+            if (filtered.length >= 1) {
+                // 根据队伍数量调整显示
+                let podiumItems = [];
+                const heights = ['h-56', 'h-64', 'h-56'];
+                const orders = ['order-2 md:order-1', 'order-1 md:order-2 z-10 shadow-[0_0_50px_rgba(255,215,0,0.1)]', 'order-3'];
+                                    
+                // 获取头像显示
+                const getAvatarHtml = (team, rank) => {
+                    if (team.avatar) {
+                        return `<img src="${team.avatar}" alt="" class="w-full h-full object-cover">`;
+                    }
+                    const rankColors = { 1: 'var(--gold)', 2: 'var(--silver)', 3: 'var(--bronze)' };
+                    return `<span style="color: ${rankColors[rank] || '#666'}">${team.teamName[0].toUpperCase()}</span>`;
+                };
+                
+                if (filtered.length >= 3) {
+                    // 3队及以上：标准领奖台 (2, 1, 3)
+                    podiumItems = [
+                        { team: filtered[1], rank: 2, heightIdx: 0, orderIdx: 0 },
+                        { team: filtered[0], rank: 1, heightIdx: 1, orderIdx: 1 },
+                        { team: filtered[2], rank: 3, heightIdx: 2, orderIdx: 2 }
+                    ];
+                } else if (filtered.length === 2) {
+                    // 2队：显示 2, 1 顺序
+                    podiumItems = [
+                        { team: filtered[1], rank: 2, heightIdx: 0, orderIdx: 0 },
+                        { team: filtered[0], rank: 1, heightIdx: 1, orderIdx: 1 }
+                    ];
+                } else {
+                    // 1队：只显示第1名
+                    podiumItems = [
+                        { team: filtered[0], rank: 1, heightIdx: 1, orderIdx: 1 }
+                    ];
+                }
+                
+                podiumDiv.innerHTML = podiumItems.map(item => {
+                    const t = item.team;
+                    const rank = item.rank;
+                    return `
+                    <div class="rank-card rank-${rank} ${heights[item.heightIdx]} ${orders[item.orderIdx]}">
+                        ${rank === 1 ? '<div class="absolute top-0 right-0 bg-[#ffd700] text-black text-[10px] font-bold px-2 py-1 font-mono">LEADER</div>' : ''}
+                        <div class="${rank === 1 ? 'text-6xl' : 'text-4xl'} font-black font-eng rank-num mb-${rank === 1 ? '6' : '4'}">${String(rank).padStart(2, '0')}</div>
+                        <div class="avatar-glow">${getAvatarHtml(t, rank)}</div>
+                        <div class="mt-${rank === 1 ? '6' : '4'} text-center">
+                            <h3 class="${rank === 1 ? 'text-2xl' : 'text-xl'} font-bold text-white font-eng">${escapeHtml(t.teamName)}</h3>
+                            <p class="text-${rank === 1 ? 'sm text-[#ffd700]' : 'xs text-gray-500'} font-mono mt-1">Score: ${t.totalScore.toLocaleString()}</p>
+                        </div>
+                    </div>
+                    `;
+                }).join('');
+            } else {
+                podiumDiv.innerHTML = '<div class="col-span-3 text-center text-gray-500 py-10">暂无解题记录</div>';
+            }
+
+            // 排名表格
+            const maxScore = filtered.length > 0 ? filtered[0].totalScore : 1;
+            const tbody = document.getElementById('team-ranking-body');
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-500 py-10">暂无数据</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map((t, i) => {
+                const rank = i + 1;
+                const isMe = t.teamId === myTeamId;
+                const rankClass = rank === 1 ? 'rank-badge-1' : rank === 2 ? 'rank-badge-2' : rank === 3 ? 'rank-badge-3' : '';
+                const scoreClass = rank === 1 ? 'text-[#ffd700]' : rank === 2 ? 'text-[#c0c0c0]' : rank === 3 ? 'text-[#cd7f32]' : 'text-white';
+                const progress = maxScore > 0 ? (t.totalScore / maxScore * 100) : 0;
+                
+                return `
+                <tr class="rank-row ${isMe ? 'my-team' : ''}">
+                    <td class="text-center"><span class="rank-badge ${rankClass}">${String(rank).padStart(2, '0')}</span></td>
+                    <td>
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 ${isMe ? 'bg-[#ff6b00]' : 'bg-[#222]'} flex items-center justify-center text-xs font-bold ${isMe ? 'text-black' : 'text-gray-400'} rounded-sm border border-[#333] overflow-hidden">
+                                ${t.avatar ? `<img src="${t.avatar}" class="w-full h-full object-cover">` : t.teamName[0].toUpperCase()}
+                            </div>
+                            <div>
+                                <div class="text-sm font-bold text-white">${escapeHtml(t.teamName)}</div>
+                                ${isMe ? '<div class="text-[10px] text-[#ff6b00] font-mono">You</div>' : ''}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-right font-mono text-gray-400">${t.solveCount}</td>
+                    <td><div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${progress}%"></div></div></td>
+                    <td class="text-right font-bold font-eng ${scoreClass} text-lg">${t.totalScore.toLocaleString()}</td>
+                </tr>
+                `;
+            }).join('');
+        }
+
+        // 渲染个人排行榜
+        function renderSoloRanking() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const filtered = soloScoreboard.filter(u => 
+                !searchTerm || u.userName.toLowerCase().includes(searchTerm) || (u.teamName && u.teamName.toLowerCase().includes(searchTerm))
+            );
+
+            const tbody = document.getElementById('solo-ranking-body');
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-500 py-10">暂无数据</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map((u, i) => {
+                const rank = i + 1;
+                const isMe = u.userId == myUserId;
+                const rankClass = rank === 1 ? 'rank-badge-1' : rank === 2 ? 'rank-badge-2' : rank === 3 ? 'rank-badge-3' : 'text-gray-600';
+                const rowClass = rank === 1 ? 'solo-top-1' : rank === 2 ? 'solo-top-2' : rank === 3 ? 'solo-top-3' : '';
+                const scoreClass = rank === 1 ? 'text-[#ffd700]' : rank === 2 ? 'text-[#c0c0c0]' : rank === 3 ? 'text-[#cd7f32]' : 'text-gray-400';
+                
+                return `
+                <tr class="rank-row ${rowClass} ${isMe ? 'my-team' : ''}">
+                    <td class="text-center"><span class="rank-badge ${rankClass}">${String(rank).padStart(2, '0')}</span></td>
+                    <td>
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-[#222] flex items-center justify-center text-xs font-bold text-gray-400 rounded-sm border border-[#333] overflow-hidden">
+                                ${u.avatar ? `<img src="${u.avatar}" class="w-full h-full object-cover">` : (u.userName ? u.userName[0].toUpperCase() : 'U')}
+                            </div>
+                            <div class="text-sm font-bold ${rank <= 3 ? 'text-white' : 'text-gray-300'}">
+                                ${escapeHtml(u.userName)} ${isMe ? '<span class="text-xs text-[#ff6b00] font-mono ml-2">(Me)</span>' : ''}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-gray-${rank <= 3 ? '400' : '500'} text-xs">${escapeHtml(u.teamName || '--')}</td>
+                    <td class="text-right font-mono text-gray-${rank <= 3 ? '400' : '500'}">${u.solveCount}</td>
+                    <td class="text-right font-bold font-eng ${scoreClass} text-lg">${u.totalScore.toLocaleString()}</td>
+                </tr>
+                `;
+            }).join('');
+        }
+
+        // 渲染趋势图
+        function renderTrendChart(trendData) {
+            const ctx = document.getElementById('teamChart').getContext('2d');
+            Chart.defaults.color = '#555';
+            Chart.defaults.font.family = 'JetBrains Mono';
+
+            // 销毁旧图表
+            if (teamChart) {
+                teamChart.destroy();
+            }
+
+            // 准备数据
+            let labels = [];
+            let datasets = [];
+            const colors = ['#ffd700', '#c0c0c0', '#cd7f32', '#ff6b00', '#22c55e'];
+
+            if (trendData && trendData.labels && trendData.teams) {
+                labels = trendData.labels;
+                datasets = trendData.teams.slice(0, 5).map((team, i) => ({
+                    label: team.name,
+                    data: team.scores,
+                    borderColor: colors[i],
+                    backgroundColor: `${colors[i]}10`,
+                    borderWidth: 2,
+                    tension: 0.2,
+                    pointRadius: 0
+                }));
+                
+                // 更新图例
+                document.getElementById('chart-legend').innerHTML = datasets.map((ds, i) => 
+                    `<span class="flex items-center gap-1"><span class="w-3 h-1" style="background:${ds.borderColor}"></span> ${escapeHtml(ds.label)}</span>`
+                ).join('');
+            } else {
+                // 使用排行榜前5名生成简单数据
+                const top5 = teamScoreboard.slice(0, 5);
+                if (top5.length === 0) {
+                    // 排行榜也没有数据，显示提示
+                    document.getElementById('chart-legend').innerHTML = '<span class="text-gray-500">暂无解题记录</span>';
+                    labels = ['Start', 'Now'];
+                    datasets = [];
+                } else {
+                    labels = ['Start', 'Now'];
+                    datasets = top5.map((team, i) => ({
+                        label: team.teamName,
+                        data: [0, team.totalScore],
+                        borderColor: colors[i],
+                        backgroundColor: `${colors[i]}10`,
+                        borderWidth: 2,
+                        tension: 0.2,
+                        pointRadius: 0
+                    }));
+                    
+                    document.getElementById('chart-legend').innerHTML = datasets.map((ds, i) => 
+                        `<span class="flex items-center gap-1"><span class="w-3 h-1" style="background:${ds.borderColor}"></span> ${escapeHtml(ds.label)}</span>`
+                    ).join('');
+                }
+            }
+
+            teamChart = new Chart(ctx, {
+                type: 'line',
+                data: { labels, datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { grid: { color: '#222' } },
+                        y: { grid: { color: '#222' }, beginAtZero: true }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        // 切换榜单
+        function switchRank(type) {
+            currentRankType = type;
+            const btnTeam = document.getElementById('btn-team');
+            const btnSolo = document.getElementById('btn-solo');
+            const secTeam = document.getElementById('section-team');
+            const secSolo = document.getElementById('section-solo');
+            const title = document.getElementById('rank-title');
+
+            if (type === 'team') {
+                btnTeam.className = 'text-xs font-bold text-black bg-[#ff6b00] px-3 py-0.5 font-mono transition';
+                btnSolo.className = 'text-xs font-bold text-gray-500 hover:text-white px-3 py-0.5 font-mono transition';
+                secTeam.style.display = 'block';
+                secSolo.style.display = 'none';
+                title.innerText = 'TEAM RANKING';
+                renderTeamRanking();
+            } else {
+                btnSolo.className = 'text-xs font-bold text-black bg-[#ff6b00] px-3 py-0.5 font-mono transition';
+                btnTeam.className = 'text-xs font-bold text-gray-500 hover:text-white px-3 py-0.5 font-mono transition';
+                secTeam.style.display = 'none';
+                secSolo.style.display = 'block';
+                title.innerText = 'SOLO RANKING';
+                renderSoloRanking();
+            }
+        }
+
+        // 搜索过滤
+        function filterRanking() {
+            if (currentRankType === 'team') {
+                renderTeamRanking();
+            } else {
+                renderSoloRanking();
+            }
+        }
+
+        // 刷新倒计时
+        function startRefreshCountdown() {
+            setInterval(() => {
+                refreshCountdown--;
+                if (refreshCountdown <= 0) {
+                    refreshCountdown = 5;
+                    refreshData();
+                }
+            }, 1000);
+        }
+
+        // 刷新数据
+        async function refreshData() {
+            await loadTeamScoreboard();
+            await loadSoloScoreboard();
+            await loadScoreTrend();
+            if (currentRankType === 'team') {
+                renderTeamRanking();
+            } else {
+                renderSoloRanking();
+            }
+        }
+
+        // HTML转义
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 初始化
+        init();
+    </script>
+
+</body>
+</html>

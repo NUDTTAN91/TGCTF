@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="author" content="tan91">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/fonts.css">
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --bg-panel: #1e1e1e;
+            --border-color: #333;
+            --accent: #ff6b00;
+            --danger: #ef4444;
+            --text-main: #e0e0e0;
+            --text-dim: #737373;
+        }
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Noto Sans SC', sans-serif; }
+        .font-eng { font-family: 'Chakra Petch', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .sidebar-item { border-left: 2px solid transparent; transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { background: rgba(255, 107, 0, 0.05); border-left-color: var(--accent); color: white; }
+        .sidebar-item.active .icon { color: var(--accent); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+        .env-card { background: var(--bg-panel); border: 1px solid var(--border-color); transition: all 0.2s; }
+        .env-card:hover { border-color: var(--accent); }
+        .env-card.default { border-color: var(--accent); background: rgba(255, 107, 0, 0.05); }
+        .form-input { background: #111; border: 1px solid #333; color: #fff; padding: 0.5rem 0.75rem; width: 100%; font-size: 0.875rem; }
+        .form-input:focus { outline: none; border-color: var(--accent); }
+        .btn-primary { background: var(--accent); color: black; font-weight: bold; padding: 0.5rem 1rem; transition: all 0.2s; }
+        .btn-primary:hover { background: #ff8533; }
+        .btn-danger { border: 1px solid var(--danger); color: var(--danger); padding: 0.5rem 1rem; transition: all 0.2s; }
+        .btn-danger:hover { background: var(--danger); color: white; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; }
+        .modal.show { display: flex; align-items: center; justify-content: center; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden selection:bg-[#ff6b00] selection:text-black">
+
+    <!-- 左侧侧边栏 -->
+    <aside class="w-48 bg-[#161616] border-r border-[#333] flex flex-col z-20 shadow-xl">
+        <div class="h-16 flex items-center px-6 border-b border-[#333]">
+            <div class="bg-[#ff6b00] text-black font-black text-xl px-2 py-0.5 font-eng tracking-tighter mr-3">TG</div>
+            <span class="font-bold text-gray-300 tracking-wider text-sm">管理中枢</span>
+        </div>
+        <nav class="flex-1 py-6 space-y-1 font-mono text-xs overflow-y-auto">
+            <a href="/admin/admin.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400">
+                <span class="icon mr-3">⌂</span> 概览
+            </a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-4">赛事核心</p>
+            <a href="/admin/admin-contests.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚑</span> 比赛管理</a>
+            <a href="/admin/admin-question-bank.html" class="sidebar-item active flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">☷</span> 题库</a>
+            <a href="/admin/admin-users.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">웃</span> 用户管理</a>
+            <a href="/admin/admin-teams.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">◈</span> 队伍管理</a>
+            <a href="/admin/admin-organizations.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🏢</span> 组织管理</a>
+            <a href="/admin/admin-data-import.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">📥</span> 数据导入</a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-6">运维监控</p>
+            <a href="/admin/admin-docker.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🐳</span> docker实例管理</a>
+            <a href="/admin/admin-anti-cheat.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🛡️</span> 防作弊系统</a>
+            <a href="/admin/admin-logs.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚠</span> 系统日志</a>
+            <a href="/admin/admin-settings.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚙</span> 系统设置</a>
+        </nav>
+        <div class="p-4 border-t border-[#333]">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-[#333] rounded-full flex items-center justify-center text-[#ff6b00] font-bold">A</div>
+                <div><p class="text-xs text-white font-bold">超级管理员</p><p class="text-[10px] text-green-500">● 连接稳定</p></div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 右侧内容区 -->
+    <div class="flex-1 flex flex-col min-w-0 bg-[#121212]">
+        <header class="h-16 bg-[#161616] border-b border-[#333] flex items-center justify-between px-8 z-10">
+            <div class="flex items-center gap-4 text-xs font-mono">
+                <span class="text-gray-500">位置:</span><span class="text-[#ff6b00]">天格后台</span><span class="text-gray-600">/</span>
+                <a href="/admin/admin-question-bank.html" class="text-gray-400 hover:text-white">题库</a><span class="text-gray-600">/</span>
+                <span class="text-white">环境变量注入</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="/home.html" class="font-mono text-xs font-bold border border-gray-500 text-gray-400 px-4 py-2 hover:border-white hover:text-white transition-all uppercase tracking-wider">← 返回前台</a>
+                <button id="logout-btn" class="font-mono text-xs font-bold border border-[#ff6b00] text-[#ff6b00] px-4 py-2 hover:bg-[#ff6b00] hover:text-black transition-all uppercase tracking-wider">Logout_离线</button>
+            </div>
+        </header>
+
+        <main class="flex-1 flex flex-col pt-6 px-8 relative overflow-y-auto">
+            <div class="absolute inset-0 z-0 opacity-10 pointer-events-none" style="background-image: radial-gradient(#333 1px, transparent 1px); background-size: 20px 20px;"></div>
+            
+            <div class="relative z-10 w-full max-w-[900px] mx-auto flex-1 flex flex-col">
+                
+                <!-- 标题和操作栏 -->
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h1 class="text-2xl font-black font-eng text-white mb-1">FLAG INJECT</h1>
+                        <p class="text-gray-500 font-mono text-xs">管理容器题目的Flag注入环境变量</p>
+                    </div>
+                    <button onclick="showAddModal()" class="btn-primary font-mono text-xs">+ 添加环境变量</button>
+                </div>
+
+                <!-- 说明 -->
+                <div class="bg-[#1e1e1e] border border-[#333] p-4 mb-6">
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        <span class="text-[#ff6b00] font-bold">说明：</span>
+                        容器题目启动时，系统会通过环境变量将动态Flag注入到容器中。不同的Docker镜像可能使用不同的环境变量名来接收Flag，
+                        例如 <code class="text-[#ff6b00]">$FLAG</code>、<code class="text-[#ff6b00]">$GZCTF_FLAG</code>、<code class="text-[#ff6b00]">$CTF_FLAG</code> 等。
+                        在此管理常用的环境变量名称，以便在新增题目时快速选择。
+                    </p>
+                </div>
+
+                <!-- 环境变量列表 -->
+                <div id="env-list" class="space-y-3 flex-1">
+                    <!-- 动态加载 -->
+                </div>
+
+            </div>
+
+            <footer class="py-1 border-t border-[#333] flex items-center justify-center flex-shrink-0 mt-auto">
+                <div class="flex items-center justify-center gap-4 text-xs flex-wrap">
+                    <div class="flex items-center gap-1">
+                        <div class="bg-[#ff6b00] text-black font-black px-1.5 py-0.5 font-eng tracking-tighter">TG</div>
+                        <span class="text-gray-500">天格后台管理系统</span>
+                    </div>
+                    <span class="text-white font-mono">Copyright © 2021-present tan91. All Rights Reserved.</span>
+                    <a href="https://github.com/NUDTTAN91" target="_blank" class="text-[#ff6b00] hover:text-white transition-colors"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg></a>
+                    <a href="https://blog.csdn.net/ZXW_NUDT" target="_blank" class="text-[#ff6b00] hover:text-white transition-colors"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></a>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <!-- 添加/编辑弹窗 -->
+    <div id="modal" class="modal">
+        <div class="bg-[#1e1e1e] border border-[#333] p-6 w-full max-w-md">
+            <h3 id="modal-title" class="text-lg font-bold font-eng text-white mb-4">添加环境变量</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">环境变量名称</label>
+                    <input type="text" id="env-name" class="form-input font-mono" placeholder="例如: FLAG, GZCTF_FLAG">
+                    <p class="text-[10px] text-gray-500 mt-1">不需要加 $ 符号，系统会自动处理</p>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">描述说明</label>
+                    <input type="text" id="env-desc" class="form-input" placeholder="例如: GZCTF平台默认">
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="env-default" class="w-4 h-4 accent-[#ff6b00]">
+                    <label for="env-default" class="text-xs text-gray-400">设为默认选项</label>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="saveEnv()" class="btn-primary flex-1 font-mono text-xs">保存</button>
+                <button onclick="closeModal()" class="btn-danger font-mono text-xs">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        const token = localStorage.getItem('tg_token');
+        if (!token) {
+            window.location.href = '/login.html';
+        } else {
+            const payload = parseJwt(token);
+            if (!payload || payload.role !== 'super') {
+                alert('权限不足：仅超级管理员可访问此页面');
+                window.location.href = '/home.html';
+            }
+        }
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('tg_token');
+            window.location.href = '/login.html';
+        });
+
+        // 环境变量数据 - 使用 localStorage 存储
+        const STORAGE_KEY = 'tg_flag_envs';
+        
+        // 默认预设：FLAG、GZCTF_FLAG 和 CMDARG
+        const defaultEnvs = [
+            { id: 1, name: 'FLAG', desc: '通用默认', isDefault: true },
+            { id: 2, name: 'GZCTF_FLAG', desc: 'GZCTF平台', isDefault: false },
+            { id: 3, name: 'CMDARG', desc: '命令行参数 $1', isDefault: false },
+        ];
+
+        function getEnvs() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (!stored) {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultEnvs));
+                return defaultEnvs;
+            }
+            return JSON.parse(stored);
+        }
+
+        function saveEnvs(envs) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(envs));
+        }
+
+        let editingId = null;
+
+        function renderList() {
+            const envs = getEnvs();
+            const container = document.getElementById('env-list');
+            
+            if (envs.length === 0) {
+                container.innerHTML = `<div class="text-center text-gray-500 py-12">暂无环境变量配置</div>`;
+                return;
+            }
+
+            container.innerHTML = envs.map(env => `
+                <div class="env-card ${env.isDefault ? 'default' : ''} p-4 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="font-mono text-lg text-[#ff6b00] font-bold">$${env.name}</div>
+                        <div class="text-xs text-gray-500">${env.desc || ''}</div>
+                        ${env.isDefault ? '<span class="text-[10px] bg-[#ff6b00] text-black px-2 py-0.5 font-bold">默认</span>' : ''}
+                    </div>
+                    <div class="flex items-center gap-2">
+                        ${!env.isDefault ? `<button onclick="setDefault(${env.id})" class="text-xs text-gray-400 hover:text-[#ff6b00] transition-colors">设为默认</button>` : ''}
+                        <button onclick="editEnv(${env.id})" class="text-xs text-gray-400 hover:text-white transition-colors">编辑</button>
+                        <button onclick="deleteEnv(${env.id})" class="text-xs text-gray-400 hover:text-red-500 transition-colors">删除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showAddModal() {
+            editingId = null;
+            document.getElementById('modal-title').textContent = '添加环境变量';
+            document.getElementById('env-name').value = '';
+            document.getElementById('env-desc').value = '';
+            document.getElementById('env-default').checked = false;
+            document.getElementById('modal').classList.add('show');
+        }
+
+        function editEnv(id) {
+            const envs = getEnvs();
+            const env = envs.find(e => e.id === id);
+            if (!env) return;
+
+            editingId = id;
+            document.getElementById('modal-title').textContent = '编辑环境变量';
+            document.getElementById('env-name').value = env.name;
+            document.getElementById('env-desc').value = env.desc || '';
+            document.getElementById('env-default').checked = env.isDefault;
+            document.getElementById('modal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('show');
+            editingId = null;
+        }
+
+        function saveEnv() {
+            const name = document.getElementById('env-name').value.trim().toUpperCase().replace(/^\$/, '');
+            const desc = document.getElementById('env-desc').value.trim();
+            const isDefault = document.getElementById('env-default').checked;
+
+            if (!name) {
+                alert('请输入环境变量名称');
+                return;
+            }
+
+            if (!/^[A-Z_][A-Z0-9_]*$/.test(name)) {
+                alert('环境变量名称只能包含大写字母、数字和下划线，且不能以数字开头');
+                return;
+            }
+
+            let envs = getEnvs();
+
+            // 检查重名
+            if (envs.some(e => e.name === name && e.id !== editingId)) {
+                alert('该环境变量名称已存在');
+                return;
+            }
+
+            if (editingId) {
+                // 编辑
+                envs = envs.map(e => {
+                    if (e.id === editingId) {
+                        return { ...e, name, desc, isDefault };
+                    }
+                    if (isDefault && e.id !== editingId) {
+                        return { ...e, isDefault: false };
+                    }
+                    return e;
+                });
+            } else {
+                // 新增
+                const newId = Math.max(0, ...envs.map(e => e.id)) + 1;
+                if (isDefault) {
+                    envs = envs.map(e => ({ ...e, isDefault: false }));
+                }
+                envs.push({ id: newId, name, desc, isDefault });
+            }
+
+            saveEnvs(envs);
+            closeModal();
+            renderList();
+        }
+
+        function setDefault(id) {
+            let envs = getEnvs();
+            envs = envs.map(e => ({ ...e, isDefault: e.id === id }));
+            saveEnvs(envs);
+            renderList();
+        }
+
+        function deleteEnv(id) {
+            if (!confirm('确定要删除该环境变量吗？')) return;
+            
+            let envs = getEnvs();
+            const toDelete = envs.find(e => e.id === id);
+            envs = envs.filter(e => e.id !== id);
+            
+            // 如果删除的是默认项，将第一项设为默认
+            if (toDelete?.isDefault && envs.length > 0) {
+                envs[0].isDefault = true;
+            }
+            
+            saveEnvs(envs);
+            renderList();
+        }
+
+        // 初始化
+        renderList();
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="author" content="tan91">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/fonts.css">
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --bg-panel: #1e1e1e;
+            --border-color: #333;
+            --accent: #ff6b00;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --text-main: #e0e0e0;
+            --text-dim: #737373;
+        }
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Noto Sans SC', sans-serif; }
+        .font-eng { font-family: 'Chakra Petch', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .sidebar-item { border-left: 2px solid transparent; transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { background: rgba(255, 107, 0, 0.05); border-left-color: var(--accent); color: white; }
+        .sidebar-item.active .icon { color: var(--accent); }
+
+        .admin-card { background: var(--bg-panel); border: 1px solid var(--border-color); position: relative; transition: all 0.3s ease; }
+        .admin-card:hover { transform: translateY(-2px); border-color: #555; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        
+        .btn-primary { background: var(--accent); color: black; font-weight: bold; }
+        .btn-primary:hover { background: white; }
+        
+        .btn-outline { border: 1px solid var(--border-color); color: var(--text-dim); }
+        .btn-outline:hover { border-color: var(--accent); color: var(--accent); background: rgba(255,107,0,0.05); }
+
+        .btn-danger-ghost { color: #888; transition: 0.2s; }
+        .btn-danger-ghost:hover { color: var(--danger); text-shadow: 0 0 5px rgba(239,68,68,0.5); }
+
+        .filter-tab { padding: 0.25rem 0.75rem; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; border: 1px solid transparent; color: var(--text-dim); transition: all 0.2s; cursor: pointer; }
+        .filter-tab:hover { color: white; background: rgba(255, 255, 255, 0.05); }
+        .filter-tab.active { border-color: var(--accent); color: var(--accent); background: rgba(255, 107, 0, 0.1); }
+        .filter-badge { margin-left: 0.5rem; padding: 0.1rem 0.3rem; font-size: 0.6rem; border-radius: 2px; background: #333; color: #aaa; }
+        .filter-tab.active .filter-badge { background: var(--accent); color: black; }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+        
+        .badge-running { color: var(--success); border: 1px solid var(--success); background: rgba(34, 197, 94, 0.1); }
+        .badge-pending { color: #facc15; border: 1px solid #facc15; background: rgba(250, 204, 21, 0.1); }
+        .badge-paused { color: #f97316; border: 1px solid #f97316; background: rgba(249, 115, 22, 0.1); }
+        .badge-ended { color: #666; border: 1px solid #444; background: rgba(255, 255, 255, 0.05); }
+
+        /* 状态切换下拉菜单 */
+        .status-dropdown { position: relative; display: inline-block; }
+        .status-dropdown-btn { cursor: pointer; transition: all 0.2s; }
+        .status-dropdown-btn:hover { filter: brightness(1.2); }
+        .status-dropdown-menu { position: absolute; top: 100%; left: 0; margin-top: 4px; background: #1e1e1e; border: 1px solid #444; min-width: 120px; z-index: 100; display: none; }
+        .status-dropdown.open .status-dropdown-menu { display: block; }
+        .status-dropdown-item { padding: 8px 12px; font-size: 10px; font-family: 'JetBrains Mono', monospace; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+        .status-dropdown-item:hover { background: rgba(255, 107, 0, 0.1); color: #ff6b00; }
+        .status-dropdown-item.active { background: rgba(255, 107, 0, 0.2); color: #ff6b00; }
+
+        #modal-overlay { transition: opacity 0.3s ease; }
+        #modal-overlay.hidden { opacity: 0; pointer-events: none; }
+        #modal-overlay:not(.hidden) { opacity: 1; pointer-events: auto; }
+        #modal-content { transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease; }
+        #modal-overlay.hidden #modal-content { transform: scale(0.95) translateY(10px); opacity: 0; }
+        #modal-overlay:not(.hidden) #modal-content { transform: scale(1) translateY(0); opacity: 1; }
+
+        .tactical-input { background: #111; border: 1px solid #333; color: white; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; padding: 0.5rem 0.75rem; width: 100%; outline: none; transition: border-color 0.2s; }
+        .tactical-input:focus { border-color: var(--accent); }
+        .radio-box input:checked + div { border-color: var(--accent); background: rgba(255, 107, 0, 0.1); }
+        .radio-box input:checked + div .check-icon { opacity: 1; }
+        ::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.5; cursor: pointer; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden selection:bg-[#ff6b00] selection:text-black">
+
+    <!-- 左侧侧边栏 -->
+    <aside class="w-48 bg-[#161616] border-r border-[#333] flex flex-col z-20 shadow-xl">
+        <div class="h-16 flex items-center px-6 border-b border-[#333]">
+            <div class="bg-[#ff6b00] text-black font-black text-xl px-2 py-0.5 font-eng tracking-tighter mr-3">TG</div>
+            <span class="font-bold text-gray-300 tracking-wider text-sm">管理中枢</span>
+        </div>
+        <nav class="flex-1 py-6 space-y-1 font-mono text-xs overflow-y-auto">
+            <a href="/admin/admin.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⌂</span> 概览</a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-4">赛事核心</p>
+            <a href="/admin/admin-contests.html" class="sidebar-item active flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚑</span> 比赛管理</a>
+            <a href="/admin/admin-question-bank.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">☷</span> 题库</a>
+            <a href="/admin/admin-users.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">웃</span> 用户管理</a>
+            <a href="/admin/admin-teams.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">◈</span> 队伍管理</a>
+            <a href="/admin/admin-organizations.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🏢</span> 组织管理</a>
+            <a href="/admin/admin-data-import.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">📥</span> 数据导入</a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-6">运维监控</p>
+            <a href="/admin/admin-docker.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🐳</span> docker实例管理</a>
+            <a href="/admin/admin-anti-cheat.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🛡️</span> 防作弊系统</a>
+            <a href="/admin/admin-logs.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚠</span> 系统日志</a>
+            <a href="/admin/admin-settings.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚙</span> 系统设置</a>
+        </nav>
+        <div class="p-4 border-t border-[#333]">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-[#333] rounded-full flex items-center justify-center text-[#ff6b00] font-bold">A</div>
+                <div><p class="text-xs text-white font-bold">超级管理员</p><p class="text-[10px] text-green-500">● 连接稳定</p></div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 右侧内容区 -->
+    <div class="flex-1 flex flex-col min-w-0 bg-[#121212]">
+        <header class="h-16 bg-[#161616] border-b border-[#333] flex items-center justify-between px-8 z-10">
+            <div class="flex items-center gap-4 text-xs font-mono">
+                <span class="text-gray-500">位置:</span><span class="text-[#ff6b00]">赛事核心</span><span class="text-gray-600">/</span><span class="text-white">比赛管理</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="/home.html" class="font-mono text-xs font-bold border border-gray-500 text-gray-400 px-4 py-2 hover:border-white hover:text-white transition-all uppercase tracking-wider">← 返回前台</a>
+                <button id="logout-btn" class="font-mono text-xs font-bold border border-[#ff6b00] text-[#ff6b00] px-4 py-2 hover:bg-[#ff6b00] hover:text-black transition-all uppercase tracking-wider">Logout_离线</button>
+            </div>
+        </header>
+
+        <main class="flex-1 flex flex-col pt-8 px-8 relative overflow-y-auto">
+            
+            <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-8 gap-6">
+                <div class="flex flex-col md:flex-row gap-8 items-start md:items-center">
+                    <div class="relative">
+                        <h1 class="text-2xl font-bold text-white tracking-wide">赛事列表</h1>
+                        <p class="text-xs text-gray-500 font-mono mt-1">MANAGE COMPETITIONS</p>
+                    </div>
+                    <div class="flex gap-2 bg-[#1a1a1a] p-1 border border-[#333] rounded-sm">
+                        <button class="filter-tab active" data-status="">全部<span class="filter-badge" id="count-all">0</span></button>
+                        <button class="filter-tab" data-status="running">进行中<span class="filter-badge" id="count-running">0</span></button>
+                        <button class="filter-tab" data-status="pending">筹备中<span class="filter-badge" id="count-pending">0</span></button>
+                        <button class="filter-tab" data-status="paused">暂停中<span class="filter-badge" id="count-paused">0</span></button>
+                        <button class="filter-tab" data-status="ended">已结束<span class="filter-badge" id="count-ended">0</span></button>
+                    </div>
+                </div>
+                <div class="flex gap-3 w-full xl:w-auto justify-end">
+                    <div class="relative">
+                        <input type="text" id="search-input" placeholder="搜索赛事名称..." class="bg-[#1e1e1e] border border-[#333] text-xs text-white px-4 py-2.5 w-64 focus:border-[#ff6b00] outline-none font-mono placeholder-gray-600">
+                        <span class="absolute right-3 top-2.5 text-gray-500 text-xs">🔍</span>
+                    </div>
+                    <button onclick="toggleModal(true)" class="btn-primary px-5 py-2 text-xs tracking-widest uppercase font-mono shadow-[0_0_15px_rgba(255,107,0,0.2)]">+ 新建比赛</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="contests-grid">
+                <!-- 动态加载比赛卡片 -->
+                <div class="col-span-full flex justify-center py-12">
+                    <div class="text-gray-500 font-mono text-sm">加载中...</div>
+                </div>
+            </div>
+
+            <footer class="py-1 border-t border-[#333] flex items-center justify-center flex-shrink-0 mt-auto">
+                <div class="flex items-center justify-center gap-4 text-xs flex-wrap">
+                    <div class="flex items-center gap-1">
+                        <div class="bg-[#ff6b00] text-black font-black px-1.5 py-0.5 font-eng tracking-tighter">TG</div>
+                        <span class="text-gray-500">天格后台管理系统</span>
+                    </div>
+                    <span class="text-white font-mono">Copyright © 2021-present tan91. All Rights Reserved.</span>
+                    <a href="https://github.com/NUDTTAN91" target="_blank" class="text-[#ff6b00] hover:text-white transition-colors"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg></a>
+                    <a href="https://blog.csdn.net/ZXW_NUDT" target="_blank" class="text-[#ff6b00] hover:text-white transition-colors"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></a>
+                </div>
+            </footer>
+
+        </main>
+    </div>
+
+    <!-- 弹窗 -->
+    <div id="modal-overlay" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm hidden transition-opacity">
+        <div id="modal-content" class="bg-[#1e1e1e] border border-[#ff6b00] w-full max-w-2xl shadow-[0_0_50px_rgba(0,0,0,0.8)] relative">
+            <div class="h-1 bg-[#ff6b00] w-full"></div>
+            <div class="px-8 py-6 border-b border-[#333] flex justify-between items-center">
+                <div>
+                    <h2 id="modal-title" class="text-xl font-bold text-white font-eng tracking-wide">新建赛事配置</h2>
+                    <p id="modal-subtitle" class="text-[10px] text-[#ff6b00] font-mono mt-1">// NEW_COMPETITION_CONFIG_WIZARD</p>
+                </div>
+                <button onclick="toggleModal(false)" class="text-gray-500 hover:text-white transition">✕</button>
+            </div>
+            <div class="p-8 space-y-6">
+                <div><label class="block text-xs font-mono text-gray-500 mb-2 uppercase">比赛名称</label><input type="text" id="contest-name" class="tactical-input" placeholder="例如：天格 CTF 2024 冬季赛"></div>
+                <div>
+                    <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">赛制模式</label>
+                    <div class="grid grid-cols-3 gap-4">
+                        <label class="cursor-pointer radio-box relative"><input type="radio" name="mode" value="jeopardy" class="peer sr-only" checked><div class="border border-[#333] bg-[#111] p-4 peer-checked:border-[#ff6b00] peer-checked:bg-[#ff6b00] peer-checked:bg-opacity-10 transition-all h-full"><div class="flex justify-between items-center mb-2"><span class="text-sm font-bold text-white">解题赛 (Jeopardy)</span><span class="check-icon opacity-0 text-[#ff6b00] transition-opacity">✔</span></div><p class="text-[10px] text-gray-500 leading-relaxed">经典模式。选手通过解题获取Flag得分，按总分排名。</p></div></label>
+                        <label class="cursor-pointer radio-box relative"><input type="radio" name="mode" value="awd" class="peer sr-only"><div class="border border-[#333] bg-[#111] p-4 peer-checked:border-[#ff6b00] peer-checked:bg-[#ff6b00] peer-checked:bg-opacity-10 transition-all h-full"><div class="flex justify-between items-center mb-2"><span class="text-sm font-bold text-white">攻防赛 (AWD)</span><span class="check-icon opacity-0 text-[#ff6b00] transition-opacity">✔</span></div><p class="text-[10px] text-gray-500 leading-relaxed">对抗模式。各队互守服务器并攻击他人，动态计分。</p></div></label>
+                        <label class="cursor-pointer radio-box relative"><input type="radio" name="mode" value="awd-f" class="peer sr-only"><div class="border border-[#333] bg-[#111] p-4 peer-checked:border-[#ff6b00] peer-checked:bg-[#ff6b00] peer-checked:bg-opacity-10 transition-all h-full"><div class="flex justify-between items-center mb-2"><span class="text-sm font-bold text-white">攻防兼备 (AWD-F)</span><span class="check-icon opacity-0 text-[#ff6b00] transition-opacity">✔</span></div><p class="text-[10px] text-gray-500 leading-relaxed">攻防+修复。解题得分，上传补丁修漏加分。</p></div></label>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-6">
+                    <div><label class="block text-xs font-mono text-gray-500 mb-2 uppercase">开始时间</label><input type="datetime-local" id="start-time" class="tactical-input text-gray-400"></div>
+                    <div><label class="block text-xs font-mono text-gray-500 mb-2 uppercase">结束时间</label><input type="datetime-local" id="end-time" class="tactical-input text-gray-400"></div>
+                </div>
+                <div>
+                    <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">参与组织 <span class="text-gray-600">(可多选，不选则所有组织可见)</span></label>
+                    <div class="relative" id="org-select-container">
+                        <div id="org-select-trigger" onclick="toggleOrgDropdown()" class="bg-[#111] border border-[#333] px-3 py-2 cursor-pointer flex items-center justify-between hover:border-[#555] transition-colors">
+                            <span id="org-select-display" class="text-xs text-gray-400">请选择组织...</span>
+                            <span class="text-gray-500">▼</span>
+                        </div>
+                        <div id="org-dropdown" class="hidden absolute top-full left-0 right-0 bg-[#1a1a1a] border border-[#444] mt-1 z-50 max-h-48 overflow-hidden shadow-lg">
+                            <div class="p-2 border-b border-[#333]">
+                                <input type="text" id="org-search" placeholder="搜索组织..." oninput="filterOrgOptions()" class="w-full bg-[#111] border border-[#333] text-xs text-white px-2 py-1.5 outline-none focus:border-[#ff6b00]">
+                            </div>
+                            <div id="org-options" class="overflow-y-auto max-h-32">
+                                <div class="text-gray-500 text-xs p-2">加载中...</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="org-selected-tags" class="flex flex-wrap gap-1 mt-2"></div>
+                </div>
+            </div>
+            <div class="px-8 py-6 border-t border-[#333] bg-[#1a1a1a] flex justify-end gap-4">
+                <button onclick="toggleModal(false)" class="btn-outline px-6 py-2 text-sm font-bold tracking-wider">取消</button>
+                <button id="modal-submit-btn" onclick="submitContest()" class="bg-[#ff6b00] text-black font-bold px-8 py-2 text-sm tracking-wider hover:bg-white transition-colors">立即创建 // CREATE</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('tg_token');
+        let allContests = [];
+        let currentFilter = '';
+        let allOrganizations = [];
+        let selectedOrgIds = [];
+
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) { return null; }
+        }
+
+        if (!token) {
+            window.location.href = '/login.html';
+        } else {
+            const payload = parseJwt(token);
+            if (!payload || payload.role !== 'super') {
+                alert('权限不足：仅超级管理员可访问此页面');
+                window.location.href = '/home.html';
+            }
+        }
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('tg_token');
+            window.location.href = '/login.html';
+        });
+
+        function toggleModal(show, editId = null) {
+            const modal = document.getElementById('modal-overlay');
+            const title = document.getElementById('modal-title');
+            const subtitle = document.getElementById('modal-subtitle');
+            const submitBtn = document.getElementById('modal-submit-btn');
+            
+            if (show) {
+                modal.classList.remove('hidden');
+                if (editId) {
+                    title.textContent = '编辑赛事配置';
+                    subtitle.textContent = '// EDIT_COMPETITION_CONFIG';
+                    submitBtn.textContent = '保存修改 // SAVE';
+                    submitBtn.setAttribute('data-edit-id', editId);
+                    loadContestForEdit(editId);
+                } else {
+                    title.textContent = '新建赛事配置';
+                    subtitle.textContent = '// NEW_COMPETITION_CONFIG_WIZARD';
+                    submitBtn.textContent = '立即创建 // CREATE';
+                    submitBtn.removeAttribute('data-edit-id');
+                    clearForm();
+                }
+            } else {
+                modal.classList.add('hidden');
+                clearForm();
+            }
+        }
+
+        function clearForm() {
+            document.getElementById('contest-name').value = '';
+            document.getElementById('start-time').value = '';
+            document.getElementById('end-time').value = '';
+            document.querySelectorAll('input[name="mode"]').forEach((r, i) => r.checked = i === 0);
+            // 清空组织选择
+            selectedOrgIds = [];
+            updateOrgDisplay();
+        }
+
+        async function loadContestForEdit(id) {
+            try {
+                const res = await fetch(`/api/admin/contests/${id}`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Failed to load contest');
+                const c = await res.json();
+                document.getElementById('contest-name').value = c.name;
+                document.getElementById('start-time').value = c.startTime.replace(' ', 'T');
+                document.getElementById('end-time').value = c.endTime.replace(' ', 'T');
+                document.querySelectorAll('input[name="mode"]').forEach(r => r.checked = r.value === c.mode);
+                
+                // 加载比赛已关联的组织
+                const orgRes = await fetch(`/api/admin/contests/${id}/organizations`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (orgRes.ok) {
+                    const orgs = await orgRes.json();
+                    selectedOrgIds = orgs.map(o => o.id);
+                    updateOrgDisplay();
+                }
+            } catch (e) {
+                console.error(e);
+                alert('加载比赛信息失败');
+            }
+        }
+
+        document.getElementById('modal-overlay').addEventListener('click', function(e) {
+            if (e.target === this) toggleModal(false);
+        });
+
+        // 加载组织列表
+        async function loadOrganizations() {
+            try {
+                const res = await fetch('/api/admin/organizations', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Failed');
+                const data = await res.json();
+                // 后端直接返回数组
+                allOrganizations = (Array.isArray(data) ? data : []).filter(o => o.name !== 'TG_AdminX' && o.status === 'active');
+                renderOrgOptions();
+            } catch (e) {
+                console.error(e);
+                document.getElementById('org-options').innerHTML = '<div class="text-red-500 text-xs p-2">加载失败</div>';
+            }
+        }
+
+        function toggleOrgDropdown() {
+            const dropdown = document.getElementById('org-dropdown');
+            dropdown.classList.toggle('hidden');
+            if (!dropdown.classList.contains('hidden')) {
+                document.getElementById('org-search').focus();
+            }
+        }
+
+        // 点击外部关闭下拉菜单
+        document.addEventListener('click', (e) => {
+            const container = document.getElementById('org-select-container');
+            if (container && !container.contains(e.target)) {
+                document.getElementById('org-dropdown').classList.add('hidden');
+            }
+        });
+
+        function filterOrgOptions() {
+            const searchTerm = document.getElementById('org-search').value.toLowerCase();
+            const options = document.querySelectorAll('.org-option');
+            options.forEach(opt => {
+                const name = opt.dataset.name.toLowerCase();
+                opt.style.display = name.includes(searchTerm) ? '' : 'none';
+            });
+        }
+
+        function renderOrgOptions() {
+            const container = document.getElementById('org-options');
+            if (allOrganizations.length === 0) {
+                container.innerHTML = '<div class="text-gray-500 text-xs p-2">暂无可选组织</div>';
+                return;
+            }
+            container.innerHTML = allOrganizations.map(o => `
+                <div class="org-option flex items-center gap-2 px-3 py-2 hover:bg-[#252525] cursor-pointer transition-colors ${selectedOrgIds.includes(o.id) ? 'bg-[#ff6b00] bg-opacity-10' : ''}" 
+                     data-id="${o.id}" data-name="${escapeHtml(o.name)}" onclick="toggleOrgSelection(${o.id}, event)">
+                    <span class="w-4 h-4 border ${selectedOrgIds.includes(o.id) ? 'border-[#ff6b00] bg-[#ff6b00]' : 'border-gray-500'} flex items-center justify-center text-xs">
+                        ${selectedOrgIds.includes(o.id) ? '✓' : ''}
+                    </span>
+                    <span class="text-xs ${selectedOrgIds.includes(o.id) ? 'text-[#ff6b00]' : 'text-gray-300'}">${escapeHtml(o.name)}</span>
+                </div>
+            `).join('');
+        }
+
+        function toggleOrgSelection(id, event) {
+            if (event) event.stopPropagation();
+            const idx = selectedOrgIds.indexOf(id);
+            if (idx > -1) {
+                selectedOrgIds.splice(idx, 1);
+            } else {
+                selectedOrgIds.push(id);
+            }
+            renderOrgOptions();
+            updateOrgDisplay();
+        }
+
+        function removeOrgSelection(id) {
+            selectedOrgIds = selectedOrgIds.filter(i => i !== id);
+            renderOrgOptions();
+            updateOrgDisplay();
+        }
+
+        function updateOrgDisplay() {
+            const display = document.getElementById('org-select-display');
+            const tagsContainer = document.getElementById('org-selected-tags');
+            
+            if (selectedOrgIds.length === 0) {
+                display.textContent = '请选择组织...';
+                display.className = 'text-xs text-gray-400';
+                tagsContainer.innerHTML = '';
+            } else {
+                display.textContent = `已选择 ${selectedOrgIds.length} 个组织`;
+                display.className = 'text-xs text-[#ff6b00]';
+                tagsContainer.innerHTML = selectedOrgIds.map(id => {
+                    const org = allOrganizations.find(o => o.id === id);
+                    if (!org) return '';
+                    return `<span class="inline-flex items-center gap-1 bg-[#ff6b00] text-white text-[10px] px-2 py-0.5 font-bold">
+                        ${escapeHtml(org.name)}
+                        <span onclick="removeOrgSelection(${id})" class="cursor-pointer hover:text-white">×</span>
+                    </span>`;
+                }).join('');
+            }
+        }
+
+        // 获取比赛列表
+        async function loadContests() {
+            try {
+                const res = await fetch('/api/admin/contests', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Failed to load contests');
+                const data = await res.json();
+                allContests = data.contests || [];
+                updateCounts();
+                renderContests();
+            } catch (e) {
+                console.error(e);
+                document.getElementById('contests-grid').innerHTML = '<div class="col-span-full text-center py-12 text-red-500 font-mono">加载失败</div>';
+            }
+        }
+
+        function updateCounts() {
+            const counts = { all: allContests.length, running: 0, pending: 0, paused: 0, ended: 0 };
+            allContests.forEach(c => {
+                if (counts[c.status] !== undefined) counts[c.status]++;
+            });
+            document.getElementById('count-all').textContent = counts.all;
+            document.getElementById('count-running').textContent = counts.running;
+            document.getElementById('count-pending').textContent = counts.pending;
+            document.getElementById('count-paused').textContent = counts.paused;
+            document.getElementById('count-ended').textContent = counts.ended;
+        }
+
+        function renderContests() {
+            const grid = document.getElementById('contests-grid');
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            
+            let filtered = allContests.filter(c => {
+                const matchStatus = !currentFilter || c.status === currentFilter;
+                const matchSearch = !searchTerm || c.name.toLowerCase().includes(searchTerm);
+                return matchStatus && matchSearch;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div class="col-span-full flex flex-col items-center justify-center py-12"><div class="text-gray-500 font-mono text-sm mb-4">暂无比赛数据</div><button onclick="toggleModal(true)" class="btn-primary px-5 py-2 text-xs tracking-widest uppercase font-mono">+ 新建比赛</button></div>';
+                return;
+            }
+
+            grid.innerHTML = filtered.map(c => renderContestCard(c)).join('');
+        }
+
+        function renderContestCard(c) {
+            const statusConfig = {
+                running: { bar: 'bg-green-500 shadow-[0_0_10px_#22c55e]', badge: 'badge-running animate-pulse', label: '● 进行中', opacity: '' },
+                pending: { bar: 'bg-yellow-400', badge: 'badge-pending', label: '○ 筹备中', opacity: '' },
+                paused: { bar: 'bg-orange-500', badge: 'badge-paused', label: '■ 暂停中', opacity: '' },
+                ended: { bar: 'bg-gray-600', badge: 'badge-ended', label: '● 已结束', opacity: 'opacity-70 hover:opacity-100' }
+            };
+            const cfg = statusConfig[c.status] || statusConfig.pending;
+            const modeLabel = c.mode === 'awd' ? '攻防赛(AWD)' : c.mode === 'awd-f' ? '攻防兼备(AWD-F)' : '解题赛(Jeopardy)';
+            const titleColor = c.status === 'ended' ? 'text-gray-300' : 'text-white group-hover:text-[#ff6b00]';
+            const timeColor = c.status === 'ended' ? 'text-gray-600' : 'text-gray-500';
+        
+            const actionButtons = c.status === 'running' 
+                ? `<button onclick="goToMonitor(${c.id}, '${c.mode}')" class="btn-outline px-3 py-1.5 text-xs font-mono">进入大屏</button><button onclick="goToEdit(${c.id})" class="btn-primary px-3 py-1.5 text-xs font-mono">管理</button>`
+                : (c.status === 'pending'
+                    ? `<button onclick="goToMonitor(${c.id}, '${c.mode}')" class="btn-outline px-3 py-1.5 text-xs font-mono">进入大屏</button><button onclick="deleteContest(${c.id})" class="btn-danger-ghost px-2 py-1.5 text-xs font-mono">删除</button><button onclick="goToEdit(${c.id})" class="btn-outline px-3 py-1.5 text-xs font-mono">编辑配置</button>`
+                    : (c.status === 'paused'
+                        ? `<button onclick="goToMonitor(${c.id}, '${c.mode}')" class="btn-outline px-3 py-1.5 text-xs font-mono">进入大屏</button><button onclick="goToEdit(${c.id})" class="btn-outline px-3 py-1.5 text-xs font-mono">编辑配置</button>`
+                        : `<button onclick="goToMonitor(${c.id}, '${c.mode}')" class="btn-outline px-3 py-1.5 text-xs font-mono">进入大屏</button><button onclick="deleteContest(${c.id})" class="btn-danger-ghost px-2 py-1.5 text-xs font-mono">删除记录</button><button onclick="goToEdit(${c.id})" class="btn-outline px-3 py-1.5 text-xs font-mono">查看归档</button>`));
+        
+            // 状态切换下拉菜单
+            const statusOptions = [
+                { value: 'pending', label: '○ 笹备中', color: '#facc15' },
+                { value: 'running', label: '● 进行中', color: '#22c55e' },
+                { value: 'paused', label: '■ 暂停中', color: '#f97316' },
+                { value: 'ended', label: '● 已结束', color: '#666' }
+            ];
+            const statusDropdown = statusOptions.map(opt => 
+                `<div class="status-dropdown-item ${c.status === opt.value ? 'active' : ''}" onclick="changeStatus(${c.id}, '${opt.value}')" style="color: ${c.status === opt.value ? '#ff6b00' : opt.color}">${opt.label}</div>`
+            ).join('');
+        
+            return `
+            <div class="admin-card group ${cfg.opacity}">
+                <div class="h-1 w-full ${cfg.bar}"></div>
+                <div class="p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="status-dropdown" id="status-dropdown-${c.id}">
+                            <span class="status-dropdown-btn ${cfg.badge} px-2 py-0.5 text-[10px] font-mono font-bold tracking-wider rounded-sm" onclick="toggleStatusDropdown(${c.id})">${cfg.label} ▼</span>
+                            <div class="status-dropdown-menu">${statusDropdown}</div>
+                        </div>
+                        <span class="text-gray-500 text-[10px] font-mono border border-gray-700 px-1">${modeLabel}</span>
+                    </div>
+                    <h2 class="text-xl font-bold ${titleColor} mb-2 transition-colors">${escapeHtml(c.name)}</h2>
+                    <p class="text-xs text-gray-500 font-mono mb-6">ID: ${c.id}</p>
+                    <div class="grid grid-cols-3 gap-2 mb-6 border-t border-b border-[#333] py-3">
+                        <div class="text-center border-r border-[#333]"><div class="text-xs text-gray-400 font-mono">队伍</div><div class="text-lg font-eng font-bold text-white">${c.teamCount || 0}</div></div>
+                        <div class="text-center border-r border-[#333]"><div class="text-xs text-gray-400 font-mono">题目</div><div class="text-lg font-eng font-bold text-white">${c.challengeCount || 0}</div></div>
+                        <div class="text-center"><div class="text-xs text-gray-400 font-mono">Flag</div><div class="text-lg font-eng font-bold text-[#ff6b00]">${c.flagCount || 0}</div></div>
+                    </div>
+                    <div class="flex justify-between items-end mt-4">
+                        <div class="flex flex-col gap-1 text-[10px] ${timeColor} font-mono"><div>开始: ${c.startTime}</div><div>结束: ${c.endTime}</div></div>
+                        <div class="flex gap-2">${actionButtons}</div>
+                    </div>
+                </div>
+            </div>`;
+        }
+        
+        // 切换状态下拉菜单
+        function toggleStatusDropdown(id) {
+            event.stopPropagation();
+            const dropdown = document.getElementById(`status-dropdown-${id}`);
+            // 关闭其他打开的下拉菜单
+            document.querySelectorAll('.status-dropdown.open').forEach(d => {
+                if (d !== dropdown) d.classList.remove('open');
+            });
+            dropdown.classList.toggle('open');
+        }
+        
+        // 点击其他地方关闭下拉菜单
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.status-dropdown.open').forEach(d => d.classList.remove('open'));
+        });
+        
+        // 修改比赛状态
+        async function changeStatus(id, newStatus) {
+            event.stopPropagation();
+            try {
+                const res = await fetch(`/api/admin/contests/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                if (!res.ok) throw new Error('Failed');
+                loadContests();
+            } catch (e) {
+                console.error(e);
+                alert('状态修改失败');
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 跳转到编辑页面
+        function goToEdit(id) {
+            window.location.href = `/admin/admin-contest-edit.html?id=${id}`;
+        }
+
+        // 跳转到大屏页面
+        function goToMonitor(id, mode) {
+            const page = mode === 'awd-f' ? 'contest-monitor-awdf.html' : 'contest-monitor.html';
+            window.open(`/${page}?id=${id}`, '_blank');
+        }
+
+        // 创建/更新比赛
+        async function submitContest() {
+            const submitBtn = document.getElementById('modal-submit-btn');
+            const editId = submitBtn.getAttribute('data-edit-id');
+            
+            const name = document.getElementById('contest-name').value.trim();
+            const startTime = document.getElementById('start-time').value;
+            const endTime = document.getElementById('end-time').value;
+            const mode = document.querySelector('input[name="mode"]:checked')?.value || 'jeopardy';
+            
+            // 获取选中的组织ID
+            const orgIds = [...selectedOrgIds];
+
+            if (!name || !startTime || !endTime) {
+                alert('请填写必填字段');
+                return;
+            }
+
+            try {
+                const url = editId ? `/api/admin/contests/${editId}` : '/api/admin/contests';
+                const method = editId ? 'PUT' : 'POST';
+                
+                const res = await fetch(url, {
+                    method,
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, mode, startTime, endTime })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed');
+                }
+
+                const result = await res.json();
+                const contestId = editId || result.id;
+
+                // 设置比赛关联的组织
+                await fetch(`/api/admin/contests/${contestId}/organizations`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ organizationIds: orgIds })
+                });
+
+                toggleModal(false);
+                loadContests();
+            } catch (e) {
+                console.error(e);
+                alert('操作失败: ' + e.message);
+            }
+        }
+
+        // 删除比赛
+        async function deleteContest(id) {
+            if (!confirm('确定要删除这个比赛吗？')) return;
+            
+            try {
+                const res = await fetch(`/api/admin/contests/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Failed to delete');
+                loadContests();
+            } catch (e) {
+                console.error(e);
+                alert('删除失败');
+            }
+        }
+
+        // 筛选标签点击
+        document.querySelectorAll('.filter-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentFilter = tab.dataset.status;
+                renderContests();
+            });
+        });
+
+        // 搜索框
+        document.getElementById('search-input').addEventListener('input', renderContests);
+
+        // 自动轮询刷新（每3秒检查一次比赛状态）
+        let autoRefreshInterval = null;
+        function startAutoRefresh() {
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            autoRefreshInterval = setInterval(() => {
+                console.log('[AutoRefresh] 检查比赛状态...');
+                loadContests();
+            }, 3000); // 3秒刷新一次
+        }
+
+        // 页面可见时刷新，不可见时暂停
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            } else {
+                loadContests();
+                startAutoRefresh();
+            }
+        });
+
+        // 页面加载
+        loadOrganizations();
+        loadContests();
+        startAutoRefresh();
+    </script>
+
+</body>
+</html>

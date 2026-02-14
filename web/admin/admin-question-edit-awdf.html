@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="author" content="tan91">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/fonts.css">
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --bg-panel: #1e1e1e;
+            --border-color: #333;
+            --accent: #ff6b00;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --text-main: #e0e0e0;
+            --text-dim: #737373;
+        }
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Noto Sans SC', sans-serif; }
+        .font-eng { font-family: 'Chakra Petch', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .sidebar-item { border-left: 2px solid transparent; transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { background: rgba(255, 107, 0, 0.05); border-left-color: var(--accent); color: white; }
+        .sidebar-item.active .icon { color: var(--accent); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+
+        .form-label { display: block; font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.1em; color: #888; margin-bottom: 6px; }
+        .form-label .required { color: var(--danger); }
+        .form-input { width: 100%; background: #111; border: 1px solid #333; padding: 10px 12px; color: white; font-size: 13px; outline: none; transition: border-color 0.2s; }
+        .form-input:focus { border-color: var(--accent); }
+        .form-input::placeholder { color: #555; }
+        .form-hint { font-size: 11px; color: #666; margin-top: 4px; }
+        textarea.form-input { min-height: 100px; resize: vertical; }
+        
+        .section-title { font-size: 12px; font-weight: bold; color: var(--accent); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #333; display: flex; align-items: center; gap: 8px; }
+        
+        .star-rating { display: flex; gap: 4px; }
+        .star { cursor: pointer; font-size: 18px; color: #333; transition: all 0.15s; }
+        .star.active { color: #ffc107; }
+        .star:hover, .star.hover-preview { color: #ffd54f; }
+        
+        .port-item { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+        .btn-remove-port { background: none; border: 1px solid #444; color: #888; width: 28px; height: 28px; cursor: pointer; font-size: 16px; }
+        .btn-remove-port:hover { border-color: var(--danger); color: var(--danger); }
+        
+        .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: 0.3s; }
+        .toggle-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: #666; transition: 0.3s; }
+        input:checked + .toggle-slider { background-color: var(--accent); }
+        input:checked + .toggle-slider:before { transform: translateX(20px); background-color: white; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden selection:bg-[#ff6b00] selection:text-black">
+
+    <!-- 左侧侧边栏 -->
+    <aside class="w-48 bg-[#161616] border-r border-[#333] flex flex-col z-20 shadow-xl">
+        <div class="h-16 flex items-center px-6 border-b border-[#333]">
+            <div class="bg-[#ff6b00] text-black font-black text-xl px-2 py-0.5 font-eng tracking-tighter mr-3">TG</div>
+            <span class="font-bold text-gray-300 tracking-wider text-sm">管理中枢</span>
+        </div>
+        <nav class="flex-1 py-6 space-y-1 font-mono text-xs overflow-y-auto">
+            <a href="/admin/admin.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⌂</span> 概览</a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-4">赛事核心</p>
+            <a href="/admin/admin-contests.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚑</span> 比赛管理</a>
+            <a href="/admin/admin-question-bank.html" class="sidebar-item active flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">☷</span> 题库</a>
+            <a href="/admin/admin-users.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">웃</span> 用户管理</a>
+            <a href="/admin/admin-teams.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">◈</span> 队伍管理</a>
+            <a href="/admin/admin-organizations.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🏢</span> 组织管理</a>
+            <a href="/admin/admin-data-import.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">📥</span> 数据导入</a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-6">运维监控</p>
+            <a href="/admin/admin-docker.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🐳</span> docker实例管理</a>
+            <a href="/admin/admin-anti-cheat.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🛡️</span> 防作弊系统</a>
+            <a href="/admin/admin-logs.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚠</span> 系统日志</a>
+            <a href="/admin/admin-settings.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚙</span> 系统设置</a>
+        </nav>
+        <div class="p-4 border-t border-[#333]">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-[#333] rounded-full flex items-center justify-center text-[#ff6b00] font-bold">A</div>
+                <div><p class="text-xs text-white font-bold">超级管理员</p><p class="text-[10px] text-green-500">● 连接稳定</p></div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 右侧内容区 -->
+    <div class="flex-1 flex flex-col min-w-0 bg-[#121212]">
+        <header class="h-16 bg-[#161616] border-b border-[#333] flex items-center justify-between px-8 z-10">
+            <div class="flex items-center gap-4 text-xs font-mono">
+                <span class="text-gray-500">位置:</span>
+                <a href="/admin/admin-question-bank.html" class="text-[#ff6b00] hover:text-white">题库</a>
+                <span class="text-gray-600">/</span>
+                <a href="/admin/admin-questions-awdf.html" class="text-purple-400 hover:text-white">AWD-F题库</a>
+                <span class="text-gray-600">/</span>
+                <span class="text-white" id="page-title">新增题目</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="/home.html" class="font-mono text-xs font-bold border border-gray-500 text-gray-400 px-4 py-2 hover:border-white hover:text-white transition-all uppercase tracking-wider">← 返回前台</a>
+                <button id="logout-btn" class="font-mono text-xs font-bold border border-[#ff6b00] text-[#ff6b00] px-4 py-2 hover:bg-[#ff6b00] hover:text-black transition-all uppercase tracking-wider">Logout_离线</button>
+            </div>
+        </header>
+
+        <main class="flex-1 flex flex-col p-6 relative overflow-y-auto">
+            <div class="absolute inset-0 z-0 opacity-10 pointer-events-none" style="background-image: radial-gradient(#333 1px, transparent 1px); background-size: 20px 20px;"></div>
+            
+            <div class="relative z-10 w-full max-w-[900px] mx-auto">
+                
+                <form id="question-form" class="space-y-6">
+                    
+                    <!-- 基本信息 -->
+                    <div class="bg-[#1a1a1a] border border-[#333] p-5">
+                        <div class="section-title">⚔️ AWD-F 题目基本信息</div>
+                        
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="form-label">题目标题 <span class="required">*</span></label>
+                                <input type="text" id="form-title" class="form-input" placeholder="输入题目标题" required>
+                            </div>
+                            <div>
+                                <label class="form-label">题目类别 <span class="required">*</span></label>
+                                <select id="form-category" class="form-input" required>
+                                    <option value="">请选择类别</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">难度</label>
+                            <div class="flex items-center gap-4">
+                                <div id="star-rating" class="star-rating">
+                                    <span class="star" data-value="1">★</span>
+                                    <span class="star" data-value="2">★</span>
+                                    <span class="star" data-value="3">★</span>
+                                    <span class="star" data-value="4">★</span>
+                                    <span class="star" data-value="5">★</span>
+                                    <span class="star" data-value="6">★</span>
+                                    <span class="star" data-value="7">★</span>
+                                    <span class="star" data-value="8">★</span>
+                                    <span class="star" data-value="9">★</span>
+                                    <span class="star" data-value="10">★</span>
+                                </div>
+                                <span class="text-xs text-gray-500 font-mono">当前: <span id="difficulty-value">5</span>/10</span>
+                                <input type="hidden" id="form-difficulty" value="5">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="form-label">题目描述</label>
+                            <textarea id="form-description" class="form-input font-mono" placeholder="题目背景、要求等"></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Docker配置 -->
+                    <div class="bg-[#1a1a1a] border border-[#333] p-5">
+                        <div class="section-title">🐳 Docker 容器配置</div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">Docker镜像名 <span class="required">*</span></label>
+                            <input type="text" id="form-docker-image" class="form-input font-mono" placeholder="registry/image:tag" required>
+                            <p class="form-hint">AWD-F题目必须是容器题</p>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">开放端口</label>
+                            <div id="ports-container">
+                                <div class="port-item">
+                                    <input type="text" class="form-input port-input" placeholder="80" style="width: 100px;">
+                                    <button type="button" class="btn-remove-port" onclick="removePort(this)" style="display:none;">&times;</button>
+                                </div>
+                            </div>
+                            <button type="button" onclick="addPort()" class="text-[#ff6b00] text-xs font-mono mt-2 hover:underline">+ 添加端口</button>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-[#111] border border-[#333] p-3">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs font-bold text-white">资源限制</span>
+                                    <div class="flex items-center gap-2">
+                                        <label class="toggle-switch" style="width:36px;height:20px;">
+                                            <input type="checkbox" id="form-no-limit" onchange="toggleResourceLimit()">
+                                            <span class="toggle-slider" style="border-radius:20px;"></span>
+                                        </label>
+                                        <span class="text-gray-500 text-xs">不限制</span>
+                                    </div>
+                                </div>
+                                <div id="resource-limits" class="grid grid-cols-3 gap-2">
+                                    <div>
+                                        <label class="form-label">CPU</label>
+                                        <input type="text" id="form-cpu" class="form-input" placeholder="1.0">
+                                    </div>
+                                    <div>
+                                        <label class="form-label">内存</label>
+                                        <input type="text" id="form-memory" class="form-input" placeholder="512m">
+                                    </div>
+                                    <div>
+                                        <label class="form-label">存储</label>
+                                        <input type="text" id="form-storage" class="form-input" placeholder="1g">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-[#111] border border-[#333] p-3">
+                                <span class="text-xs font-bold text-white mb-2 block">Flag注入配置</span>
+                                <div class="mb-2">
+                                    <label class="form-label">环境变量名</label>
+                                    <input type="text" id="form-flag-env" class="form-input font-mono" placeholder="FLAG" value="FLAG">
+                                </div>
+                                <div>
+                                    <label class="form-label">注入脚本路径</label>
+                                    <input type="text" id="form-flag-script" class="form-input font-mono" placeholder="/flag.sh">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- AWD-F 专属配置 -->
+                    <div class="bg-[#1a1a1a] border border-purple-500/30 p-5">
+                        <div class="section-title text-purple-400">🎯 AWD-F 专属配置</div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">EXP攻击脚本 <span class="text-purple-400">(重要)</span></label>
+                            <textarea id="form-exp-script" class="form-input font-mono text-xs" placeholder="#!/bin/bash
+# EXP脚本，用于验证漏洞是否修复
+# 参数: $1=目标IP $2=目标端口
+# 返回: exit 0=攻击成功, exit 1=攻击失败
+
+curl -s http://$1:$2/vuln.php?cmd=id | grep -q 'uid=' && exit 0 || exit 1" style="min-height: 150px;"></textarea>
+                            <p class="form-hint">系统每轮调用此脚本攻击选手容器，攻击失败则判定防守成功</p>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">功能检测脚本</label>
+                            <textarea id="form-check-script" class="form-input font-mono text-xs" placeholder="#!/bin/bash
+# 功能检测脚本，验证服务是否正常运行
+# 参数: $1=目标IP $2=目标端口
+# 返回: exit 0=服务正常, exit 1=服务异常
+
+curl -s --max-time 5 http://$1:$2/ | grep -q 'Welcome' && exit 0 || exit 1" style="min-height: 120px;"></textarea>
+                            <p class="form-hint">验证选手补丁后服务仍然正常，避免选手通过删服务来"修漏洞"</p>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="form-label">补丁白名单 (JSON数组)</label>
+                                <textarea id="form-patch-whitelist" class="form-input font-mono text-xs" placeholder='["/var/www/html/index.php", "/var/www/html/config.php"]' style="min-height: 80px;"></textarea>
+                                <p class="form-hint">允许选手修改的文件路径列表</p>
+                            </div>
+                            <div>
+                                <label class="form-label">漏洞文件路径 (出题参考)</label>
+                                <input type="text" id="form-vulnerable-file" class="form-input font-mono text-xs" placeholder="/var/www/html/vuln.php">
+                                <p class="form-hint">仅供出题人参考，不对选手展示</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 保存按钮 -->
+                    <div class="flex gap-3">
+                        <a href="/admin/admin-questions-awdf.html" class="flex-1 border border-[#333] text-gray-400 py-3 text-center hover:border-white hover:text-white transition-all font-mono text-sm">返回列表</a>
+                        <button type="submit" class="flex-1 bg-[#ff6b00] text-black py-3 font-bold hover:bg-white transition-all font-mono text-sm text-center">保存题目</button>
+                    </div>
+                </form>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) { return null; }
+        }
+
+        const token = localStorage.getItem('tg_token');
+        if (!token) {
+            window.location.href = '/login.html';
+        } else {
+            const payload = parseJwt(token);
+            if (!payload || payload.role !== 'super') {
+                alert('权限不足');
+                window.location.href = '/home.html';
+            }
+        }
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('tg_token');
+            window.location.href = '/login.html';
+        });
+
+        // 获取URL参数
+        const urlParams = new URLSearchParams(window.location.search);
+        const editId = urlParams.get('id');
+        let currentDifficulty = 5;
+
+        // 星级评分
+        const starRating = document.getElementById('star-rating');
+        const stars = starRating.querySelectorAll('.star');
+        
+        function setDifficulty(value) {
+            currentDifficulty = value;
+            document.getElementById('form-difficulty').value = value;
+            document.getElementById('difficulty-value').textContent = value;
+            stars.forEach((star, i) => {
+                star.classList.toggle('active', i < value);
+            });
+        }
+        
+        stars.forEach(star => {
+            star.addEventListener('click', () => setDifficulty(parseInt(star.dataset.value)));
+            star.addEventListener('mouseenter', () => {
+                const val = parseInt(star.dataset.value);
+                stars.forEach((s, i) => s.classList.toggle('hover-preview', i < val && i >= currentDifficulty));
+            });
+            star.addEventListener('mouseleave', () => stars.forEach(s => s.classList.remove('hover-preview')));
+        });
+        setDifficulty(5);
+
+        // 端口管理
+        function addPort() {
+            const container = document.getElementById('ports-container');
+            const div = document.createElement('div');
+            div.className = 'port-item';
+            div.innerHTML = `
+                <input type="text" class="form-input port-input" placeholder="8080" style="width: 100px;">
+                <button type="button" class="btn-remove-port" onclick="removePort(this)">&times;</button>
+            `;
+            container.appendChild(div);
+        }
+
+        function removePort(btn) {
+            btn.parentElement.remove();
+        }
+
+        function toggleResourceLimit() {
+            const noLimit = document.getElementById('form-no-limit').checked;
+            document.getElementById('resource-limits').style.display = noLimit ? 'none' : 'grid';
+        }
+
+        // 加载类别
+        async function loadCategories() {
+            try {
+                const res = await fetch('/api/admin/categories', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    const categories = await res.json();
+                    const select = document.getElementById('form-category');
+                    select.innerHTML = '<option value="">请选择类别</option>' + 
+                        categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // 加载编辑数据
+        async function loadQuestion() {
+            if (!editId) return;
+            
+            document.getElementById('page-title').textContent = '编辑题目';
+            
+            try {
+                const res = await fetch(`/api/admin/awdf/questions/${editId}`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Failed');
+                
+                const q = await res.json();
+                
+                document.getElementById('form-title').value = q.title;
+                document.getElementById('form-category').value = q.categoryId;
+                setDifficulty(parseInt(q.difficulty) || 5);
+                document.getElementById('form-description').value = q.description || '';
+                document.getElementById('form-docker-image').value = q.dockerImage || '';
+                document.getElementById('form-cpu').value = q.cpuLimit || '';
+                document.getElementById('form-memory').value = q.memoryLimit || '';
+                document.getElementById('form-storage').value = q.storageLimit || '';
+                document.getElementById('form-no-limit').checked = q.noResourceLimit;
+                document.getElementById('form-flag-env').value = q.flagEnv || 'FLAG';
+                document.getElementById('form-flag-script').value = q.flagScript || '';
+                document.getElementById('form-exp-script').value = q.expScript || '';
+                document.getElementById('form-check-script').value = q.checkScript || '';
+                document.getElementById('form-patch-whitelist').value = q.patchWhitelist || '';
+                document.getElementById('form-vulnerable-file').value = q.vulnerableFile || '';
+                
+                // 加载端口
+                if (q.ports) {
+                    try {
+                        const ports = JSON.parse(q.ports);
+                        const container = document.getElementById('ports-container');
+                        container.innerHTML = '';
+                        ports.forEach((port, i) => {
+                            const div = document.createElement('div');
+                            div.className = 'port-item';
+                            div.innerHTML = `
+                                <input type="text" class="form-input port-input" value="${port}" placeholder="80" style="width: 100px;">
+                                <button type="button" class="btn-remove-port" onclick="removePort(this)" ${i === 0 ? 'style="display:none;"' : ''}>&times;</button>
+                            `;
+                            container.appendChild(div);
+                        });
+                    } catch (e) {}
+                }
+                
+                toggleResourceLimit();
+            } catch (e) {
+                console.error(e);
+                alert('加载题目失败');
+            }
+        }
+
+        // 表单提交
+        document.getElementById('question-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // 收集端口
+            const ports = [];
+            document.querySelectorAll('.port-input').forEach(input => {
+                if (input.value.trim()) ports.push(input.value.trim());
+            });
+            
+            const data = {
+                title: document.getElementById('form-title').value,
+                categoryId: parseInt(document.getElementById('form-category').value),
+                difficulty: parseInt(document.getElementById('form-difficulty').value),
+                description: document.getElementById('form-description').value,
+                dockerImage: document.getElementById('form-docker-image').value,
+                ports: ports.length > 0 ? JSON.stringify(ports) : '',
+                cpuLimit: document.getElementById('form-cpu').value,
+                memoryLimit: document.getElementById('form-memory').value,
+                storageLimit: document.getElementById('form-storage').value,
+                noResourceLimit: document.getElementById('form-no-limit').checked,
+                flagEnv: document.getElementById('form-flag-env').value || 'FLAG',
+                flagScript: document.getElementById('form-flag-script').value,
+                expScript: document.getElementById('form-exp-script').value,
+                checkScript: document.getElementById('form-check-script').value,
+                patchWhitelist: document.getElementById('form-patch-whitelist').value,
+                vulnerableFile: document.getElementById('form-vulnerable-file').value
+            };
+            
+            try {
+                const res = await fetch(editId ? `/api/admin/awdf/questions/${editId}` : '/api/admin/awdf/questions', {
+                    method: editId ? 'PUT' : 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!res.ok) {
+                    const err = await res.json();
+                    alert('保存失败: ' + (err.error || err.details || '未知错误'));
+                    return;
+                }
+                
+                // 显示保存成功提示
+                const toast = document.createElement('div');
+                toast.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 font-mono text-sm z-50';
+                toast.textContent = '✓ 保存成功';
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 2000);
+                
+                // 新增后跳转到编辑模式
+                if (!editId) {
+                    const result = await res.json();
+                    if (result.id) {
+                        history.replaceState(null, '', `/admin/admin-question-edit-awdf.html?id=${result.id}`);
+                        document.getElementById('page-title').textContent = '编辑题目';
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+                alert('保存失败');
+            }
+        });
+
+        // 初始化
+        loadCategories().then(() => loadQuestion());
+    </script>
+
+</body>
+</html>

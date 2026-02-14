@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="author" content="tan91">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/fonts.css">
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --bg-panel: #1e1e1e;
+            --border-color: #333;
+            --accent: #ff6b00;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --info: #3b82f6;
+            --text-main: #e0e0e0;
+            --text-dim: #737373;
+        }
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Noto Sans SC', sans-serif; }
+        .font-eng { font-family: 'Chakra Petch', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .sidebar-item { border-left: 2px solid transparent; transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { background: rgba(255, 107, 0, 0.05); border-left-color: var(--accent); color: white; }
+        .sidebar-item.active .icon { color: var(--accent); }
+
+        .admin-card { background: var(--bg-panel); border: 1px solid var(--border-color); position: relative; }
+        .stat-card::after { content: ''; position: absolute; top: 0; right: 0; width: 0; height: 0; border-top: 20px solid var(--border-color); border-left: 20px solid transparent; }
+
+        .btn-action { border: 1px solid var(--border-color); color: var(--text-dim); padding: 0.5rem 1rem; font-size: 0.75rem; transition: all 0.2s; }
+        .btn-action:hover { border-color: var(--accent); color: var(--accent); background: rgba(255,107,0,0.05); }
+        .btn-primary { background: var(--accent); color: black; border: none; padding: 0.5rem 1rem; font-size: 0.75rem; font-weight: bold; transition: all 0.2s; }
+        .btn-primary:hover { background: #ff8533; }
+        .btn-primary:disabled { background: #666; color: #999; cursor: not-allowed; }
+
+        .tactical-table thead th { background: #151515; color: #666; font-family: 'JetBrains Mono', monospace; font-weight: normal; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.75rem; border-bottom: 1px solid #333; text-align: left; font-size: 0.7rem; }
+        .tactical-table tbody tr { border-bottom: 1px solid #252525; transition: background 0.2s; }
+        .tactical-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+        .tactical-table td { padding: 0.75rem; vertical-align: middle; font-size: 0.8rem; }
+
+        .upload-zone { border: 2px dashed #444; border-radius: 4px; padding: 2rem; text-align: center; transition: all 0.2s; cursor: pointer; }
+        .upload-zone:hover, .upload-zone.dragover { border-color: var(--accent); background: rgba(255,107,0,0.05); }
+        .upload-zone input { display: none; }
+
+        .tab-btn { padding: 0.75rem 1.5rem; font-size: 0.85rem; border: none; background: transparent; color: #666; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
+        .tab-btn:hover { color: #aaa; }
+        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .input-row { display: grid; grid-template-columns: 1fr 1fr 1.5fr 1fr 1fr auto; gap: 0.5rem; margin-bottom: 0.5rem; align-items: center; }
+        .input-row input { background: #111; border: 1px solid #333; color: white; padding: 0.5rem; font-size: 0.8rem; outline: none; }
+        .input-row input:focus { border-color: var(--accent); }
+        .input-row .btn-remove { background: none; border: none; color: #666; cursor: pointer; font-size: 1rem; padding: 0.25rem 0.5rem; }
+        .input-row .btn-remove:hover { color: var(--danger); }
+
+        .result-success { color: var(--success); }
+        .result-error { color: var(--danger); }
+        .result-warning { color: #f59e0b; }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden selection:bg-[#ff6b00] selection:text-black">
+
+    <!-- 左侧侧边栏 -->
+    <aside class="w-48 bg-[#161616] border-r border-[#333] flex flex-col z-20 shadow-xl">
+        <div class="h-16 flex items-center px-6 border-b border-[#333]">
+            <div class="bg-[#ff6b00] text-black font-black text-xl px-2 py-0.5 font-eng tracking-tighter mr-3">TG</div>
+            <span class="font-bold text-gray-300 tracking-wider text-sm">管理中枢</span>
+        </div>
+        <nav class="flex-1 py-6 space-y-1 font-mono text-xs overflow-y-auto">
+            <a href="/admin/admin.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⌂</span> 概览</a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-4">赛事核心</p>
+            <a href="/admin/admin-contests.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚑</span> 比赛管理</a>
+            <a href="/admin/admin-question-bank.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">☷</span> 题库</a>
+            <a href="/admin/admin-users.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">웃</span> 用户管理</a>
+            <a href="/admin/admin-teams.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">◈</span> 队伍管理</a>
+            <a href="/admin/admin-organizations.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🏢</span> 组织管理</a>
+            <a href="/admin/admin-data-import.html" class="sidebar-item active flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">📥</span> 数据导入</a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-6">运维监控</p>
+            <a href="/admin/admin-docker.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🐳</span> docker实例管理</a>
+            <a href="/admin/admin-anti-cheat.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🛡️</span> 防作弊系统</a>
+            <a href="/admin/admin-logs.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚠</span> 系统日志</a>
+            <a href="/admin/admin-settings.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚙</span> 系统设置</a>
+        </nav>
+        <div class="p-4 border-t border-[#333]">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-[#333] rounded-full flex items-center justify-center text-[#ff6b00] font-bold">A</div>
+                <div><p class="text-xs text-white font-bold">超级管理员</p><p class="text-[10px] text-green-500">● 连接稳定</p></div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 右侧内容区 -->
+    <div class="flex-1 flex flex-col min-w-0 bg-[#121212]">
+        <header class="h-16 bg-[#161616] border-b border-[#333] flex items-center justify-between px-8 z-10">
+            <div class="flex items-center gap-4 text-xs font-mono">
+                <span class="text-gray-500">位置:</span><span class="text-[#ff6b00]">赛事核心</span><span class="text-gray-600">/</span><span class="text-white">数据导入</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="/home.html" class="font-mono text-xs font-bold border border-gray-500 text-gray-400 px-4 py-2 hover:border-white hover:text-white transition-all uppercase tracking-wider">← 返回前台</a>
+                <button id="logout-btn" class="font-mono text-xs font-bold border border-[#ff6b00] text-[#ff6b00] px-4 py-2 hover:bg-[#ff6b00] hover:text-black transition-all uppercase tracking-wider">Logout_离线</button>
+            </div>
+        </header>
+
+        <main class="flex-1 flex flex-col pt-8 px-8 relative overflow-y-auto">
+            
+            <!-- 统计卡片 -->
+            <div class="grid grid-cols-3 gap-6 mb-8">
+                <div class="admin-card stat-card p-5 flex items-center justify-between"><div class="text-lg text-gray-400 font-mono font-bold uppercase">普通用户数</div><div id="stat-users" class="text-2xl font-eng font-bold text-white">--</div></div>
+                <div class="admin-card stat-card p-5 flex items-center justify-between"><div class="text-lg text-gray-400 font-mono font-bold uppercase">队伍数量</div><div id="stat-teams" class="text-2xl font-eng font-bold text-blue-400">--</div></div>
+                <div class="admin-card stat-card p-5 flex items-center justify-between"><div class="text-lg text-gray-400 font-mono font-bold uppercase">组织机构</div><div id="stat-orgs" class="text-2xl font-eng font-bold text-green-500">--</div></div>
+            </div>
+
+            <div class="admin-card overflow-hidden flex-1 flex flex-col">
+                <!-- 标签页 -->
+                <div class="border-b border-[#333] bg-[#1a1a1a]">
+                    <button class="tab-btn active" onclick="switchTab('excel')">Excel 导入</button>
+                    <button class="tab-btn" onclick="switchTab('manual')">手动编辑</button>
+                </div>
+
+                <!-- Excel导入 -->
+                <div id="tab-excel" class="tab-content active p-6 flex-1 overflow-y-auto">
+                    <div class="mb-6">
+                        <h3 class="text-sm font-bold text-white mb-2">步骤 1：下载模板</h3>
+                        <p class="text-xs text-gray-500 mb-3">下载Excel模板，按格式填写用户数据</p>
+                        <button onclick="downloadTemplate()" class="btn-action font-mono">
+                            📄 下载导入模板
+                        </button>
+                    </div>
+
+                    <div class="mb-6">
+                        <h3 class="text-sm font-bold text-white mb-2">步骤 2：上传文件</h3>
+                        <p class="text-xs text-gray-500 mb-3">支持 .xlsx 格式文件</p>
+                        <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+                            <input type="file" id="file-input" accept=".xlsx,.xls" onchange="handleFileSelect(event)">
+                            <div class="text-gray-500 text-sm mb-2">📁 点击或拖拽文件到此处</div>
+                            <div class="text-gray-600 text-xs">支持 .xlsx 格式</div>
+                        </div>
+                        <div id="file-info" class="mt-3 hidden">
+                            <div class="flex items-center gap-3 text-sm">
+                                <span class="text-green-500">✓</span>
+                                <span id="file-name" class="text-white"></span>
+                                <button onclick="clearFile()" class="text-red-500 text-xs hover:underline">移除</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <h3 class="text-sm font-bold text-white mb-2">步骤 3：预览数据</h3>
+                        <div id="preview-area" class="hidden">
+                            <div id="preview-summary" class="mb-4 p-4 bg-[#111] border border-[#333]">
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                                    <div><span class="text-gray-500">总记录数：</span><span id="preview-total" class="text-white font-bold">0</span></div>
+                                    <div><span class="text-gray-500">已存在用户：</span><span id="preview-existing" class="text-yellow-500 font-bold">0</span></div>
+                                    <div><span class="text-gray-500">新建组织：</span><span id="preview-new-orgs" class="text-blue-400 font-bold">0</span></div>
+                                    <div><span class="text-gray-500">新建队伍：</span><span id="preview-new-teams" class="text-green-500 font-bold">0</span></div>
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto max-h-64">
+                                <table class="w-full tactical-table text-xs">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>用户名</th>
+                                            <th>真实姓名</th>
+                                            <th>邮箱</th>
+                                            <th>所属队伍</th>
+                                            <th>所属组织</th>
+                                            <th>状态</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="preview-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div id="preview-placeholder" class="text-gray-600 text-sm">请先上传文件</div>
+                    </div>
+
+                    <div class="mb-6">
+                        <h3 class="text-sm font-bold text-white mb-2">步骤 4：执行导入</h3>
+                        <div class="flex items-center gap-4">
+                            <button id="btn-import-excel" onclick="executeExcelImport()" class="btn-primary font-mono" disabled>
+                                🚀 开始导入
+                            </button>
+                            <span class="text-xs text-gray-500">默认密码：123456</span>
+                        </div>
+                    </div>
+
+                    <!-- 导入结果 -->
+                    <div id="import-result" class="hidden mt-6 p-4 bg-[#111] border border-[#333]">
+                        <h4 class="text-sm font-bold text-white mb-3">导入结果</h4>
+                        <div id="result-content"></div>
+                    </div>
+                </div>
+
+                <!-- 手动编辑 -->
+                <div id="tab-manual" class="tab-content p-6 flex-1 overflow-y-auto">
+                    <div class="mb-4">
+                        <h3 class="text-sm font-bold text-white mb-2">手动添加用户</h3>
+                        <p class="text-xs text-gray-500 mb-3">直接在下方表格中输入用户信息</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="input-row text-xs text-gray-500 font-mono mb-2">
+                            <span>用户名 *</span>
+                            <span>真实姓名 *</span>
+                            <span>邮箱</span>
+                            <span>所属队伍</span>
+                            <span>所属组织</span>
+                            <span></span>
+                        </div>
+                        <div id="manual-rows">
+                            <!-- 动态添加行 -->
+                        </div>
+                        <button onclick="addManualRow()" class="btn-action font-mono mt-2">+ 添加一行</button>
+                    </div>
+
+                    <div class="flex items-center gap-4 mt-6">
+                        <button id="btn-import-manual" onclick="executeManualImport()" class="btn-primary font-mono">
+                            🚀 开始导入
+                        </button>
+                        <button onclick="clearManualRows()" class="btn-action font-mono">清空所有</button>
+                        <span class="text-xs text-gray-500">默认密码：123456</span>
+                    </div>
+
+                    <!-- 手动导入结果 -->
+                    <div id="manual-result" class="hidden mt-6 p-4 bg-[#111] border border-[#333]">
+                        <h4 class="text-sm font-bold text-white mb-3">导入结果</h4>
+                        <div id="manual-result-content"></div>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="py-1 border-t border-[#333] flex items-center justify-center flex-shrink-0 mt-auto">
+                <div class="flex items-center justify-center gap-4 text-xs flex-wrap">
+                    <div class="flex items-center gap-1">
+                        <div class="bg-[#ff6b00] text-black font-black px-1.5 py-0.5 font-eng tracking-tighter">TG</div>
+                        <span class="text-gray-500">天格后台管理系统</span>
+                    </div>
+                    <span class="text-white font-mono">Copyright © 2021-present tan91. All Rights Reserved.</span>
+                    <a href="https://github.com/NUDTTAN91" target="_blank" class="text-[#ff6b00] hover:text-white transition-colors"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg></a>
+                    <a href="https://blog.csdn.net/ZXW_NUDT" target="_blank" class="text-[#ff6b00] hover:text-white transition-colors"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></a>
+                </div>
+            </footer>
+
+        </main>
+    </div>
+
+<script>
+const token = localStorage.getItem('tg_token');
+if (!token) {
+    window.location.href = '/login.html';
+}
+
+let selectedFile = null;
+let previewData = null;
+let manualRowId = 0;
+
+// 初始化
+document.addEventListener('DOMContentLoaded', () => {
+    loadStats();
+    addManualRow();
+    addManualRow();
+    addManualRow();
+    setupDragDrop();
+});
+
+// 加载统计数据
+async function loadStats() {
+    try {
+        const res = await fetch('/api/admin/import/stats', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            document.getElementById('stat-users').textContent = data.userCount || 0;
+            document.getElementById('stat-teams').textContent = data.teamCount || 0;
+            document.getElementById('stat-orgs').textContent = data.orgCount || 0;
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+// 标签页切换
+function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    
+    document.querySelector(`[onclick="switchTab('${tab}')"]`).classList.add('active');
+    document.getElementById(`tab-${tab}`).classList.add('active');
+}
+
+// 下载模板
+function downloadTemplate() {
+    window.location.href = '/api/admin/import/template?token=' + token;
+}
+
+// 设置拖拽
+function setupDragDrop() {
+    const zone = document.getElementById('upload-zone');
+    
+    zone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        zone.classList.add('dragover');
+    });
+    
+    zone.addEventListener('dragleave', () => {
+        zone.classList.remove('dragover');
+    });
+    
+    zone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        zone.classList.remove('dragover');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFile(files[0]);
+        }
+    });
+}
+
+// 文件选择
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (file) {
+        handleFile(file);
+    }
+}
+
+// 处理文件
+async function handleFile(file) {
+    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+        alert('请上传 Excel 文件 (.xlsx)');
+        return;
+    }
+    
+    selectedFile = file;
+    document.getElementById('file-info').classList.remove('hidden');
+    document.getElementById('file-name').textContent = file.name;
+    
+    // 预览数据
+    await previewFile();
+}
+
+// 清除文件
+function clearFile() {
+    selectedFile = null;
+    previewData = null;
+    document.getElementById('file-input').value = '';
+    document.getElementById('file-info').classList.add('hidden');
+    document.getElementById('preview-area').classList.add('hidden');
+    document.getElementById('preview-placeholder').classList.remove('hidden');
+    document.getElementById('btn-import-excel').disabled = true;
+}
+
+// 预览文件
+async function previewFile() {
+    if (!selectedFile) return;
+    
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    
+    try {
+        const res = await fetch('/api/admin/import/users/preview', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+            body: formData
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+            alert(data.message || '预览失败');
+            return;
+        }
+        
+        previewData = data;
+        renderPreview(data);
+        document.getElementById('preview-area').classList.remove('hidden');
+        document.getElementById('preview-placeholder').classList.add('hidden');
+        document.getElementById('btn-import-excel').disabled = false;
+        
+    } catch (e) {
+        console.error(e);
+        alert('预览失败');
+    }
+}
+
+// 渲染预览
+function renderPreview(data) {
+    document.getElementById('preview-total').textContent = data.total || 0;
+    document.getElementById('preview-existing').textContent = (data.existingUsers || []).length;
+    document.getElementById('preview-new-orgs').textContent = (data.newOrgs || []).length;
+    document.getElementById('preview-new-teams').textContent = (data.newTeams || []).length;
+    
+    const tbody = document.getElementById('preview-tbody');
+    const existingSet = new Set(data.existingUsers || []);
+    
+    tbody.innerHTML = (data.users || []).map((u, i) => {
+        const isExisting = existingSet.has(u.username);
+        const statusClass = isExisting ? 'text-yellow-500' : 'text-green-500';
+        const statusText = isExisting ? '已存在' : '待导入';
+        
+        return `<tr>
+            <td class="text-gray-500">${i + 1}</td>
+            <td class="font-mono text-white">${escapeHtml(u.username)}</td>
+            <td>${escapeHtml(u.displayName)}</td>
+            <td class="text-gray-500">${escapeHtml(u.email || '-')}</td>
+            <td>${escapeHtml(u.teamName || '-')}</td>
+            <td>${escapeHtml(u.organization || '-')}</td>
+            <td class="${statusClass}">${statusText}</td>
+        </tr>`;
+    }).join('');
+}
+
+// 执行Excel导入
+async function executeExcelImport() {
+    if (!selectedFile) {
+        alert('请先上传文件');
+        return;
+    }
+    
+    const btn = document.getElementById('btn-import-excel');
+    btn.disabled = true;
+    btn.textContent = '导入中...';
+    
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    
+    try {
+        const res = await fetch('/api/admin/import/users/excel', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+            body: formData
+        });
+        
+        const result = await res.json();
+        showImportResult('import-result', 'result-content', result);
+        loadStats();
+        
+    } catch (e) {
+        console.error(e);
+        alert('导入失败');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '🚀 开始导入';
+    }
+}
+
+// 显示导入结果
+function showImportResult(containerId, contentId, result) {
+    const container = document.getElementById(containerId);
+    const content = document.getElementById(contentId);
+    
+    let html = `
+        <div class="grid grid-cols-3 gap-4 mb-4 text-sm">
+            <div><span class="text-gray-500">总数：</span><span class="text-white font-bold">${result.total}</span></div>
+            <div><span class="text-gray-500">成功：</span><span class="result-success font-bold">${result.success}</span></div>
+            <div><span class="text-gray-500">失败：</span><span class="result-error font-bold">${result.failed}</span></div>
+        </div>
+    `;
+    
+    if (result.createdOrgs && result.createdOrgs.length > 0) {
+        html += `<div class="mb-2 text-xs"><span class="text-gray-500">新建组织：</span><span class="text-blue-400">${result.createdOrgs.join(', ')}</span></div>`;
+    }
+    
+    if (result.createdTeams && result.createdTeams.length > 0) {
+        html += `<div class="mb-2 text-xs"><span class="text-gray-500">新建队伍：</span><span class="text-green-500">${result.createdTeams.join(', ')}</span></div>`;
+    }
+    
+    if (result.errors && result.errors.length > 0) {
+        html += `<div class="mt-4"><div class="text-xs text-gray-500 mb-2">错误信息：</div><ul class="text-xs text-red-400 list-disc list-inside max-h-32 overflow-y-auto">`;
+        result.errors.forEach(err => {
+            html += `<li>${escapeHtml(err)}</li>`;
+        });
+        html += `</ul></div>`;
+    }
+    
+    content.innerHTML = html;
+    container.classList.remove('hidden');
+}
+
+// 手动编辑相关
+function addManualRow() {
+    const container = document.getElementById('manual-rows');
+    const rowId = `row-${manualRowId++}`;
+    
+    const row = document.createElement('div');
+    row.className = 'input-row';
+    row.id = rowId;
+    row.innerHTML = `
+        <input type="text" placeholder="用户名" class="username">
+        <input type="text" placeholder="真实姓名" class="displayname">
+        <input type="text" placeholder="邮箱（可选）" class="email">
+        <input type="text" placeholder="队伍（可选）" class="team">
+        <input type="text" placeholder="组织（可选）" class="org">
+        <button class="btn-remove" onclick="removeManualRow('${rowId}')">×</button>
+    `;
+    container.appendChild(row);
+}
+
+function removeManualRow(rowId) {
+    const row = document.getElementById(rowId);
+    if (row) {
+        row.remove();
+    }
+}
+
+function clearManualRows() {
+    document.getElementById('manual-rows').innerHTML = '';
+    manualRowId = 0;
+    addManualRow();
+    addManualRow();
+    addManualRow();
+    document.getElementById('manual-result').classList.add('hidden');
+}
+
+// 执行手动导入
+async function executeManualImport() {
+    const rows = document.querySelectorAll('#manual-rows .input-row');
+    const users = [];
+    
+    rows.forEach(row => {
+        const username = row.querySelector('.username').value.trim();
+        const displayName = row.querySelector('.displayname').value.trim();
+        const email = row.querySelector('.email').value.trim();
+        const teamName = row.querySelector('.team').value.trim();
+        const organization = row.querySelector('.org').value.trim();
+        
+        if (username || displayName) {
+            users.push({ username, displayName, email, teamName, organization });
+        }
+    });
+    
+    if (users.length === 0) {
+        alert('请至少输入一条用户数据');
+        return;
+    }
+    
+    const btn = document.getElementById('btn-import-manual');
+    btn.disabled = true;
+    btn.textContent = '导入中...';
+    
+    try {
+        const res = await fetch('/api/admin/import/users', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ users })
+        });
+        
+        const result = await res.json();
+        showImportResult('manual-result', 'manual-result-content', result);
+        loadStats();
+        
+    } catch (e) {
+        console.error(e);
+        alert('导入失败');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '🚀 开始导入';
+    }
+}
+
+// 工具函数
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// 登出
+document.getElementById('logout-btn').addEventListener('click', () => {
+    localStorage.removeItem('tg_token');
+    window.location.href = '/login.html';
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="tan91">
+    <title>TG CTF - 赛事列表</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #050505;
+            --bg-panel: #111;
+            --accent: #ff6b00;
+            --text-main: #e0e0e0;
+            --text-dim: #666;
+        }
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Noto Sans SC', sans-serif; overflow: hidden; }
+        .font-eng { font-family: 'Chakra Petch', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* 左侧列表项 */
+        .mission-item {
+            padding: 1.5rem;
+            border-left: 2px solid #333;
+            border-bottom: 1px solid #1a1a1a;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .mission-item:hover { background: rgba(255,255,255,0.02); }
+        .mission-item.active {
+            background: rgba(255, 107, 0, 0.05);
+            border-left: 4px solid var(--accent);
+        }
+        .mission-item.active .mission-title { color: white; }
+        
+        /* 右侧详情面板动画 */
+        .detail-panel { animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* 按钮 */
+        .btn-glitch {
+            position: relative; background: var(--accent); color: black; font-weight: bold;
+            font-family: 'Chakra Petch', sans-serif; letter-spacing: 0.1em;
+            padding: 0.8rem 3rem; clip-path: polygon(10px 0, 100% 0, 100% 100%, 0 100%, 0 10px);
+            transition: 0.2s;
+        }
+        .btn-glitch:hover { background: white; box-shadow: 0 0 20px var(--accent); }
+
+        /* 默认背景 (无图片时显示) */
+        .default-bg {
+            background-image: url('https://www.transparenttextures.com/patterns/diagmonds-light.png');
+            opacity: 0.1;
+        }
+
+        /* 图片背景覆盖层 (有图片时显示) */
+        .image-bg-overlay {
+            background: linear-gradient(to right, #050505 0%, rgba(5,5,5,0.8) 50%, rgba(5,5,5,0.4) 100%);
+        }
+
+        /* 滚动条 */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+        /* 自定义弹窗 */
+        .toast-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 24px 32px;
+            z-index: 100;
+            min-width: 300px;
+            max-width: 400px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+        }
+        .toast-modal.hidden { display: none; }
+        .toast-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 99;
+        }
+        .toast-overlay.hidden { display: none; }
+        .toast-icon { font-size: 2rem; margin-bottom: 12px; }
+        .toast-icon.warning { color: #ff6b00; }
+        .toast-icon.error { color: #ef4444; }
+        .toast-icon.info { color: #3b82f6; }
+        .toast-title { font-size: 1rem; font-weight: bold; color: white; margin-bottom: 8px; font-family: 'Chakra Petch', sans-serif; }
+        .toast-message { font-size: 0.875rem; color: #888; margin-bottom: 20px; font-family: 'JetBrains Mono', monospace; }
+        .toast-btn {
+            width: 100%;
+            padding: 10px 20px;
+            background: var(--accent);
+            color: black;
+            font-weight: bold;
+            font-family: 'Chakra Petch', sans-serif;
+            border: none;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .toast-btn:hover { background: white; }
+    </style>
+</head>
+<body class="h-screen flex flex-col relative selection:bg-[#ff6b00] selection:text-black">
+
+    <!-- 顶部导航 -->
+    <header class="h-16 border-b border-[#333] bg-[#0a0a0a] flex items-center justify-between px-6 z-20 shrink-0">
+        <div class="flex items-center gap-8">
+            <a href="/home.html" class="text-xl font-black font-eng text-white tracking-tighter hover:text-[#ff6b00] transition-colors">TG <span class="text-[#ff6b00]">/</span> HUB</a>
+            <div class="h-4 w-px bg-[#333]"></div>
+            <nav class="flex gap-6 font-mono text-xs font-bold text-gray-500">
+                <a href="/contests.html" class="text-white border-b-2 border-[#ff6b00] pb-5 mt-5">赛事列表</a>
+            </nav>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="font-mono text-xs text-gray-500">USER: <span id="username-display" class="text-white">--</span></div>
+            <button id="logout-btn" class="font-mono text-xs text-gray-500 hover:text-[#ff6b00] transition-colors">退出</button>
+        </div>
+    </header>
+
+    <!-- 主布局：左右分栏 -->
+    <div class="flex flex-1 overflow-hidden">
+        
+        <!-- 左侧：档案列表 (List) -->
+        <aside class="w-1/3 min-w-[350px] max-w-[450px] border-r border-[#333] bg-[#0f0f0f] flex flex-col z-10">
+            
+            <!-- 搜索与筛选 -->
+            <div class="p-4 border-b border-[#333] bg-[#111]">
+                <h2 class="text-xs font-mono text-gray-500 mb-2">MISSION_SELECT</h2>
+                <div class="flex gap-2">
+                    <input id="search-input" type="text" placeholder="Search operations..." class="bg-black border border-[#333] text-xs text-white px-3 py-2 w-full focus:border-[#ff6b00] outline-none font-mono">
+                    <select id="status-filter" class="bg-[#333] text-white px-3 py-2 text-xs border border-[#333] hover:bg-[#444] outline-none font-mono">
+                        <option value="">ALL</option>
+                        <option value="running">LIVE</option>
+                        <option value="pending">UPCOMING</option>
+                        <option value="ended">ENDED</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 列表滚动区：由 JS 动态生成内容 -->
+            <div id="mission-list" class="flex-1 overflow-y-auto">
+                <!-- JS 将在这里插入 .mission-item -->
+            </div>
+            
+            <!-- 底部状态 -->
+            <div class="p-3 border-t border-[#333] text-[10px] text-gray-600 font-mono text-center">
+                <span id="mission-count">0</span> MISSIONS AVAILABLE
+            </div>
+        </aside>
+
+        <!-- 右侧：详情面板 (Details) -->
+        <main class="flex-1 bg-[#050505] relative flex flex-col">
+            
+            <!-- A. 背景容器 (动态切换) -->
+            <div id="detail-bg-container" class="absolute inset-0 z-0">
+                <!-- 情况1: 默认纹理背景 (无图片时显示) -->
+                <div id="bg-default" class="default-bg w-full h-full absolute inset-0"></div>
+                
+                <!-- 情况2: 图片背景 (有图片时显示) -->
+                <div id="bg-image" class="w-full h-full absolute inset-0 bg-cover bg-center hidden" style="background-image: url('');">
+                    <!-- 黑色遮罩，保证文字清晰 -->
+                    <div class="image-bg-overlay w-full h-full absolute inset-0"></div>
+                </div>
+            </div>
+
+            <!-- 右上角装饰光晕 -->
+            <div class="absolute top-0 right-0 w-full h-full bg-gradient-to-l from-black via-transparent to-transparent z-0 pointer-events-none"></div>
+
+            <!-- B. 详情内容容器 (动态渲染) -->
+            <div id="detail-content" class="relative z-10 flex-1 flex flex-col p-12 overflow-y-auto detail-panel">
+                
+                <!-- 空状态提示 -->
+                <div id="empty-state" class="flex-1 flex flex-col items-center justify-center text-center">
+                    <div class="text-6xl text-gray-700 mb-4">⚑</div>
+                    <div class="text-gray-500 font-mono text-sm">NO MISSION SELECTED</div>
+                    <div class="text-gray-600 font-mono text-xs mt-2">选择左侧比赛查看详情</div>
+                </div>
+
+                <!-- 详情内容（默认隐藏） -->
+                <div id="detail-info" class="hidden flex-1 flex flex-col">
+                    <!-- 1. 头部 -->
+                    <div class="flex justify-between items-start mb-8">
+                        <div>
+                            <div class="flex items-center gap-3 mb-4">
+                                <span id="d-status-badge" class="bg-[#ff6b00] text-black text-xs font-bold px-3 py-1 font-mono">● LIVE NOW</span>
+                                <span id="d-mode" class="text-[#ff6b00] font-mono text-xs tracking-widest">// JEOPARDY_MODE</span>
+                            </div>
+                            <h1 id="d-title" class="text-5xl md:text-6xl font-black text-white font-eng leading-none mb-4 drop-shadow-lg">
+                                --
+                            </h1>
+                        </div>
+                        <div class="text-right hidden md:block">
+                            <div id="d-id" class="text-6xl font-black text-white/10 font-eng select-none">--</div>
+                        </div>
+                    </div>
+
+                    <!-- 2. 信息网格 -->
+                    <div class="grid grid-cols-3 gap-8 border-t border-b border-white/10 py-8 mb-10 bg-black/20 backdrop-blur-sm">
+                        <div>
+                            <h4 class="text-xs font-mono text-gray-500 mb-1">TIME INFO</h4>
+                            <div id="d-time" class="text-2xl font-mono text-white font-bold">--</div>
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-mono text-gray-500 mb-1">PARTICIPANTS</h4>
+                            <div class="text-2xl font-mono text-white font-bold"><span id="d-teams">--</span> <span class="text-xs text-gray-600">Teams</span></div>
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-mono text-gray-500 mb-1">MODE</h4>
+                            <div id="d-mode-text" class="text-2xl font-mono text-white font-bold">--</div>
+                        </div>
+                    </div>
+
+                    <!-- 3. 详细描述 -->
+                    <div class="mb-12 max-w-3xl">
+                        <h3 class="text-sm font-bold text-white mb-4 font-eng tracking-wider">MISSION BRIEFING</h3>
+                        <div id="d-desc" class="text-gray-400 text-sm leading-7 font-mono mb-4">
+                            --
+                        </div>
+                    </div>
+
+                    <!-- 4. 底部行动栏 -->
+                    <div class="mt-auto">
+                        <div class="flex items-center gap-6">
+                            <button id="d-btn" class="btn-glitch">
+                                ACCESS SYSTEM &rarr;
+                            </button>
+                            <span id="d-btn-hint" class="text-xs font-mono text-green-500 animate-pulse">● GATEWAY OPEN</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // 解析 JWT Token
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // 登录检查
+        const token = localStorage.getItem('tg_token');
+        if (!token) {
+            window.location.href = '/login.html';
+        }
+        
+        // 验证 token 是否有效（重置密码后会失效）
+        async function validateToken() {
+            try {
+                const resp = await fetch('/api/profile', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (resp.status === 401) {
+                    localStorage.removeItem('tg_token');
+                    localStorage.removeItem('tg_must_change_password');
+                    window.location.href = '/login.html';
+                }
+            } catch (e) {
+                console.error('Token validation failed', e);
+            }
+        }
+        validateToken();
+        
+        // 检查是否需要强制修改密码（防绕过）
+        if (localStorage.getItem('tg_must_change_password') === 'true') {
+            alert('请先修改密码后再访问系统');
+            window.location.href = '/change-password.html';
+        }
+
+        // 显示用户名
+        const payload = parseJwt(token);
+        if (payload && payload.displayName) {
+            document.getElementById('username-display').textContent = payload.displayName;
+        }
+
+        // 退出登录
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('tg_token');
+            window.location.href = '/login.html';
+        });
+
+        // 比赛数据
+        let missions = [];
+        let currentMission = null;
+        let isSuper = false;
+
+        // 检查是否超级管理员
+        if (payload && payload.role === 'super') {
+            isSuper = true;
+        }
+
+        const listContainer = document.getElementById('mission-list');
+        const countDisplay = document.getElementById('mission-count');
+        const searchInput = document.getElementById('search-input');
+        const statusFilter = document.getElementById('status-filter');
+
+        // 初始化
+        async function init() {
+            await loadContests();
+            bindEvents();
+        }
+
+        // 从 API 加载比赛数据
+        async function loadContests() {
+            try {
+                // 如果用户已登录，传递token以便后端根据用户组织过滤比赛
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = 'Bearer ' + token;
+                }
+                const res = await fetch('/api/contests', { headers });
+                if (!res.ok) throw new Error('Failed to load');
+                const data = await res.json();
+                missions = (data.contests || []).map(c => ({
+                    id: c.id,
+                    title: c.name,
+                    mode: c.mode.toUpperCase(),
+                    status: c.status,
+                    statusText: getStatusText(c.status),
+                    coverImage: c.coverImage || '',
+                    startTime: c.startTime,
+                    endTime: c.endTime,
+                    teams: c.teamsCount || 0,
+                    desc: c.description || '暂无描述'
+                }));
+                renderList();
+            } catch (e) {
+                console.error('加载比赛失败:', e);
+                listContainer.innerHTML = '<div class="p-4 text-center text-gray-500 font-mono text-xs">加载失败</div>';
+            }
+        }
+
+        function getStatusText(status) {
+            switch(status) {
+                case 'running': return '● LIVE NOW';
+                case 'pending': return '○ UPCOMING';
+                case 'ended': return '● ENDED';
+                case 'paused': return '◐ PAUSED';
+                default: return status.toUpperCase();
+            }
+        }
+
+        // 绑定搜索和筛选事件
+        function bindEvents() {
+            searchInput.addEventListener('input', renderList);
+            statusFilter.addEventListener('change', renderList);
+        }
+
+        // 渲染左侧列表
+        function renderList() {
+            const keyword = searchInput.value.toLowerCase();
+            const status = statusFilter.value;
+
+            const filtered = missions.filter(m => {
+                const matchKeyword = m.title.toLowerCase().includes(keyword);
+                const matchStatus = !status || m.status === status;
+                return matchKeyword && matchStatus;
+            });
+
+            listContainer.innerHTML = '';
+            
+            if (filtered.length === 0) {
+                listContainer.innerHTML = '<div class="p-8 text-center text-gray-600 font-mono text-xs">NO MISSIONS FOUND</div>';
+                countDisplay.innerText = '0';
+                return;
+            }
+
+            filtered.forEach((m, index) => {
+                const item = document.createElement('div');
+                const isActive = currentMission && currentMission.id === m.id;
+                item.className = `mission-item ${isActive ? 'active' : ''}`;
+                item.dataset.id = m.id;
+                
+                let badgeClass = '';
+                if(m.status === 'running') badgeClass = 'text-[#ff6b00] bg-[#ff6b00] bg-opacity-10';
+                else if(m.status === 'pending') badgeClass = 'text-yellow-500 border border-yellow-900';
+                else if(m.status === 'paused') badgeClass = 'text-blue-400 border border-blue-900';
+                else badgeClass = 'text-gray-600 border border-[#333]';
+
+                item.innerHTML = `
+                    <div class="flex justify-between items-start mb-1">
+                        <span class="text-[10px] font-bold px-1 font-mono ${badgeClass}">${m.statusText}</span>
+                        <span class="text-[10px] font-mono text-gray-500">ID: ${String(m.id).padStart(2, '0')}</span>
+                    </div>
+                    <h3 class="mission-title text-lg font-bold ${isActive ? 'text-white' : 'text-gray-500'} font-eng mb-1">${m.title}</h3>
+                    <p class="text-xs text-gray-600 truncate">${m.mode} MODE</p>
+                `;
+
+                item.addEventListener('click', () => {
+                    document.querySelectorAll('.mission-item').forEach(el => {
+                        el.classList.remove('active');
+                        el.querySelector('.mission-title').classList.remove('text-white');
+                        el.querySelector('.mission-title').classList.add('text-gray-500');
+                    });
+                    item.classList.add('active');
+                    item.querySelector('.mission-title').classList.remove('text-gray-500');
+                    item.querySelector('.mission-title').classList.add('text-white');
+                    
+                    currentMission = m;
+                    renderDetail(m);
+                });
+
+                listContainer.appendChild(item);
+            });
+
+            countDisplay.innerText = filtered.length;
+        }
+
+        // 渲染右侧详情
+        function renderDetail(data) {
+            document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('detail-info').classList.remove('hidden');
+
+            const container = document.getElementById('detail-content');
+            container.classList.remove('detail-panel');
+            void container.offsetWidth;
+            container.classList.add('detail-panel');
+
+            const bgDefault = document.getElementById('bg-default');
+            const bgImage = document.getElementById('bg-image');
+
+            if (data.coverImage && data.coverImage.trim() !== '') {
+                bgDefault.classList.add('hidden');
+                bgImage.classList.remove('hidden');
+                bgImage.style.backgroundImage = `url('${data.coverImage}')`;
+            } else {
+                bgDefault.classList.remove('hidden');
+                bgImage.classList.add('hidden');
+            }
+
+            document.getElementById('d-title').innerHTML = data.title;
+            document.getElementById('d-id').innerText = String(data.id).padStart(2, '0');
+            document.getElementById('d-status-badge').innerText = data.statusText;
+            document.getElementById('d-mode').innerText = '// ' + data.mode + '_MODE';
+            document.getElementById('d-mode-text').innerText = data.mode;
+            document.getElementById('d-teams').innerText = data.teams;
+            document.getElementById('d-desc').innerHTML = data.desc || '暂无描述';
+
+            // 时间显示
+            let timeInfo = '--';
+            if (data.status === 'running') {
+                timeInfo = '进行中 → ' + data.endTime;
+            } else if (data.status === 'pending') {
+                timeInfo = '开始于 ' + data.startTime;
+            } else if (data.status === 'ended') {
+                timeInfo = '已结束 ' + data.endTime;
+            } else if (data.status === 'paused') {
+                timeInfo = '已暂停';
+            }
+            document.getElementById('d-time').innerText = timeInfo;
+
+            // 状态徽章颜色
+            const badge = document.getElementById('d-status-badge');
+            badge.className = 'text-xs font-bold px-3 py-1 font-mono ';
+            if(data.status === 'running') badge.className += 'bg-[#ff6b00] text-black';
+            else if(data.status === 'pending') badge.className += 'text-yellow-500 border border-yellow-900 bg-yellow-900 bg-opacity-10';
+            else if(data.status === 'paused') badge.className += 'text-blue-400 border border-blue-900 bg-blue-900 bg-opacity-10';
+            else badge.className += 'text-gray-500 border border-[#333]';
+
+            // 按钮状态
+            const btn = document.getElementById('d-btn');
+            const hint = document.getElementById('d-btn-hint');
+            
+            if (data.status === 'running') {
+                btn.innerHTML = 'ACCESS SYSTEM &rarr;';
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                hint.className = 'text-xs font-mono text-green-500 animate-pulse';
+                hint.innerText = '● GATEWAY OPEN';
+            } else if (data.status === 'pending') {
+                btn.innerHTML = 'WAITING...';
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                hint.className = 'text-xs font-mono text-yellow-500';
+                hint.innerText = '○ LOCKED';
+            } else if (data.status === 'paused') {
+                btn.innerHTML = 'PAUSED';
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                hint.className = 'text-xs font-mono text-blue-400';
+                hint.innerText = '◐ SUSPENDED';
+            } else {
+                btn.innerHTML = 'REPLAY MISSION &rarr;';
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                hint.className = 'text-xs font-mono text-gray-500';
+                hint.innerText = '● ARCHIVED';
+            }
+        }
+
+        // 启动
+        init();
+
+        // 自定义弹窗函数
+        function showToast(title, message, type = 'warning') {
+            const iconMap = {
+                warning: '⚠️',
+                error: '❌',
+                info: 'ℹ️'
+            };
+            document.getElementById('toast-icon').className = 'toast-icon ' + type;
+            document.getElementById('toast-icon').textContent = iconMap[type] || '⚠️';
+            document.getElementById('toast-title').textContent = title;
+            document.getElementById('toast-message').textContent = message;
+            document.getElementById('toast-overlay').classList.remove('hidden');
+            document.getElementById('toast-modal').classList.remove('hidden');
+        }
+
+        function hideToast() {
+            document.getElementById('toast-overlay').classList.add('hidden');
+            document.getElementById('toast-modal').classList.add('hidden');
+        }
+
+        // ACCESS SYSTEM 按钮点击事件
+        document.getElementById('d-btn').addEventListener('click', async () => {
+            if (!currentMission) return;
+            
+            // 超级管理员可以直接进入（不需要报名）
+            if (isSuper) {
+                const page = currentMission.mode === 'awd-f' ? 'contest-challenges-awdf.html' : 'contest-challenges.html';
+                window.location.href = `/${page}?id=${currentMission.id}`;
+                return;
+            }
+            
+            // 检查队伍审核状态
+            try {
+                const res = await fetch(`/api/contests/${currentMission.id}/team-status`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                
+                if (!res.ok) {
+                    showToast('检查失败', '检查状态失败，请稍后重试', 'error');
+                    return;
+                }
+                
+                const data = await res.json();
+                
+                if (!data.canEnter) {
+                    // 不能进入，显示提示信息
+                    showToast('无法进入', data.message || '队伍审核未通过', 'warning');
+                    return;
+                }
+                
+                // 可以进入（根据比赛模式跳转到对应页面）
+                const page = currentMission.mode === 'awd-f' ? 'contest-challenges-awdf.html' : 'contest-challenges.html';
+                window.location.href = `/${page}?id=${currentMission.id}`;
+            } catch (e) {
+                console.error('检查队伍状态失败:', e);
+                showToast('检查失败', '检查状态失败，请稍后重试', 'error');
+            }
+        });
+
+    </script>
+
+    <!-- 自定义弹窗 -->
+    <div id="toast-overlay" class="toast-overlay hidden" onclick="hideToast()"></div>
+    <div id="toast-modal" class="toast-modal hidden">
+        <div id="toast-icon" class="toast-icon warning">⚠️</div>
+        <div id="toast-title" class="toast-title">提示</div>
+        <div id="toast-message" class="toast-message">消息内容</div>
+        <button class="toast-btn" onclick="hideToast()">确定</button>
+    </div>
+
+</body>
+</html>

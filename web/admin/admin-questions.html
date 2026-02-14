@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="author" content="tan91">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/fonts.css">
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --bg-panel: #1e1e1e;
+            --border-color: #333;
+            --accent: #ff6b00;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --info: #3b82f6;
+            --text-main: #e0e0e0;
+            --text-dim: #737373;
+        }
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Noto Sans SC', sans-serif; }
+        .font-eng { font-family: 'Chakra Petch', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .sidebar-item { border-left: 2px solid transparent; transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { background: rgba(255, 107, 0, 0.05); border-left-color: var(--accent); color: white; }
+        .sidebar-item.active .icon { color: var(--accent); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+
+        .admin-table { width: 100%; border-collapse: collapse; }
+        .admin-table th, .admin-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #333; }
+        .admin-table th { background: #1a1a1a; font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.1em; color: #888; }
+        .admin-table tr:hover { background: rgba(255, 107, 0, 0.03); }
+
+        .btn-action { padding: 6px 12px; font-size: 11px; font-family: 'JetBrains Mono', monospace; border: 1px solid; transition: all 0.2s; cursor: pointer; }
+        .btn-edit { border-color: #666; color: #888; }
+        .btn-edit:hover { border-color: var(--accent); color: var(--accent); }
+        .btn-delete { border-color: #666; color: #888; }
+        .btn-delete:hover { border-color: var(--danger); color: var(--danger); }
+
+        .type-badge { padding: 4px 8px; font-size: 10px; font-family: 'JetBrains Mono', monospace; border: 1px solid; }
+        .type-static-attachment { background: rgba(59, 130, 246, 0.1); color: var(--info); border-color: rgba(59, 130, 246, 0.3); }
+        .type-static-container { background: rgba(34, 197, 94, 0.1); color: var(--success); border-color: rgba(34, 197, 94, 0.3); }
+        .type-dynamic-attachment { background: rgba(168, 85, 247, 0.1); color: #a855f7; border-color: rgba(168, 85, 247, 0.3); }
+        .type-dynamic-container { background: rgba(255, 107, 0, 0.1); color: var(--accent); border-color: rgba(255, 107, 0, 0.3); }
+
+        .difficulty-easy { color: var(--success); }
+        .difficulty-medium { color: #eab308; }
+        .difficulty-hard { color: var(--danger); }
+
+        .filter-btn { padding: 6px 16px; font-size: 11px; font-family: 'JetBrains Mono', monospace; border: 1px solid #333; color: #888; transition: all 0.2s; cursor: pointer; }
+        .filter-btn:hover { border-color: #666; color: white; }
+        .filter-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(255,107,0,0.1); }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden selection:bg-[#ff6b00] selection:text-black">
+
+    <!-- 左侧侧边栏 -->
+    <aside class="w-48 bg-[#161616] border-r border-[#333] flex flex-col z-20 shadow-xl">
+        <div class="h-16 flex items-center px-6 border-b border-[#333]">
+            <div class="bg-[#ff6b00] text-black font-black text-xl px-2 py-0.5 font-eng tracking-tighter mr-3">TG</div>
+            <span class="font-bold text-gray-300 tracking-wider text-sm">管理中枢</span>
+        </div>
+        <nav class="flex-1 py-6 space-y-1 font-mono text-xs overflow-y-auto">
+            <a href="/admin/admin.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⌂</span> 概览</a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-4">赛事核心</p>
+            <a href="/admin/admin-contests.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚑</span> 比赛管理</a>
+            <a href="/admin/admin-question-bank.html" class="sidebar-item active flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">☷</span> 题库</a>
+            <a href="/admin/admin-users.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">웃</span> 用户管理</a>
+            <a href="/admin/admin-teams.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">◈</span> 队伍管理</a>
+            <a href="/admin/admin-organizations.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🏢</span> 组织管理</a>
+            <a href="/admin/admin-data-import.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">📥</span> 数据导入</a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-6">运维监控</p>
+            <a href="/admin/admin-docker.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🐳</span> docker实例管理</a>
+            <a href="/admin/admin-anti-cheat.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🛡️</span> 防作弊系统</a>
+            <a href="/admin/admin-logs.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚠</span> 系统日志</a>
+            <a href="/admin/admin-settings.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚙</span> 系统设置</a>
+        </nav>
+        <div class="p-4 border-t border-[#333]">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-[#333] rounded-full flex items-center justify-center text-[#ff6b00] font-bold">A</div>
+                <div><p class="text-xs text-white font-bold">超级管理员</p><p class="text-[10px] text-green-500">● 连接稳定</p></div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 右侧内容区 -->
+    <div class="flex-1 flex flex-col min-w-0 bg-[#121212]">
+        <header class="h-16 bg-[#161616] border-b border-[#333] flex items-center justify-between px-8 z-10">
+            <div class="flex items-center gap-4 text-xs font-mono">
+                <span class="text-gray-500">位置:</span>
+                <a href="/admin/admin-question-bank.html" class="text-[#ff6b00] hover:text-white">题库</a>
+                <span class="text-gray-600">/</span>
+                <span class="text-white">题目列表</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="/home.html" class="font-mono text-xs font-bold border border-gray-500 text-gray-400 px-4 py-2 hover:border-white hover:text-white transition-all uppercase tracking-wider">← 返回前台</a>
+                <button id="logout-btn" class="font-mono text-xs font-bold border border-[#ff6b00] text-[#ff6b00] px-4 py-2 hover:bg-[#ff6b00] hover:text-black transition-all uppercase tracking-wider">Logout_离线</button>
+            </div>
+        </header>
+
+        <main class="flex-1 flex flex-col pt-6 px-8 relative overflow-hidden">
+            <div class="absolute inset-0 z-0 opacity-10 pointer-events-none" style="background-image: radial-gradient(#333 1px, transparent 1px); background-size: 20px 20px;"></div>
+            
+            <div class="relative z-10 w-full max-w-[1600px] mx-auto flex-1 flex flex-col">
+                
+                <!-- 操作栏 -->
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-4">
+                        <a href="/admin/admin-question-bank.html" class="text-gray-500 hover:text-white font-mono text-sm">← 返回题库</a>
+                        <h1 class="text-xl font-bold font-eng text-white">题库管理</h1>
+                        <span class="text-gray-500 font-mono text-sm" id="total-count"></span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="downloadTemplate()" class="border border-gray-500 text-gray-400 font-bold px-4 py-2.5 font-mono text-sm hover:bg-gray-700 hover:text-white transition-all">
+                            ⬇ 下载模板
+                        </button>
+                        <button onclick="batchTestImages()" class="border border-[#3b82f6] text-[#3b82f6] font-bold px-4 py-2.5 font-mono text-sm hover:bg-[#3b82f6] hover:text-black transition-all">
+                            🔍 批量测试镜像
+                        </button>
+                        <button onclick="document.getElementById('import-file').click()" class="border border-[#22c55e] text-[#22c55e] font-bold px-4 py-2.5 font-mono text-sm hover:bg-[#22c55e] hover:text-black transition-all">
+                            📥 导入题库
+                        </button>
+                        <input type="file" id="import-file" accept=".xlsx,.xls" style="display:none" onchange="importQuestions(this)">
+                        <button onclick="location.href='/admin/admin-question-edit.html'" class="bg-[#ff6b00] text-black font-bold px-6 py-3 font-mono text-sm hover:bg-white transition-all" style="clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%, 0 8px);">
+                            + 新增题目
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 筛选栏 -->
+                <div class="flex items-center gap-4 mb-6 flex-wrap">
+                    <span class="text-xs text-gray-500 font-mono">筛选:</span>
+                    <div class="flex gap-2">
+                        <button class="filter-btn active" data-filter="all">全部</button>
+                        <button class="filter-btn" data-filter="static_attachment">静态附件</button>
+                        <button class="filter-btn" data-filter="static_container">静态容器</button>
+                        <button class="filter-btn" data-filter="dynamic_attachment">动态附件</button>
+                        <button class="filter-btn" data-filter="dynamic_container">动态容器</button>
+                    </div>
+                    <select id="filter-category" class="bg-[#111] border border-[#333] text-white px-3 py-2 text-xs font-mono outline-none">
+                        <option value="">全部类别</option>
+                    </select>
+                </div>
+
+                <!-- 表格 -->
+                <div class="bg-[#1a1a1a] border border-[#333] overflow-hidden">
+                    <div style="max-height: 700px; overflow-y: auto;">
+                    <table class="admin-table w-full">
+                        <thead>
+                            <tr>
+                                <th class="whitespace-nowrap">ID</th>
+                                <th class="whitespace-nowrap">题目标题</th>
+                                <th class="whitespace-nowrap">类型</th>
+                                <th class="whitespace-nowrap">类别</th>
+                                <th class="whitespace-nowrap">难度</th>
+                                <th class="whitespace-nowrap">端口</th>
+                                <th class="whitespace-nowrap">镜像状态</th>
+                                <th class="whitespace-nowrap">状态</th>
+                                <th class="whitespace-nowrap">创建时间</th>
+                                <th class="whitespace-nowrap">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="question-list">
+                            <tr><td colspan="10" class="text-center text-gray-500 py-8">加载中...</td></tr>
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <footer class="py-1 border-t border-[#333] flex items-center justify-center flex-shrink-0 mt-auto">
+                <div class="flex items-center justify-center gap-4 text-xs flex-wrap">
+                    <div class="flex items-center gap-1">
+                        <div class="bg-[#ff6b00] text-black font-black px-1.5 py-0.5 font-eng tracking-tighter">TG</div>
+                        <span class="text-gray-500">天格后台管理系统</span>
+                    </div>
+                    <span class="text-white font-mono">Copyright © 2021-present tan91. All Rights Reserved.</span>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <!-- 导入结果弹窗 -->
+    <div id="import-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50" style="display:none">
+        <div class="bg-[#1a1a1a] border border-[#333] w-[600px] max-h-[80vh] overflow-hidden flex flex-col">
+            <div class="p-4 border-b border-[#333] flex items-center justify-between">
+                <h3 class="font-bold text-white font-eng">📥 导入结果</h3>
+                <button onclick="closeImportModal()" class="text-gray-500 hover:text-white">✕</button>
+            </div>
+            <div class="p-4 flex-1 overflow-y-auto">
+                <div id="import-summary" class="mb-4 p-3 bg-[#111] border border-[#333] font-mono text-sm"></div>
+                <div id="import-details" class="space-y-2 text-sm font-mono"></div>
+            </div>
+            <div class="p-4 border-t border-[#333]">
+                <button onclick="closeImportModal()" class="bg-[#ff6b00] text-black font-bold px-6 py-2 font-mono text-sm hover:bg-white transition-all">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 镜像测试结果弹窗 -->
+    <div id="test-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50" style="display:none">
+        <div class="bg-[#1a1a1a] border border-[#333] w-[700px] max-h-[80vh] overflow-hidden flex flex-col">
+            <div class="p-4 border-b border-[#333] flex items-center justify-between">
+                <h3 class="font-bold text-white font-eng">🔍 镜像测试结果</h3>
+                <button onclick="closeTestModal()" class="text-gray-500 hover:text-white">✕</button>
+            </div>
+            <div class="p-4 flex-1 overflow-y-auto">
+                <div id="test-summary" class="mb-4 p-3 bg-[#111] border border-[#333] font-mono text-sm"></div>
+                <div id="test-details" class="space-y-2 text-sm font-mono max-h-[400px] overflow-y-auto"></div>
+            </div>
+            <div class="p-4 border-t border-[#333]">
+                <button onclick="closeTestModal()" class="bg-[#ff6b00] text-black font-bold px-6 py-2 font-mono text-sm hover:bg-white transition-all">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载中遮罩 -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50" style="display:none">
+        <div class="text-center">
+            <div class="text-4xl mb-4 animate-spin">⏳</div>
+            <div id="loading-text" class="text-white font-mono">处理中...</div>
+        </div>
+    </div>
+
+    <script>
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) { return null; }
+        }
+
+        const token = localStorage.getItem('tg_token');
+        if (!token) {
+            window.location.href = '/login.html';
+        } else {
+            const payload = parseJwt(token);
+            if (!payload || payload.role !== 'super') {
+                alert('权限不足');
+                window.location.href = '/home.html';
+            }
+        }
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('tg_token');
+            window.location.href = '/login.html';
+        });
+
+        let questions = [];
+        let categories = [];
+        let currentFilter = 'all';
+        let currentCategory = '';
+
+        const typeLabels = {
+            'static_attachment': '静态附件',
+            'static_container': '静态容器',
+            'dynamic_attachment': '动态附件',
+            'dynamic_container': '动态容器'
+        };
+
+        const difficultyLabels = {
+            'easy': 'EASY',
+            'medium': 'MEDIUM',
+            'hard': 'HARD'
+        };
+
+        // 根据类别ID获取发光颜色
+        function getCategoryColor(categoryId) {
+            const cat = categories.find(c => c.id === categoryId);
+            return cat && cat.glowColor ? cat.glowColor : '#ff6b00';
+        }
+
+        async function loadData() {
+            try {
+                const [questRes, catRes] = await Promise.all([
+                    fetch('/api/admin/questions', { headers: { 'Authorization': 'Bearer ' + token } }),
+                    fetch('/api/admin/categories', { headers: { 'Authorization': 'Bearer ' + token } })
+                ]);
+                
+                if (questRes.ok) questions = await questRes.json();
+                if (catRes.ok) {
+                    categories = await catRes.json();
+                    renderCategoryFilter();
+                }
+                
+                renderQuestions();
+            } catch (e) {
+                console.error(e);
+                document.getElementById('question-list').innerHTML = '<tr><td colspan="9" class="text-center text-red-500 py-8">加载失败</td></tr>';
+            }
+        }
+
+        function renderCategoryFilter() {
+            const select = document.getElementById('filter-category');
+            select.innerHTML = '<option value="">全部类别</option>' + 
+                categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        }
+
+        function renderQuestions() {
+            let filtered = questions;
+            
+            if (currentFilter !== 'all') {
+                filtered = filtered.filter(q => q.type === currentFilter);
+            }
+            if (currentCategory) {
+                filtered = filtered.filter(q => q.categoryId == currentCategory);
+            }
+            
+            document.getElementById('total-count').textContent = `(${filtered.length}/${questions.length})`;
+            
+            const tbody = document.getElementById('question-list');
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center text-gray-500 py-8">暂无数据</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(q => {
+                // 解析端口显示
+                let portsDisplay = '--';
+                if (q.ports) {
+                    try {
+                        const portArr = JSON.parse(q.ports);
+                        portsDisplay = portArr.join(', ');
+                    } catch (e) {
+                        portsDisplay = q.ports; // 如果解析失败则直接显示
+                    }
+                }
+                
+                // 镜像状态显示
+                let imageStatus = '--';
+                if (q.type === 'static_container' || q.type === 'dynamic_container') {
+                    if (q.imageStatus === 'exists') {
+                        imageStatus = '<span class="text-green-400">✓ 存在</span>';
+                    } else if (q.imageStatus === 'not_found') {
+                        imageStatus = '<span class="text-red-400">✗ 不存在</span>';
+                    } else {
+                        imageStatus = '<span class="text-gray-500">未测试</span>';
+                    }
+                }
+                
+                return `
+                <tr>
+                    <td class="font-mono text-gray-500 whitespace-nowrap">${q.id}</td>
+                    <td class="whitespace-nowrap">
+                        <div class="font-bold text-white">${q.title}</div>
+                    </td>
+                    <td class="whitespace-nowrap"><span class="type-badge type-${q.type.replace('_', '-')}">${typeLabels[q.type]}</span></td>
+                    <td class="whitespace-nowrap"><span class="font-mono text-xs" style="color: ${getCategoryColor(q.categoryId)};">${q.categoryName || '--'}</span></td>
+                    <td class="whitespace-nowrap"><span class="font-mono text-xs">${q.difficulty || '--'}⭐</span></td>
+                    <td class="whitespace-nowrap font-mono text-xs text-gray-400">${(() => { try { return JSON.parse(q.ports || '[]').join(', ') || '--'; } catch(e) { return q.ports || '--'; } })()}</td>
+                    <td class="whitespace-nowrap text-xs">${imageStatus}</td>
+                    <td class="whitespace-nowrap">
+                        ${q.needsEdit ? '<span class="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 text-xs font-mono rounded">待编辑</span>' : '<span class="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs font-mono rounded">完成</span>'}
+                    </td>
+                    <td class="whitespace-nowrap font-mono text-xs text-gray-500">${new Date(q.createdAt).toLocaleDateString()}</td>
+                    <td class="whitespace-nowrap">
+                        <div class="flex gap-2">
+                            <button onclick="editQuestion(${q.id})" class="btn-action btn-edit">编辑</button>
+                            <button onclick="deleteQuestion(${q.id}, '${q.title}')" class="btn-action btn-delete">删除</button>
+                        </div>
+                    </td>
+                </tr>
+            `}).join('');
+        }
+
+        function editQuestion(id) {
+            window.location.href = `/admin/admin-question-edit.html?id=${id}`;
+        }
+
+        async function deleteQuestion(id, title) {
+            if (!confirm(`确定要删除题目"${title}"吗？`)) return;
+            
+            try {
+                const res = await fetch(`/api/admin/questions/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                
+                if (!res.ok) {
+                    const data = await res.json();
+                    if (data.error === 'QUESTION_IN_USE') {
+                        alert(`该题目正在被${data.count}个比赛使用，无法删除`);
+                    } else {
+                        alert('删除失败: ' + data.error);
+                    }
+                    return;
+                }
+                
+                loadData();
+            } catch (e) {
+                console.error(e);
+                alert('删除失败');
+            }
+        }
+
+        // 筛选按钮事件
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                renderQuestions();
+            });
+        });
+
+        document.getElementById('filter-category').addEventListener('change', (e) => {
+            currentCategory = e.target.value;
+            renderQuestions();
+        });
+
+        loadData();
+
+        // 导入题库
+        async function importQuestions(input) {
+            if (!input.files || !input.files[0]) return;
+            
+            const file = input.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            showLoading('正在导入题库...');
+            
+            try {
+                const res = await fetch('/api/admin/questions/import', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body: formData
+                });
+                
+                const data = await res.json();
+                hideLoading();
+                
+                if (!res.ok) {
+                    alert('导入失败: ' + (data.error || '未知错误'));
+                    return;
+                }
+                
+                // 显示导入结果
+                showImportResult(data);
+                loadData();
+            } catch (e) {
+                hideLoading();
+                console.error(e);
+                alert('导入失败');
+            } finally {
+                input.value = '';
+            }
+        }
+
+        function showImportResult(data) {
+            document.getElementById('import-summary').innerHTML = `
+                <span class="text-[#22c55e]">✓ 成功: ${data.success || 0}</span>
+                <span class="mx-4">|</span>
+                <span class="text-[#ef4444]">✗ 失败: ${data.failed || 0}</span>
+                <span class="mx-4">|</span>
+                <span class="text-gray-400">总计: ${data.total || 0}</span>
+            `;
+            
+            const details = data.details || [];
+            document.getElementById('import-details').innerHTML = details.map((d, i) => `
+                <div class="p-2 border border-[#333] ${d.success ? 'bg-green-900/20' : 'bg-red-900/20'}">
+                    <span class="${d.success ? 'text-[#22c55e]' : 'text-[#ef4444]'}">
+                        ${d.success ? '✓' : '✗'}
+                    </span>
+                    <span class="text-gray-400 ml-2">第${d.row || i+1}行:</span>
+                    <span class="text-white ml-2">${d.title || '--'}</span>
+                    ${!d.success ? `<div class="text-[#ef4444] text-xs mt-1 ml-6">${d.error || ''}</div>` : ''}
+                </div>
+            `).join('');
+            
+            document.getElementById('import-modal').style.display = 'flex';
+        }
+
+        function closeImportModal() {
+            document.getElementById('import-modal').style.display = 'none';
+        }
+
+        // 批量测试镜像
+        async function batchTestImages() {
+            // 获取所有容器类型的题目
+            const containerQuestions = questions.filter(q => 
+                q.type === 'static_container' || q.type === 'dynamic_container'
+            );
+            
+            if (containerQuestions.length === 0) {
+                alert('没有需要测试的容器题目');
+                return;
+            }
+            
+            if (!confirm(`将测试 ${containerQuestions.length} 个容器题目的镜像，可能需要较长时间，是否继续？`)) {
+                return;
+            }
+            
+            showLoading(`正在测试 ${containerQuestions.length} 个镜像...`);
+            
+            try {
+                const res = await fetch('/api/admin/questions/batch-test-images', {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                });
+                
+                const data = await res.json();
+                hideLoading();
+                
+                if (!res.ok) {
+                    alert('测试失败: ' + (data.error || '未知错误'));
+                    return;
+                }
+                
+                // 更新题目的镜像状态
+                const results = data.results || [];
+                results.forEach(r => {
+                    const q = questions.find(q => Number(q.id) === Number(r.questionId));
+                    if (q) {
+                        q.imageStatus = r.exists ? 'exists' : 'not_found';
+                    }
+                });
+                
+                // 重新加载数据（从数据库获取最新状态）
+                await loadData();
+                
+                // 显示结果弹窗
+                showTestResult(data);
+            } catch (e) {
+                hideLoading();
+                console.error(e);
+                alert('测试失败');
+            }
+        }
+
+        function showTestResult(data) {
+            document.getElementById('test-summary').innerHTML = `
+                <span class="text-[#22c55e]">✓ 存在: ${data.exists || 0}</span>
+                <span class="mx-4">|</span>
+                <span class="text-[#ef4444]">✗ 不存在: ${data.notFound || 0}</span>
+                <span class="mx-4">|</span>
+                <span class="text-gray-400">总计: ${data.total || 0}</span>
+            `;
+            
+            const results = data.results || [];
+            // 先显示不存在的，再显示存在的
+            const sorted = results.sort((a, b) => (a.exists === b.exists) ? 0 : a.exists ? 1 : -1);
+            
+            document.getElementById('test-details').innerHTML = sorted.map(r => `
+                <div class="p-2 border border-[#333] ${r.exists ? 'bg-green-900/20' : 'bg-red-900/20'}">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="${r.exists ? 'text-[#22c55e]' : 'text-[#ef4444]'}">
+                                ${r.exists ? '✓' : '✗'}
+                            </span>
+                            <span class="text-white ml-2">${r.title || '--'}</span>
+                            <span class="text-gray-500 ml-2">#${r.questionId}</span>
+                        </div>
+                        <span class="text-gray-400 text-xs">${r.exists ? '镜像存在' : '镜像不存在'}</span>
+                    </div>
+                    <div class="text-gray-500 text-xs mt-1 ml-6 truncate">${r.image || '--'}</div>
+                    ${r.error ? `<div class="text-[#ef4444] text-xs mt-1 ml-6">${r.error}</div>` : ''}
+                </div>
+            `).join('');
+            
+            document.getElementById('test-modal').style.display = 'flex';
+        }
+
+        function closeTestModal() {
+            document.getElementById('test-modal').style.display = 'none';
+        }
+
+        function showLoading(text) {
+            document.getElementById('loading-text').textContent = text || '处理中...';
+            document.getElementById('loading-overlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-overlay').style.display = 'none';
+        }
+
+        // 下载导入模板
+        async function downloadTemplate() {
+            try {
+                const res = await fetch('/api/admin/questions/template', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) {
+                    alert('下载失败');
+                    return;
+                }
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = '题库导入模板.xlsx';
+                a.click();
+                window.URL.revokeObjectURL(url);
+            } catch (e) {
+                console.error(e);
+                alert('下载失败');
+            }
+        }
+    </script>
+
+</body>
+</html>

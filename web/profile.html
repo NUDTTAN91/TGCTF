@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="author" content="tan91">
+    <title>档案库 - TG</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'JetBrains Mono';
+            src: url('admin/fonts/JetBrainsMono-Regular.woff2') format('woff2');
+            font-weight: 400;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'JetBrains Mono';
+            src: url('admin/fonts/JetBrainsMono-Bold.woff2') format('woff2');
+            font-weight: 700;
+            font-style: normal;
+        }
+        :root {
+            --bg-dark: #191919;
+            --bg-panel: #262626;
+            --accent: #ff6b00;
+            --text-main: #e0e0e0;
+            --text-dim: #737373;
+        }
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Noto Sans SC', sans-serif; }
+        .font-eng { font-family: 'Chakra Petch', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        
+        .tactical-border { position: relative; border: 1px solid #404040; background: var(--bg-panel); transition: all 0.3s ease; }
+        .tactical-border::before, .tactical-border::after { content: ''; position: absolute; width: 8px; height: 8px; border-color: var(--accent); border-style: solid; transition: all 0.3s ease; }
+        .tactical-border::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+        .tactical-border::after { top: -1px; right: -1px; border-width: 2px 2px 0 0; }
+
+        .scan-line { width: 100%; height: 3px; background: linear-gradient(to right, transparent, var(--accent), transparent); position: fixed; top: 0; left: 0; z-index: 9999; opacity: 0.2; animation: scan 6s linear infinite; pointer-events: none; }
+        @keyframes scan { 0% { top: -10%; } 100% { top: 110%; } }
+
+        .input-field {
+            background: #1a1a1a;
+            border: 1px solid #404040;
+            color: #fff;
+            padding: 0.75rem 1rem;
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .input-field:disabled {
+            background: #262626;
+            color: #737373;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #000;
+            font-weight: bold;
+            padding: 0.75rem 2rem;
+            transition: all 0.2s;
+        }
+        .btn-primary:hover {
+            background: #fff;
+        }
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid #404040;
+            color: #fff;
+            padding: 0.75rem 2rem;
+            transition: all 0.2s;
+        }
+        .btn-secondary:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* 侧边栏菜单项 */
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 2px solid transparent;
+        }
+        .sidebar-item:hover {
+            background: rgba(255, 107, 0, 0.1);
+        }
+        .sidebar-item.active {
+            background: rgba(255, 107, 0, 0.15);
+            border-left-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* 内容面板 */
+        .content-panel {
+            display: none;
+        }
+        .content-panel.active {
+            display: block;
+        }
+
+        /* 自定义弹窗 */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: var(--bg-panel);
+            border: 1px solid #404040;
+            padding: 2rem;
+            max-width: 400px;
+            width: 90%;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col relative overflow-x-hidden selection:bg-[#ff6b00] selection:text-black">
+
+    <div class="scan-line"></div>
+
+    <header class="border-b border-[#333] bg-[#191919] z-50 sticky top-0 backdrop-blur-sm bg-opacity-95">
+        <div class="container mx-auto px-4 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-6">
+                <a href="/home.html" class="bg-[#ff6b00] text-black font-black text-2xl px-3 py-1 font-eng tracking-tighter hover:bg-white transition-colors cursor-pointer">TG</a>
+                <div class="hidden md:block h-6 w-[1px] bg-[#444]"></div>
+                <div class="hidden md:block text-xs text-[#737373] font-mono leading-tight">
+                    <p>档案库</p>
+                    <p>USER PROFILE</p>
+                </div>
+            </div>
+            <nav class="hidden md:flex items-center gap-8 font-bold text-sm tracking-widest text-gray-400">
+                <a href="/home.html" class="hover:text-[#ff6b00] transition-colors">首页</a>
+                <a href="/contests.html" class="hover:text-[#ff6b00] transition-colors">靶场中心</a>
+                <a href="/profile.html" class="text-[#ff6b00]">档案库</a>
+                <a href="/admin/admin.html" id="admin-entry" class="hidden bg-[#ff6b00] text-black px-3 py-1 hover:bg-white transition-colors">管理后台</a>
+            </nav>
+            <div>
+                <button class="font-mono text-xs font-bold border border-[#ff6b00] text-[#ff6b00] px-4 py-2 hover:bg-[#ff6b00] hover:text-black transition-all uppercase tracking-wider" id="logout-btn">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow flex">
+        <!-- 左侧边栏 -->
+        <aside class="w-64 bg-[#1c1c1c] border-r border-[#333] flex-shrink-0">
+            <!-- 用户卡片 -->
+            <div class="p-6 border-b border-[#333]">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 bg-[#333] flex items-center justify-center text-[#ff6b00] font-black text-2xl font-mono rounded-full overflow-hidden" id="avatar">
+                        <span id="avatar-text">-</span>
+                        <img id="avatar-img" class="w-full h-full object-cover hidden" alt="avatar">
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-white font-bold text-lg truncate" id="sidebar-name">加载中...</div>
+                        <div class="text-gray-500 text-xs font-mono truncate" id="sidebar-username">@---</div>
+                    </div>
+                </div>
+                <div class="mt-4 text-xs text-gray-500 font-mono space-y-1">
+                    <div class="flex justify-between">
+                        <span>角色</span>
+                        <span class="text-gray-400" id="sidebar-role">-</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>队伍</span>
+                        <span class="text-[#ff6b00]" id="sidebar-team">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 导航菜单 -->
+            <nav class="py-4">
+                <div class="px-4 mb-2 text-xs text-gray-600 font-mono uppercase tracking-wider">档案管理</div>
+                <div class="sidebar-item active" data-panel="profile">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    <span>个人信息</span>
+                </div>
+                <div class="sidebar-item" data-panel="password">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                    <span>修改密码</span>
+                </div>
+                <div class="sidebar-item" data-panel="team">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <span>我的队伍</span>
+                </div>
+                <div class="sidebar-item" data-panel="avatar">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <span>修改头像</span>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- 右侧内容区 -->
+        <div class="flex-1 p-8 overflow-auto">
+            <!-- 个人信息面板 -->
+            <div id="panel-profile" class="content-panel active">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-1 h-6 bg-[#ff6b00]"></div>
+                    <h2 class="text-2xl font-bold text-white">个人信息</h2>
+                    <span class="text-[#ff6b00] text-sm font-mono">// PROFILE</span>
+                </div>
+                <div class="tactical-border p-6 max-w-2xl">
+                    <div class="space-y-5">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-gray-400 text-sm mb-2 font-mono">用户名</label>
+                                <input type="text" id="username" class="input-field w-full" disabled>
+                            </div>
+                            <div>
+                                <label class="block text-gray-400 text-sm mb-2 font-mono">显示名称</label>
+                                <input type="text" id="displayName" class="input-field w-full" disabled>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-gray-400 text-sm mb-2 font-mono">邮箱</label>
+                                <input type="email" id="email" class="input-field w-full" disabled>
+                            </div>
+                            <div>
+                                <label class="block text-gray-400 text-sm mb-2 font-mono">角色</label>
+                                <input type="text" id="role" class="input-field w-full" disabled>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 text-sm mb-2 font-mono">所属组织</label>
+                            <input type="text" id="organization" class="input-field w-full" disabled>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 text-sm text-gray-500 font-mono pt-2 border-t border-[#333]">
+                            <div>上次登录: <span id="lastLogin" class="text-gray-400">-</span></div>
+                            <div>注册时间: <span id="createdAt" class="text-gray-400">-</span></div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- 修改密码面板 -->
+            <div id="panel-password" class="content-panel">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-1 h-6 bg-[#ff6b00]"></div>
+                    <h2 class="text-2xl font-bold text-white">修改密码</h2>
+                    <span class="text-[#ff6b00] text-sm font-mono">// SECURITY</span>
+                </div>
+                <div class="tactical-border p-6 max-w-md">
+                    <div class="space-y-5">
+                        <div>
+                            <label class="block text-gray-400 text-sm mb-2 font-mono">当前密码</label>
+                            <input type="password" id="oldPassword" class="input-field w-full" placeholder="输入当前密码">
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 text-sm mb-2 font-mono">新密码</label>
+                            <input type="password" id="newPassword" class="input-field w-full" placeholder="至少6位">
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 text-sm mb-2 font-mono">确认新密码</label>
+                            <input type="password" id="confirmPassword" class="input-field w-full" placeholder="再次输入新密码">
+                        </div>
+                        <div class="pt-2">
+                            <button onclick="changePassword()" class="btn-primary">修改密码</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 我的队伍面板 -->
+            <div id="panel-team" class="content-panel">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-1 h-6 bg-[#ff6b00]"></div>
+                    <h2 class="text-2xl font-bold text-white">我的队伍</h2>
+                    <span class="text-[#ff6b00] text-sm font-mono">// TEAM</span>
+                </div>
+                <div id="team-info">
+                    <div class="text-gray-500 font-mono">加载中...</div>
+                </div>
+            </div>
+
+            <!-- 修改头像面板 -->
+            <div id="panel-avatar" class="content-panel">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-1 h-6 bg-[#ff6b00]"></div>
+                    <h2 class="text-2xl font-bold text-white">修改头像</h2>
+                    <span class="text-[#ff6b00] text-sm font-mono">// AVATAR</span>
+                </div>
+                <div class="tactical-border p-6 max-w-md">
+                    <div class="space-y-6">
+                        <!-- 当前头像预览 -->
+                        <div class="flex flex-col items-center">
+                            <div class="w-32 h-32 bg-[#333] rounded-full overflow-hidden flex items-center justify-center border-2 border-[#444]" id="avatar-preview-container">
+                                <span id="avatar-preview-text" class="text-[#ff6b00] font-black text-5xl font-mono">-</span>
+                                <img id="avatar-preview-img" class="w-full h-full object-cover hidden" alt="avatar preview">
+                            </div>
+                            <p class="text-gray-500 text-sm font-mono mt-3">当前头像</p>
+                        </div>
+
+                        <!-- 上传区域 -->
+                        <div>
+                            <label class="block text-gray-400 text-sm mb-2 font-mono">选择新头像</label>
+                            <div class="border-2 border-dashed border-[#404040] p-6 text-center hover:border-[#ff6b00] transition-colors cursor-pointer" onclick="document.getElementById('avatarInput').click()">
+                                <input type="file" id="avatarInput" accept="image/*" class="hidden" onchange="previewAvatar(this)">
+                                <svg class="w-10 h-10 mx-auto mb-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                <p class="text-gray-500 text-sm">点击或拖拽上传图片</p>
+                                <p class="text-gray-600 text-xs mt-1">支持 JPG, PNG, GIF, WEBP，最大 2MB</p>
+                            </div>
+                        </div>
+
+                        <!-- 新头像预览 -->
+                        <div id="new-avatar-preview" class="hidden">
+                            <label class="block text-gray-400 text-sm mb-2 font-mono">新头像预览</label>
+                            <div class="flex items-center gap-4">
+                                <div class="w-20 h-20 bg-[#333] rounded-full overflow-hidden border border-[#ff6b00]">
+                                    <img id="new-avatar-img" class="w-full h-full object-cover" alt="new avatar">
+                                </div>
+                                <button onclick="cancelAvatarSelect()" class="text-gray-400 hover:text-white text-sm">取消</button>
+                            </div>
+                        </div>
+
+                        <div class="pt-2">
+                            <button onclick="uploadAvatar()" class="btn-primary" id="upload-btn" disabled>上传头像</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 消息弹窗 -->
+    <div id="messageModal" class="modal-overlay hidden">
+        <div class="modal-content text-center">
+            <p id="messageText" class="text-lg mb-6"></p>
+            <button onclick="closeMessage()" class="btn-primary">确定</button>
+        </div>
+    </div>
+
+    <!-- 队伍头像修改弹窗 -->
+    <div id="teamAvatarModal" class="modal-overlay hidden">
+        <div class="modal-content max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-white">修改队伍头像</h3>
+                <button onclick="closeTeamAvatarModal()" class="text-gray-400 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <!-- 当前队伍头像 -->
+                <div class="flex flex-col items-center">
+                    <div class="w-24 h-24 bg-[#333] rounded-full overflow-hidden flex items-center justify-center border-2 border-[#444]" id="team-avatar-preview-container">
+                        <span id="team-avatar-preview-text" class="text-[#ff6b00] font-black text-3xl font-mono">-</span>
+                        <img id="team-avatar-preview-img" class="w-full h-full object-cover hidden" alt="team avatar">
+                    </div>
+                    <p class="text-gray-500 text-xs font-mono mt-2">当前队伍头像</p>
+                </div>
+                <!-- 上传区域 -->
+                <div class="border-2 border-dashed border-[#404040] p-4 text-center hover:border-[#ff6b00] transition-colors cursor-pointer" onclick="document.getElementById('teamAvatarInput').click()">
+                    <input type="file" id="teamAvatarInput" accept="image/*" class="hidden" onchange="previewTeamAvatar(this)">
+                    <svg class="w-8 h-8 mx-auto mb-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <p class="text-gray-500 text-xs">点击选择图片</p>
+                </div>
+                <!-- 新头像预览 -->
+                <div id="new-team-avatar-preview" class="hidden flex items-center gap-4">
+                    <div class="w-16 h-16 bg-[#333] rounded-full overflow-hidden border border-[#ff6b00]">
+                        <img id="new-team-avatar-img" class="w-full h-full object-cover" alt="new team avatar">
+                    </div>
+                    <div class="text-gray-400 text-sm font-mono">新头像预览</div>
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button onclick="closeTeamAvatarModal()" class="btn-secondary flex-1">取消</button>
+                    <button onclick="uploadTeamAvatar()" class="btn-primary flex-1" id="team-upload-btn" disabled>上传</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('tg_token');
+        if (!token) {
+            window.location.href = '/login.html';
+        }
+        
+        // 检查是否需要强制修改密码（防绕过）
+        if (localStorage.getItem('tg_must_change_password') === 'true') {
+            alert('请先修改密码后再访问系统');
+            window.location.href = '/change-password.html';
+        }
+
+        // 解析JWT
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        const payload = parseJwt(token);
+        if (payload && payload.role === 'super') {
+            document.getElementById('admin-entry').classList.remove('hidden');
+        }
+
+        // 侧边栏切换
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            item.addEventListener('click', () => {
+                // 移除所有active
+                document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+                document.querySelectorAll('.content-panel').forEach(p => p.classList.remove('active'));
+                
+                // 激活当前
+                item.classList.add('active');
+                const panelId = 'panel-' + item.dataset.panel;
+                document.getElementById(panelId).classList.add('active');
+            });
+        });
+
+        // 显示消息
+        function showMessage(msg) {
+            document.getElementById('messageText').textContent = msg;
+            document.getElementById('messageModal').classList.remove('hidden');
+        }
+        function closeMessage() {
+            document.getElementById('messageModal').classList.add('hidden');
+        }
+
+        // 加载个人信息
+        async function loadProfile() {
+            try {
+                const resp = await fetch('/api/profile', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                // 检测 token 失效，跳转登录页
+                if (resp.status === 401) {
+                    localStorage.removeItem('tg_token');
+                    localStorage.removeItem('tg_must_change_password');
+                    window.location.href = '/login.html';
+                    return;
+                }
+                if (!resp.ok) throw new Error('加载失败');
+                const data = await resp.json();
+                
+                // 侧边栏信息
+                document.getElementById('sidebar-name').textContent = data.displayName || data.username;
+                document.getElementById('sidebar-username').textContent = '@' + data.username;
+                
+                // 处理头像显示
+                const avatarText = document.getElementById('avatar-text');
+                const avatarImg = document.getElementById('avatar-img');
+                const avatarPreviewText = document.getElementById('avatar-preview-text');
+                const avatarPreviewImg = document.getElementById('avatar-preview-img');
+                const initial = (data.displayName || data.username).charAt(0).toUpperCase();
+                
+                if (data.avatar) {
+                    // 有头像，显示图片
+                    avatarText.classList.add('hidden');
+                    avatarImg.src = data.avatar;
+                    avatarImg.classList.remove('hidden');
+                    
+                    avatarPreviewText.classList.add('hidden');
+                    avatarPreviewImg.src = data.avatar;
+                    avatarPreviewImg.classList.remove('hidden');
+                } else {
+                    // 无头像，显示首字母
+                    avatarText.textContent = initial;
+                    avatarText.classList.remove('hidden');
+                    avatarImg.classList.add('hidden');
+                    
+                    avatarPreviewText.textContent = initial;
+                    avatarPreviewText.classList.remove('hidden');
+                    avatarPreviewImg.classList.add('hidden');
+                }
+                
+                const roleMap = { super: '超级管理员', admin: '管理员', user: '普通用户' };
+                document.getElementById('sidebar-role').textContent = roleMap[data.role] || data.role;
+                document.getElementById('sidebar-team').textContent = data.teamName || '无';
+                
+                // 表单信息
+                document.getElementById('username').value = data.username || '';
+                document.getElementById('displayName').value = data.displayName || '';
+                document.getElementById('email').value = data.email || '';
+                document.getElementById('role').value = roleMap[data.role] || data.role;
+                document.getElementById('organization').value = data.organizationName || '无';
+                document.getElementById('lastLogin').textContent = data.lastLoginAt || '-';
+                document.getElementById('createdAt').textContent = data.createdAt || '-';
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // 保存个人信息
+        async function saveProfile() {
+            const displayName = document.getElementById('displayName').value.trim();
+            const email = document.getElementById('email').value.trim();
+
+            if (!displayName) {
+                showMessage('显示名称不能为空');
+                return;
+            }
+
+            try {
+                const resp = await fetch('/api/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ displayName, email })
+                });
+                if (!resp.ok) throw new Error('保存失败');
+                showMessage('保存成功');
+                loadProfile(); // 刷新侧边栏
+            } catch (e) {
+                showMessage('保存失败: ' + e.message);
+            }
+        }
+
+        // 修改密码
+        async function changePassword() {
+            const oldPassword = document.getElementById('oldPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (!oldPassword || !newPassword) {
+                showMessage('请填写完整');
+                return;
+            }
+            if (newPassword.length < 6) {
+                showMessage('新密码至少6位');
+                return;
+            }
+            if (newPassword !== confirmPassword) {
+                showMessage('两次输入的新密码不一致');
+                return;
+            }
+
+            try {
+                const resp = await fetch('/api/profile/password', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ oldPassword, newPassword })
+                });
+                const data = await resp.json();
+                if (!resp.ok) {
+                    if (data.error === 'WRONG_PASSWORD') {
+                        showMessage('当前密码错误');
+                    } else {
+                        showMessage('修改失败');
+                    }
+                    return;
+                }
+                showMessage('密码修改成功');
+                document.getElementById('oldPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+            } catch (e) {
+                showMessage('修改失败: ' + e.message);
+            }
+        }
+
+        // 加载我的队伍
+        async function loadMyTeam() {
+            const container = document.getElementById('team-info');
+            try {
+                const resp = await fetch('/api/profile/team', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                // 检测 token 失效，跳转登录页
+                if (resp.status === 401) {
+                    localStorage.removeItem('tg_token');
+                    localStorage.removeItem('tg_must_change_password');
+                    window.location.href = '/login.html';
+                    return;
+                }
+                if (!resp.ok) throw new Error('加载失败');
+                const data = await resp.json();
+
+                if (!data.team) {
+                    container.innerHTML = `
+                        <div class="tactical-border p-8 text-center max-w-md">
+                            <svg class="w-16 h-16 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                            <p class="text-gray-500 font-mono">您尚未加入任何队伍</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const team = data.team;
+                
+                // 设置当前队伍头像用于弹窗预览
+                currentTeamAvatar = team.avatar;
+                
+                // 处理队伍头像
+                const teamAvatarHtml = team.avatar 
+                    ? `<img src="${team.avatar}" class="w-full h-full object-cover" alt="team avatar">`
+                    : `<span class="text-[#ff6b00] font-black text-2xl font-mono">${team.name.charAt(0).toUpperCase()}</span>`;
+                
+                const membersHtml = team.members.map(m => `
+                    <div class="flex items-center gap-3 p-4 bg-[#1a1a1a] border border-[#333]">
+                        <div class="w-10 h-10 bg-[#333] flex items-center justify-center text-[#ff6b00] font-bold font-mono">
+                            ${m.displayName.charAt(0).toUpperCase()}
+                        </div>
+                        <div class="flex-1">
+                            <div class="text-white font-bold">${escapeHtml(m.displayName)}</div>
+                            <div class="text-gray-500 text-xs font-mono">@${escapeHtml(m.username)}</div>
+                        </div>
+                        ${m.isCaptain ? '<span class="bg-[#ff6b00] text-black text-xs font-bold px-2 py-0.5 font-mono">队长</span>' : ''}
+                    </div>
+                `).join('');
+
+                container.innerHTML = `
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-1">
+                            <div class="tactical-border p-5">
+                                <!-- 队伍头像 -->
+                                <div class="flex flex-col items-center mb-4">
+                                    <div class="w-20 h-20 bg-[#333] rounded-full overflow-hidden flex items-center justify-center border-2 border-[#444] relative group">
+                                        ${teamAvatarHtml}
+                                        ${team.isCaptain ? `<div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" onclick="showTeamAvatarModal()">
+                                            <span class="text-white text-xs font-mono">修改头像</span>
+                                        </div>` : ''}
+                                    </div>
+                                    ${team.isCaptain ? `<button onclick="showTeamAvatarModal()" class="text-[#ff6b00] text-xs font-mono mt-2 hover:underline">修改队伍头像</button>` : ''}
+                                </div>
+                                <h3 class="text-xl font-bold text-white mb-3 text-center">${escapeHtml(team.name)}</h3>
+                                <p class="text-gray-400 text-sm mb-4 text-center">${escapeHtml(team.description || '暂无描述')}</p>
+                                <div class="text-sm text-gray-500 font-mono space-y-2 border-t border-[#333] pt-4">
+                                    <div class="flex justify-between">
+                                        <span>队长</span>
+                                        <span class="text-gray-300">${escapeHtml(team.captainName || '-')}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>人数</span>
+                                        <span class="text-gray-300">${team.members.length}人</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>创建</span>
+                                        <span class="text-gray-300">${team.createdAt}</span>
+                                    </div>
+                                </div>
+                                ${team.isCaptain ? '<div class="mt-4 pt-4 border-t border-[#333] text-[#ff6b00] text-sm font-bold text-center">您是队长</div>' : ''}
+                            </div>
+                        </div>
+                        <div class="lg:col-span-2">
+                            <div class="flex items-center gap-2 mb-4">
+                                <span class="text-gray-400 font-mono text-sm">队伍成员</span>
+                                <span class="bg-[#333] text-gray-300 text-xs px-2 py-0.5 font-mono">${team.members.length}人</span>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                ${membersHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } catch (e) {
+                container.innerHTML = '<div class="text-red-500 font-mono">加载失败</div>';
+                console.error(e);
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 头像预览
+        let selectedAvatarFile = null;
+        function previewAvatar(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                
+                // 验证文件大小
+                if (file.size > 2 * 1024 * 1024) {
+                    showMessage('文件大小不能超过 2MB');
+                    input.value = '';
+                    return;
+                }
+                
+                // 验证文件类型
+                const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                if (!validTypes.includes(file.type)) {
+                    showMessage('仅支持 JPG, PNG, GIF, WEBP 格式');
+                    input.value = '';
+                    return;
+                }
+                
+                selectedAvatarFile = file;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('new-avatar-img').src = e.target.result;
+                    document.getElementById('new-avatar-preview').classList.remove('hidden');
+                    document.getElementById('upload-btn').disabled = false;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // 取消选择
+        function cancelAvatarSelect() {
+            selectedAvatarFile = null;
+            document.getElementById('avatarInput').value = '';
+            document.getElementById('new-avatar-preview').classList.add('hidden');
+            document.getElementById('upload-btn').disabled = true;
+        }
+
+        // 上传头像
+        async function uploadAvatar() {
+            if (!selectedAvatarFile) {
+                showMessage('请先选择图片');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('avatar', selectedAvatarFile);
+            
+            try {
+                document.getElementById('upload-btn').disabled = true;
+                document.getElementById('upload-btn').textContent = '上传中...';
+                
+                const resp = await fetch('/api/profile/avatar', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: formData
+                });
+                
+                if (!resp.ok) {
+                    const data = await resp.json();
+                    throw new Error(data.error || '上传失败');
+                }
+                
+                showMessage('头像上传成功');
+                cancelAvatarSelect();
+                loadProfile(); // 刷新显示
+            } catch (e) {
+                showMessage('上传失败: ' + e.message);
+            } finally {
+                document.getElementById('upload-btn').disabled = false;
+                document.getElementById('upload-btn').textContent = '上传头像';
+            }
+        }
+
+        // 登出
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('tg_token');
+            window.location.href = '/login.html';
+        });
+
+        // ========== 队伍头像相关 ==========
+        let currentTeamAvatar = null;
+        let selectedTeamAvatarFile = null;
+
+        function showTeamAvatarModal() {
+            // 设置当前头像预览
+            if (currentTeamAvatar) {
+                document.getElementById('team-avatar-preview-text').classList.add('hidden');
+                document.getElementById('team-avatar-preview-img').src = currentTeamAvatar;
+                document.getElementById('team-avatar-preview-img').classList.remove('hidden');
+            }
+            document.getElementById('teamAvatarModal').classList.remove('hidden');
+        }
+
+        function closeTeamAvatarModal() {
+            document.getElementById('teamAvatarModal').classList.add('hidden');
+            selectedTeamAvatarFile = null;
+            document.getElementById('teamAvatarInput').value = '';
+            document.getElementById('new-team-avatar-preview').classList.add('hidden');
+            document.getElementById('team-upload-btn').disabled = true;
+        }
+
+        function previewTeamAvatar(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                if (file.size > 2 * 1024 * 1024) {
+                    showMessage('文件大小不能超过 2MB');
+                    input.value = '';
+                    return;
+                }
+                const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                if (!validTypes.includes(file.type)) {
+                    showMessage('仅支持 JPG, PNG, GIF, WEBP 格式');
+                    input.value = '';
+                    return;
+                }
+                selectedTeamAvatarFile = file;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('new-team-avatar-img').src = e.target.result;
+                    document.getElementById('new-team-avatar-preview').classList.remove('hidden');
+                    document.getElementById('team-upload-btn').disabled = false;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function uploadTeamAvatar() {
+            if (!selectedTeamAvatarFile) {
+                showMessage('请先选择图片');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('avatar', selectedTeamAvatarFile);
+            try {
+                document.getElementById('team-upload-btn').disabled = true;
+                document.getElementById('team-upload-btn').textContent = '上传中...';
+                
+                const resp = await fetch('/api/team/avatar', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body: formData
+                });
+                if (!resp.ok) {
+                    const data = await resp.json();
+                    if (data.error === 'NOT_CAPTAIN') {
+                        throw new Error('只有队长才能修改队伍头像');
+                    }
+                    throw new Error(data.error || '上传失败');
+                }
+                showMessage('队伍头像上传成功');
+                closeTeamAvatarModal();
+                loadMyTeam(); // 刷新队伍信息
+            } catch (e) {
+                showMessage('上传失败: ' + e.message);
+            } finally {
+                document.getElementById('team-upload-btn').disabled = false;
+                document.getElementById('team-upload-btn').textContent = '上传';
+            }
+        }
+
+        // 初始化加载
+        loadProfile();
+        loadMyTeam();
+    </script>
+</body>
+</html>

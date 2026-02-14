@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="author" content="tan91">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/fonts.css">
+    <style>
+        :root { --bg-dark: #121212; --bg-panel: #1e1e1e; --border-color: #333; --accent: #ff6b00; --danger: #ef4444; --success: #22c55e; --text-main: #e0e0e0; --text-dim: #737373; }
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Noto Sans SC', sans-serif; }
+        .font-eng { font-family: 'Chakra Petch', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .sidebar-item { border-left: 2px solid transparent; transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { background: rgba(255, 107, 0, 0.05); border-left-color: var(--accent); color: white; }
+        .sidebar-item.active .icon { color: var(--accent); }
+        .admin-card { background: var(--bg-panel); border: 1px solid var(--border-color); position: relative; height: 100%; display: flex; flex-direction: column; }
+        .tactical-toggle { position: relative; display: inline-block; width: 40px; height: 20px; flex-shrink: 0; }
+        .tactical-toggle input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border: 1px solid #555; }
+        .toggle-slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: #888; transition: .4s; }
+        input:checked + .toggle-slider { background-color: rgba(255, 107, 0, 0.2); border-color: var(--accent); }
+        input:checked + .toggle-slider:before { transform: translateX(20px); background-color: var(--accent); }
+        .setting-input { background: #111; border: 1px solid #333; color: white; font-family: 'JetBrains Mono', monospace; padding: 0.5rem; width: 100%; outline: none; transition: 0.2s; text-align: center; }
+        .setting-input:focus { border-color: var(--accent); }
+        .setting-group-title { font-family: 'Chakra Petch', sans-serif; font-weight: bold; color: var(--accent); letter-spacing: 0.05em; padding-bottom: 1rem; border-bottom: 1px solid #333; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; }
+        .btn-save { background: var(--accent); color: black; font-weight: bold; padding: 0.6rem 3rem; transition: 0.2s; font-family: 'Chakra Petch', sans-serif; letter-spacing: 0.1em; }
+        .btn-save:hover { background: white; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255,107,0,0.4); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+    </style>
+</head>
+<body class="flex h-screen w-screen overflow-hidden selection:bg-[#ff6b00] selection:text-black">
+
+    <aside class="w-48 bg-[#161616] border-r border-[#333] flex flex-col z-20 shadow-xl shrink-0">
+        <div class="h-16 flex items-center px-6 border-b border-[#333] shrink-0">
+            <div class="bg-[#ff6b00] text-black font-black text-xl px-2 py-0.5 font-eng tracking-tighter mr-3">TG</div>
+            <span class="font-bold text-gray-300 tracking-wider text-sm">管理中枢</span>
+        </div>
+        <nav class="flex-1 py-6 space-y-1 font-mono text-xs overflow-y-auto">
+            <a href="/admin/admin.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⌂</span> 概览</a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-4">赛事核心</p>
+            <a href="/admin/admin-contests.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚑</span> 比赛管理</a>
+            <a href="/admin/admin-question-bank.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">☷</span> 题库</a>
+            <a href="/admin/admin-users.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">웃</span> 用户管理</a>
+            <a href="/admin/admin-teams.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">◈</span> 队伍管理</a>
+            <a href="/admin/admin-organizations.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🏢</span> 组织管理</a>
+            <a href="/admin/admin-data-import.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">📥</span> 数据导入</a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-6">运维监控</p>
+            <a href="/admin/admin-docker.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🐳</span> docker实例管理</a>
+            <a href="/admin/admin-anti-cheat.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🛡️</span> 防作弊系统</a>
+            <a href="/admin/admin-logs.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚠</span> 系统日志</a>
+            <a href="/admin/admin-settings.html" class="sidebar-item active flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚙</span> 系统设置</a>
+        </nav>
+        <div class="p-4 border-t border-[#333] shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-[#333] rounded-full flex items-center justify-center text-[#ff6b00] font-bold">A</div>
+                <div><p class="text-xs text-white font-bold">超级管理员</p><p class="text-[10px] text-green-500">● 连接稳定</p></div>
+            </div>
+        </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col min-w-0 bg-[#121212]">
+        <header class="h-16 bg-[#161616] border-b border-[#333] flex items-center justify-between px-8 z-10">
+            <div class="flex items-center gap-4 text-xs font-mono">
+                <span class="text-gray-500">位置:</span><span class="text-[#ff6b00]">运维监控</span><span class="text-gray-600">/</span><span class="text-white">系统设置</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="/home.html" class="font-mono text-xs font-bold border border-gray-500 text-gray-400 px-4 py-2 hover:border-white hover:text-white transition-all uppercase tracking-wider">← 返回前台</a>
+                <button id="logout-btn" class="font-mono text-xs font-bold border border-[#ff6b00] text-[#ff6b00] px-4 py-2 hover:bg-[#ff6b00] hover:text-black transition-all uppercase tracking-wider">Logout_离线</button>
+            </div>
+        </header>
+
+        <main class="flex-1 flex flex-col pt-8 px-8 relative overflow-y-auto">
+            <div class="max-w-6xl mx-auto space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-1">
+                        <div class="admin-card p-6">
+                            <h3 class="setting-group-title"><span class="text-lg">웃</span> 账户策略配置</h3>
+                            <div class="space-y-6 flex-1">
+                                <div class="flex items-start justify-between gap-4">
+                                    <div><h4 class="text-xs font-bold text-white mb-1">开放新用户注册</h4><p class="text-[10px] text-gray-500 leading-relaxed">关闭后前台隐藏注册入口。</p></div>
+                                    <label class="tactical-toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                                </div>
+                                <div class="h-px bg-[#222] w-full"></div>
+                                <div class="flex items-start justify-between gap-4">
+                                    <div><h4 class="text-xs font-bold text-white mb-1">注册后自动激活</h4><p class="text-[10px] text-gray-500 leading-relaxed">无需管理员手动审核。</p></div>
+                                    <label class="tactical-toggle"><input type="checkbox"><span class="toggle-slider"></span></label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-2">
+                        <div class="admin-card p-6">
+                            <h3 class="setting-group-title"><span class="text-lg">🐳</span> Docker 容器策略</h3>
+                            <div class="grid grid-cols-3 gap-x-6 gap-y-6">
+                                <div><label class="block text-xs font-mono text-gray-400 mb-2 uppercase">初始有效期</label><div class="flex items-center group"><input type="number" id="containerInitialTtl" value="120" class="setting-input rounded-l-sm border-r-0 group-hover:border-[#ff6b00]"><div class="bg-[#222] border border-[#333] text-gray-400 text-xs px-3 py-2.5 font-mono border-l-0 group-hover:border-[#ff6b00]">MIN</div></div><p class="text-[10px] text-gray-600 mt-1">靶机启动后的默认存活时间。</p></div>
+                                <div><label class="block text-xs font-mono text-gray-400 mb-2 uppercase">单次续期时长</label><div class="flex items-center group"><input type="number" id="containerExtendTtl" value="120" class="setting-input rounded-l-sm border-r-0 group-hover:border-[#ff6b00]"><div class="bg-[#222] border border-[#333] text-gray-400 text-xs px-3 py-2.5 font-mono border-l-0 group-hover:border-[#ff6b00]">ADD</div></div><p class="text-[10px] text-gray-600 mt-1">点击延长按钮增加的时间。</p></div>
+                                <div><label class="block text-xs font-mono text-gray-400 mb-2 uppercase">续期窗口 (剩余时间)</label><div class="flex items-center group"><input type="number" id="containerExtendWindow" value="15" class="setting-input rounded-l-sm border-r-0 group-hover:border-[#ff6b00]"><div class="bg-[#222] border border-[#333] text-gray-400 text-xs px-3 py-2.5 font-mono border-l-0 group-hover:border-[#ff6b00]">LAST</div></div><p class="text-[10px] text-gray-600 mt-1">仅在倒计时小于此时允许续期。</p></div>
+                                <div><label class="block text-xs font-mono text-gray-400 mb-2 uppercase">端口范围起始</label><div class="flex items-center group"><input type="number" id="portRangeStart" value="49152" min="1024" max="65535" class="setting-input group-hover:border-[#ff6b00]"></div><p class="text-[10px] text-gray-600 mt-1">容器端口映射起始端口。</p></div>
+                                <div><label class="block text-xs font-mono text-gray-400 mb-2 uppercase">端口范围结束</label><div class="flex items-center group"><input type="number" id="portRangeEnd" value="65535" min="1024" max="65535" class="setting-input group-hover:border-[#ff6b00]"></div><p class="text-[10px] text-gray-600 mt-1">容器端口映射结束端口。</p></div>
+                                <div class="flex items-end"><p class="text-[10px] text-yellow-600 bg-yellow-900 bg-opacity-20 p-2 border border-yellow-900">⚠️ 确保端口范围不与其他服务冲突</p></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="admin-card p-6 !h-auto">
+                    <h3 class="setting-group-title"><span class="text-lg">⚙</span> 全局运维控制</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                        <div class="flex items-center justify-between p-3 bg-[#151515] border border-[#333] rounded-sm">
+                            <div><h4 class="text-sm font-bold text-white mb-1">自动销毁过期实例</h4><p class="text-[10px] text-gray-500">Cron 任务每分钟检查并清理超时容器。</p></div>
+                            <label class="tactical-toggle"><input type="checkbox" id="autoDestroyExpired" checked><span class="toggle-slider"></span></label>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-red-900 bg-opacity-10 border border-red-900 rounded-sm">
+                            <div><h4 class="text-sm font-bold text-red-500 mb-1">系统维护模式</h4><p class="text-[10px] text-red-400 opacity-70">暂停所有服务，前台显示维护公告。</p></div>
+                            <label class="tactical-toggle"><input type="checkbox"><span class="toggle-slider"></span></label>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-center pt-6 pb-4"><button id="saveSettingsBtn" class="btn-save text-sm">[ 确认并保存配置 ]</button></div>
+            </div>
+
+            <footer class="py-1 border-t border-[#333] flex items-center justify-center flex-shrink-0 mt-auto">
+                <div class="flex items-center justify-center gap-4 text-xs flex-wrap">
+                    <div class="flex items-center gap-1">
+                        <div class="bg-[#ff6b00] text-black font-black px-1.5 py-0.5 font-eng tracking-tighter">TG</div>
+                        <span class="text-gray-500">天格后台管理系统</span>
+                    </div>
+                    <span class="text-white font-mono">Copyright © 2021-present tan91. All Rights Reserved.</span>
+                    <a href="https://github.com/NUDTTAN91" target="_blank" class="text-[#ff6b00] hover:text-white transition-colors"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg></a>
+                    <a href="https://blog.csdn.net/ZXW_NUDT" target="_blank" class="text-[#ff6b00] hover:text-white transition-colors"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></a>
+                </div>
+            </footer>
+
+        </main>
+    </div>
+
+    <script>
+        function parseJwt(token) { try { const base64Url = token.split('.')[1]; const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/'); const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')); return JSON.parse(jsonPayload); } catch (e) { return null; } }
+        const token = localStorage.getItem('tg_token');
+        if (!token) { window.location.href = '/login.html'; } else { const payload = parseJwt(token); if (!payload || payload.role !== 'super') { alert('权限不足：仅超级管理员可访问此页面'); window.location.href = '/home.html'; } }
+        document.getElementById('logout-btn').addEventListener('click', () => { localStorage.removeItem('tg_token'); window.location.href = '/login.html'; });
+
+        // 加载系统设置
+        async function loadSettings() {
+            try {
+                const resp = await fetch('/api/admin/settings', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    document.getElementById('containerInitialTtl').value = data.containerInitialTtl || 120;
+                    document.getElementById('containerExtendTtl').value = data.containerExtendTtl || 120;
+                    document.getElementById('containerExtendWindow').value = data.containerExtendWindow || 15;
+                    document.getElementById('autoDestroyExpired').checked = data.autoDestroyExpired !== false;
+                    document.getElementById('portRangeStart').value = data.portRangeStart || 49152;
+                    document.getElementById('portRangeEnd').value = data.portRangeEnd || 65535;
+                }
+            } catch (e) {
+                console.error('加载设置失败:', e);
+            }
+        }
+
+        // 保存系统设置
+        async function saveSettings() {
+            const settings = {
+                containerInitialTtl: parseInt(document.getElementById('containerInitialTtl').value) || 120,
+                containerExtendTtl: parseInt(document.getElementById('containerExtendTtl').value) || 120,
+                containerExtendWindow: parseInt(document.getElementById('containerExtendWindow').value) || 15,
+                autoDestroyExpired: document.getElementById('autoDestroyExpired').checked,
+                portRangeStart: parseInt(document.getElementById('portRangeStart').value) || 49152,
+                portRangeEnd: parseInt(document.getElementById('portRangeEnd').value) || 65535
+            };
+
+            // 验证端口范围
+            if (settings.portRangeStart >= settings.portRangeEnd) {
+                alert('端口范围配置错误：起始端口必须小于结束端口');
+                return;
+            }
+            if (settings.portRangeStart < 1024) {
+                alert('端口范围配置错误：起始端口必须 >= 1024');
+                return;
+            }
+
+            try {
+                const resp = await fetch('/api/admin/settings', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify(settings)
+                });
+                if (resp.ok) {
+                    alert('设置已保存');
+                } else {
+                    const data = await resp.json();
+                    alert('保存失败: ' + (data.message || data.error));
+                }
+            } catch (e) {
+                alert('保存失败: ' + e.message);
+            }
+        }
+
+        document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
+        loadSettings();
+    </script>
+</body>
+</html>

@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="author" content="tan91">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/fonts.css">
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --bg-panel: #1e1e1e;
+            --border-color: #333;
+            --accent: #ff6b00;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --info: #3b82f6;
+            --text-main: #e0e0e0;
+            --text-dim: #737373;
+        }
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Noto Sans SC', sans-serif; }
+        .font-eng { font-family: 'Chakra Petch', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .sidebar-item { border-left: 2px solid transparent; transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { background: rgba(255, 107, 0, 0.05); border-left-color: var(--accent); color: white; }
+        .sidebar-item.active .icon { color: var(--accent); }
+
+        .admin-card { background: var(--bg-panel); border: 1px solid var(--border-color); position: relative; }
+        .stat-card::after { content: ''; position: absolute; top: 0; right: 0; width: 0; height: 0; border-top: 20px solid var(--border-color); border-left: 20px solid transparent; }
+
+        .btn-action { border: 1px solid var(--border-color); color: var(--text-dim); padding: 0.25rem 0.5rem; font-size: 0.75rem; transition: all 0.2s; white-space: nowrap; cursor: pointer;}
+        .btn-action:hover { border-color: var(--accent); color: var(--accent); background: rgba(255,107,0,0.05); }
+        .btn-danger-ghost { color: #888; border: 1px solid transparent; padding: 0.25rem 0.5rem; font-size: 0.75rem; transition: 0.2s; margin-left: 0.5rem; cursor: pointer; }
+        .btn-danger-ghost:hover { color: var(--danger); border-color: var(--danger); background: rgba(239,68,68,0.1); }
+
+        .tactical-table thead th { background: #151515; color: #666; font-family: 'JetBrains Mono', monospace; font-weight: normal; text-transform: uppercase; letter-spacing: 0.05em; padding: 1rem; border-bottom: 1px solid #333; text-align: left; font-size: 0.75rem; }
+        .tactical-table tbody tr { border-bottom: 1px solid #252525; transition: background 0.2s; }
+        .tactical-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+        .tactical-table td { padding: 1rem; vertical-align: middle; }
+
+        .org-logo { width: 40px; height: 40px; background: #111; border: 1px solid #444; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-family: 'Chakra Petch', sans-serif; font-size: 1.2rem; }
+
+        .status-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+        .dot-green { background: var(--success); box-shadow: 0 0 5px var(--success); }
+        .dot-gray { background: #555; }
+        .dot-red { background: var(--danger); box-shadow: 0 0 5px var(--danger); }
+
+        .tab-btn { padding: 0.5rem 1rem; font-size: 0.75rem; border-bottom: 2px solid transparent; color: #888; cursor: pointer; transition: all 0.2s; }
+        .tab-btn:hover { color: white; }
+        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden selection:bg-[#ff6b00] selection:text-black">
+
+    <!-- 左侧侧边栏 -->
+    <aside class="w-48 bg-[#161616] border-r border-[#333] flex flex-col z-20 shadow-xl">
+        <div class="h-16 flex items-center px-6 border-b border-[#333]">
+            <div class="bg-[#ff6b00] text-black font-black text-xl px-2 py-0.5 font-eng tracking-tighter mr-3">TG</div>
+            <span class="font-bold text-gray-300 tracking-wider text-sm">管理中枢</span>
+        </div>
+        <nav class="flex-1 py-6 space-y-1 font-mono text-xs overflow-y-auto">
+            <a href="/admin/admin.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⌂</span> 概览</a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-4">赛事核心</p>
+            <a href="/admin/admin-contests.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚑</span> 比赛管理</a>
+            <a href="/admin/admin-question-bank.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">☷</span> 题库</a>
+            <a href="/admin/admin-users.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">웃</span> 用户管理</a>
+            <a href="/admin/admin-teams.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">◈</span> 队伍管理</a>
+            <a href="/admin/admin-organizations.html" class="sidebar-item active flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🏢</span> 组织管理</a>
+            <a href="/admin/admin-data-import.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">📥</span> 数据导入</a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-6">运维监控</p>
+            <a href="/admin/admin-docker.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🐳</span> docker实例管理</a>
+            <a href="/admin/admin-anti-cheat.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🛡️</span> 防作弊系统</a>
+            <a href="/admin/admin-logs.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚠</span> 系统日志</a>
+            <a href="/admin/admin-settings.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚙</span> 系统设置</a>
+        </nav>
+        <div class="p-4 border-t border-[#333]">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-[#333] rounded-full flex items-center justify-center text-[#ff6b00] font-bold">A</div>
+                <div><p class="text-xs text-white font-bold">超级管理员</p><p class="text-[10px] text-green-500">● 连接稳定</p></div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 右侧内容区 -->
+    <div class="flex-1 flex flex-col min-w-0 bg-[#121212]">
+        <header class="h-16 bg-[#161616] border-b border-[#333] flex items-center justify-between px-8 z-10">
+            <div class="flex items-center gap-4 text-xs font-mono">
+                <span class="text-gray-500">位置:</span><span class="text-[#ff6b00]">赛事核心</span><span class="text-gray-600">/</span><span class="text-white">组织管理</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="/home.html" class="font-mono text-xs font-bold border border-gray-500 text-gray-400 px-4 py-2 hover:border-white hover:text-white transition-all uppercase tracking-wider">← 返回前台</a>
+                <button id="logout-btn" class="font-mono text-xs font-bold border border-[#ff6b00] text-[#ff6b00] px-4 py-2 hover:bg-[#ff6b00] hover:text-black transition-all uppercase tracking-wider">Logout_离线</button>
+            </div>
+        </header>
+
+        <main class="flex-1 flex flex-col pt-8 px-8 relative overflow-hidden">
+            
+            <div class="grid grid-cols-3 gap-6 mb-8">
+                <div class="admin-card stat-card p-5 flex items-center justify-between"><div class="text-lg text-gray-400 font-mono font-bold uppercase">组织总数</div><div id="stat-total" class="text-2xl font-eng font-bold text-white">--</div></div>
+                <div class="admin-card stat-card p-5 flex items-center justify-between"><div class="text-lg text-gray-400 font-mono font-bold uppercase">活跃组织</div><div id="stat-active" class="text-2xl font-eng font-bold text-green-500">--</div></div>
+                <div class="admin-card stat-card p-5 border-l-2 border-l-red-500 flex items-center justify-between"><div class="text-lg text-gray-400 font-mono font-bold uppercase">已禁用</div><div id="stat-disabled" class="text-2xl font-eng font-bold text-red-500">--</div></div>
+            </div>
+
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 bg-[#1a1a1a] p-4 border border-[#333]">
+                <div class="flex items-center gap-4 w-full md:w-auto">
+                    <h2 class="text-lg font-bold text-white font-eng tracking-wide">ORG_REGISTRY</h2>
+                    <div class="h-6 w-px bg-[#333]"></div>
+                    <div class="relative">
+                        <input type="text" id="search-input" placeholder="搜索组织名称 / ID..." class="bg-[#111] border border-[#333] text-xs text-white px-4 py-2 w-64 focus:border-[#ff6b00] outline-none font-mono placeholder-gray-600">
+                        <button class="absolute right-2 top-1.5 text-gray-500 hover:text-white">🔍</button>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <select id="status-filter" class="bg-[#111] border border-[#333] text-xs text-gray-400 px-3 py-2 outline-none hover:border-[#555] cursor-pointer">
+                        <option value="">所有状态</option><option value="active">活跃</option><option value="disabled">已禁用</option>
+                    </select>
+                    <button onclick="openCreateModal()" class="btn-action font-mono bg-[#333] text-white border-transparent">+ 创建组织</button>
+                </div>
+            </div>
+
+            <div class="admin-card overflow-hidden">
+                <div style="max-height: 587px; overflow-y: auto;">
+                <table class="w-full tactical-table">
+                    <thead>
+                        <tr>
+                            <th class="w-16 text-left pl-6">ID</th>
+                            <th>组织信息</th>
+                            <th>用户数</th>
+                            <th>队伍数</th>
+                            <th>创建时间</th>
+                            <th>状态</th>
+                            <th class="text-left">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orgs-tbody">
+                        <tr><td colspan="7" class="text-center py-12 text-gray-500 font-mono">加载中...</td></tr>
+                    </tbody>
+                </table>
+                </div>
+                <div class="p-4 border-t border-[#333] flex justify-between items-center bg-[#151515]">
+                    <div id="pagination-info" class="text-xs text-gray-500 font-mono">显示 0 个组织</div>
+                </div>
+            </div>
+
+            <footer class="py-1 border-t border-[#333] flex items-center justify-center flex-shrink-0 mt-auto">
+                <div class="flex items-center justify-center gap-4 text-xs flex-wrap">
+                    <div class="flex items-center gap-1">
+                        <div class="bg-[#ff6b00] text-black font-black px-1.5 py-0.5 font-eng tracking-tighter">TG</div>
+                        <span class="text-gray-500">天格后台管理系统</span>
+                    </div>
+                    <span class="text-white font-mono">Copyright © 2021-present tan91. All Rights Reserved.</span>
+                    <a href="https://github.com/NUDTTAN91" target="_blank" class="text-[#ff6b00] hover:text-white transition-colors"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg></a>
+                    <a href="https://blog.csdn.net/ZXW_NUDT" target="_blank" class="text-[#ff6b00] hover:text-white transition-colors"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></a>
+                </div>
+            </footer>
+
+        </main>
+    </div>
+
+    <!-- 创建/编辑组织模态框 -->
+    <div id="modal-overlay" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center">
+        <div class="bg-[#1e1e1e] border border-[#444] w-full max-w-md mx-4">
+            <div class="p-4 border-b border-[#333] flex justify-between items-center">
+                <h3 id="modal-title" class="font-bold text-white">创建组织</h3>
+                <button onclick="closeModal()" class="text-gray-500 hover:text-white text-xl">&times;</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1 font-mono">组织名称 <span class="text-red-500">*</span></label>
+                    <input type="text" id="input-name" class="w-full bg-[#111] border border-[#333] text-white px-3 py-2 text-sm focus:border-[#ff6b00] outline-none font-mono" placeholder="Organization Name">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1 font-mono">组织简介</label>
+                    <textarea id="input-description" class="w-full bg-[#111] border border-[#333] text-white px-3 py-2 text-sm focus:border-[#ff6b00] outline-none h-24 resize-none" placeholder="组织简介..."></textarea>
+                </div>
+            </div>
+            <div class="p-4 border-t border-[#333] flex justify-end gap-3">
+                <button onclick="closeModal()" class="px-4 py-2 text-xs text-gray-400 border border-[#333] hover:border-gray-500 font-mono">取消</button>
+                <button id="modal-submit-btn" onclick="submitOrg()" class="px-4 py-2 text-xs bg-[#ff6b00] text-black font-bold hover:bg-[#ff8533] font-mono">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 成员管理模态框 -->
+    <div id="member-modal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center">
+        <div class="bg-[#1e1e1e] border border-[#444] w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col">
+            <div class="p-4 border-b border-[#333] flex justify-between items-center">
+                <h3 id="member-modal-title" class="font-bold text-white">组织成员管理</h3>
+                <button onclick="closeMemberModal()" class="text-gray-500 hover:text-white text-xl">&times;</button>
+            </div>
+            <div class="flex border-b border-[#333]">
+                <button class="tab-btn active" data-tab="users" onclick="switchTab('users')">用户</button>
+                <button class="tab-btn" data-tab="teams" onclick="switchTab('teams')">队伍</button>
+            </div>
+            <div class="p-6 flex-1 overflow-y-auto">
+                <!-- 用户Tab -->
+                <div id="tab-users" class="tab-content">
+                    <div class="mb-4">
+                        <h4 class="text-sm text-gray-400 mb-2 font-mono">当前用户</h4>
+                        <div id="user-list" class="space-y-2 max-h-48 overflow-y-auto">
+                            <div class="text-gray-500 text-sm">加载中...</div>
+                        </div>
+                    </div>
+                    <div class="border-t border-[#333] pt-4">
+                        <h4 class="text-sm text-gray-400 mb-2 font-mono">添加用户</h4>
+                        <div class="flex gap-2">
+                            <select id="user-select" class="flex-1 bg-[#111] border border-[#333] text-xs text-gray-400 px-3 py-2 outline-none">
+                                <option value="">选择用户...</option>
+                            </select>
+                            <button onclick="addUser()" class="btn-action font-mono bg-[#333] text-white border-transparent">添加</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- 队伍Tab -->
+                <div id="tab-teams" class="tab-content hidden">
+                    <div class="mb-4">
+                        <h4 class="text-sm text-gray-400 mb-2 font-mono">当前队伍</h4>
+                        <div id="team-list" class="space-y-2 max-h-48 overflow-y-auto">
+                            <div class="text-gray-500 text-sm">加载中...</div>
+                        </div>
+                    </div>
+                    <div class="border-t border-[#333] pt-4">
+                        <h4 class="text-sm text-gray-400 mb-2 font-mono">添加队伍</h4>
+                        <div class="flex gap-2">
+                            <select id="team-select" class="flex-1 bg-[#111] border border-[#333] text-xs text-gray-400 px-3 py-2 outline-none">
+                                <option value="">选择队伍...</option>
+                            </select>
+                            <button onclick="addTeam()" class="btn-action font-mono bg-[#333] text-white border-transparent">添加</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 确认弹窗 -->
+    <div id="confirm-overlay" class="fixed inset-0 bg-black bg-opacity-70 z-[60] hidden items-center justify-center">
+        <div class="bg-[#1e1e1e] border border-[#444] w-full max-w-sm mx-4 p-6">
+            <p id="confirm-message" class="text-white text-sm mb-6 whitespace-pre-line">确定要执行此操作吗？</p>
+            <div class="flex justify-end gap-3">
+                <button onclick="hideConfirm()" class="px-4 py-2 text-xs text-gray-400 border border-[#333] hover:border-gray-500 font-mono">取消</button>
+                <button id="confirm-ok-btn" class="px-4 py-2 text-xs bg-red-600 text-white font-bold hover:bg-red-500 font-mono">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 队长处理选择弹窗 -->
+    <div id="captain-choice-overlay" class="fixed inset-0 bg-black bg-opacity-70 z-[60] hidden items-center justify-center">
+        <div class="bg-[#1e1e1e] border border-[#444] w-full max-w-md mx-4 p-6">
+            <h3 class="text-white font-bold mb-4">队长处理确认</h3>
+            <p class="text-gray-300 text-sm mb-2">该组织内的用户是以下外部队伍的队长：</p>
+            <div id="captain-teams-list" class="max-h-32 overflow-y-auto mb-4 text-sm"></div>
+            <p class="text-yellow-500 text-xs mb-4">请选择如何处理这些队伍：</p>
+            <div class="flex flex-col gap-3">
+                <button id="btn-delete-teams" class="w-full px-4 py-3 text-sm bg-red-600 text-white font-bold hover:bg-red-500">连同队伍一起删除</button>
+                <button id="btn-change-captain" class="w-full px-4 py-3 text-sm bg-blue-600 text-white font-bold hover:bg-blue-500">保留队伍，随机更换队长</button>
+                <button onclick="hideCaptainChoice()" class="w-full px-4 py-2 text-xs text-gray-400 border border-[#333] hover:border-gray-500 font-mono">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/admin';
+        let allOrgs = [];
+        let editingOrgId = null;
+        let currentOrgId = null;
+        let confirmCallback = null;
+
+        function getToken() { return localStorage.getItem('tg_token'); }
+
+        async function fetchOrgs() {
+            try {
+                const res = await fetch(`${API_BASE}/organizations`, {
+                    headers: { 'Authorization': 'Bearer ' + getToken() }
+                });
+                if (!res.ok) throw new Error('加载失败');
+                allOrgs = await res.json();
+                renderOrgs();
+                updateStats();
+            } catch (e) {
+                document.getElementById('orgs-tbody').innerHTML = '<tr><td colspan="7" class="text-center py-12 text-red-500 font-mono">加载失败</td></tr>';
+            }
+        }
+
+        function updateStats() {
+            const total = allOrgs.length;
+            const active = allOrgs.filter(o => o.status === 'active').length;
+            const disabled = allOrgs.filter(o => o.status === 'disabled').length;
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-active').textContent = active;
+            document.getElementById('stat-disabled').textContent = disabled;
+        }
+
+        function renderOrgs() {
+            const searchVal = document.getElementById('search-input').value.toLowerCase();
+            const statusVal = document.getElementById('status-filter').value;
+            let filtered = allOrgs.filter(o => {
+                const matchSearch = o.name.toLowerCase().includes(searchVal) || String(o.id).includes(searchVal);
+                const matchStatus = !statusVal || o.status === statusVal;
+                return matchSearch && matchStatus;
+            });
+
+            const tbody = document.getElementById('orgs-tbody');
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-12 text-gray-500 font-mono">暂无数据</td></tr>';
+                document.getElementById('pagination-info').textContent = '显示 0 个组织';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(o => renderOrgRow(o)).join('');
+            document.getElementById('pagination-info').textContent = `显示 ${filtered.length} 个组织`;
+        }
+
+        function renderOrgRow(o) {
+            const isDisabled = o.status === 'disabled';
+            const isSystemOrg = o.name === 'TG_AdminX';
+            const rowClass = isDisabled ? 'bg-red-900 bg-opacity-5' : (isSystemOrg ? 'bg-[#ff6b00] bg-opacity-[0.03]' : '');
+            const logoClass = isDisabled ? 'border-red-500 text-red-500' : (isSystemOrg ? 'border-[#ff6b00] text-[#ff6b00]' : 'border-gray-600 text-gray-400');
+            const nameClass = isDisabled ? 'text-gray-400 line-through' : 'text-white';
+            const idClass = isDisabled ? 'text-red-500' : (isSystemOrg ? 'text-[#ff6b00]' : 'text-gray-500');
+            const statusDot = isDisabled ? 'dot-red' : 'dot-green';
+            const statusText = isDisabled ? '已禁用' : '活跃';
+            const statusColor = isDisabled ? 'text-red-500' : 'text-green-500';
+
+            const systemBadge = isSystemOrg ? '<span class="ml-2 bg-[#ff6b00] text-black text-[10px] px-1.5 py-0.5 font-bold">SYSTEM</span>' : '';
+
+            // TG_AdminX 组织显示"系统组织"，其他组织显示操作按钮
+            const actionsHtml = isSystemOrg 
+                ? '<span class="text-[#ff6b00] text-xs font-mono">系统组织</span>'
+                : `<button onclick="openMemberModal(${o.id}, '${o.name}')" class="btn-action">成员管理</button>
+                   <button onclick="openEditModal(${o.id})" class="btn-action">编辑</button>
+                   ${isDisabled 
+                       ? `<button onclick="toggleStatus(${o.id}, 'active')" class="btn-action text-green-500 border-green-500">启用</button>`
+                       : `<button onclick="toggleStatus(${o.id}, 'disabled')" class="btn-danger-ghost">禁用</button>`}
+                   <button onclick="confirmDelete(${o.id}, '${o.name}')" class="btn-danger-ghost">删除</button>`;
+
+            return `
+            <tr class="${rowClass}">
+                <td class="pl-6"><span class="font-mono ${idClass}">${o.id}</span></td>
+                <td>
+                    <div class="flex items-center gap-3">
+                        <div class="org-logo ${logoClass}">${o.name.charAt(0).toUpperCase()}</div>
+                        <div>
+                            <p class="${nameClass} font-bold">${o.name}${systemBadge}</p>
+                            <p class="text-gray-500 text-xs">${o.description || '暂无简介'}</p>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="text-blue-400 font-mono">${o.userCount}</span></td>
+                <td><span class="text-purple-400 font-mono">${o.teamCount}</span></td>
+                <td class="text-gray-500 font-mono text-xs">${o.createdAt || '-'}</td>
+                <td><span class="status-dot ${statusDot}"></span><span class="${statusColor} text-xs">${statusText}</span></td>
+                <td class="text-left">
+                    ${actionsHtml}
+                </td>
+            </tr>`;
+        }
+
+        function openCreateModal() {
+            editingOrgId = null;
+            document.getElementById('modal-title').textContent = '创建组织';
+            document.getElementById('input-name').value = '';
+            document.getElementById('input-description').value = '';
+            document.getElementById('modal-overlay').classList.remove('hidden');
+            document.getElementById('modal-overlay').classList.add('flex');
+        }
+
+        function openEditModal(id) {
+            const org = allOrgs.find(o => o.id === id);
+            if (!org) return;
+            editingOrgId = id;
+            document.getElementById('modal-title').textContent = '编辑组织';
+            document.getElementById('input-name').value = org.name;
+            document.getElementById('input-description').value = org.description || '';
+            document.getElementById('modal-overlay').classList.remove('hidden');
+            document.getElementById('modal-overlay').classList.add('flex');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.add('hidden');
+            document.getElementById('modal-overlay').classList.remove('flex');
+        }
+
+        async function submitOrg() {
+            const name = document.getElementById('input-name').value.trim();
+            const description = document.getElementById('input-description').value.trim();
+            if (!name) { alert('请输入组织名称'); return; }
+
+            const url = editingOrgId ? `${API_BASE}/organizations/${editingOrgId}` : `${API_BASE}/organizations`;
+            const method = editingOrgId ? 'PUT' : 'POST';
+
+            try {
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, description })
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    alert(err.message || '操作失败');
+                    return;
+                }
+                closeModal();
+                fetchOrgs();
+            } catch (e) { alert('请求失败'); }
+        }
+
+        async function toggleStatus(id, status) {
+            try {
+                const res = await fetch(`${API_BASE}/organizations/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: allOrgs.find(o => o.id === id).name, status })
+                });
+                if (!res.ok) throw new Error();
+                fetchOrgs();
+            } catch (e) { alert('操作失败'); }
+        }
+
+        async function confirmDelete(id, name) {
+            const org = allOrgs.find(o => o.id === id);
+            const userCount = org ? org.userCount : 0;
+            const teamCount = org ? org.teamCount : 0;
+
+            // 先检查是否有队长问题
+            try {
+                const checkRes = await fetch(`${API_BASE}/organizations/${id}/check-captains`, {
+                    headers: { 'Authorization': 'Bearer ' + getToken() }
+                });
+                if (checkRes.ok) {
+                    const checkData = await checkRes.json();
+                    if (checkData.captainTeams && checkData.captainTeams.length > 0) {
+                        // 有队长问题，显示选择弹窗
+                        showCaptainChoice(id, name, userCount, teamCount, checkData.captainTeams);
+                        return;
+                    }
+                }
+            } catch (e) { console.error(e); }
+
+            // 没有队长问题，直接确认删除
+            let msg = `确定要删除组织 "${name}" 吗？`;
+            if (userCount > 0 || teamCount > 0) {
+                msg += `\n\n警告：该组织下有 ${userCount} 个用户和 ${teamCount} 个队伍，删除后将全部被清除！`;
+            }
+            showConfirm(msg, () => executeDelete(id, false));
+        }
+
+        function showCaptainChoice(orgId, orgName, userCount, teamCount, captainTeams) {
+            const list = document.getElementById('captain-teams-list');
+            list.innerHTML = captainTeams.map(t => 
+                `<div class="p-2 bg-[#111] border border-[#333] mb-1"><span class="text-white">${escapeHtml(t.teamName)}</span> <span class="text-gray-500">(队长: ${escapeHtml(t.captainName)})</span></div>`
+            ).join('');
+
+            document.getElementById('btn-delete-teams').onclick = () => {
+                hideCaptainChoice();
+                const msg = `确定要删除组织 "${orgName}" 吗？\n\n将删除：${userCount} 个用户、${teamCount} 个组织内队伍、${captainTeams.length} 个外部队伍`;
+                showConfirm(msg, () => executeDelete(orgId, true));
+            };
+
+            document.getElementById('btn-change-captain').onclick = () => {
+                hideCaptainChoice();
+                const msg = `确定要删除组织 "${orgName}" 吗？\n\n将删除：${userCount} 个用户、${teamCount} 个组织内队伍\n外部队伍将随机更换队长`;
+                showConfirm(msg, () => executeDelete(orgId, false));
+            };
+
+            document.getElementById('captain-choice-overlay').classList.remove('hidden');
+            document.getElementById('captain-choice-overlay').classList.add('flex');
+        }
+
+        function hideCaptainChoice() {
+            document.getElementById('captain-choice-overlay').classList.add('hidden');
+            document.getElementById('captain-choice-overlay').classList.remove('flex');
+        }
+
+        async function executeDelete(id, deleteCaptainTeams) {
+            try {
+                const res = await fetch(`${API_BASE}/organizations/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ deleteCaptainTeams })
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    showToast(err.message || '删除失败', 'error');
+                    return;
+                }
+                const data = await res.json();
+                let msg = `删除成功！已清除 ${data.deletedUsers} 个用户和 ${data.deletedTeams} 个队伍`;
+                if (data.deletedCaptainTeams > 0) {
+                    msg += `，另删除 ${data.deletedCaptainTeams} 个外部队伍`;
+                }
+                showToast(msg, 'success');
+                fetchOrgs();
+            } catch (e) { showToast('删除失败', 'error'); }
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `fixed top-20 right-8 px-4 py-3 text-sm font-mono z-[100] ${type === 'error' ? 'bg-red-600' : 'bg-green-600'} text-white`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ========== 成员管理 ==========
+        function openMemberModal(id, name) {
+            currentOrgId = id;
+            document.getElementById('member-modal-title').textContent = `组织成员管理 - ${name}`;
+            document.getElementById('member-modal').classList.remove('hidden');
+            document.getElementById('member-modal').classList.add('flex');
+            switchTab('users');
+            loadOrgUsers();
+            loadOrgTeams();
+            loadAvailableUsers();
+            loadAvailableTeams();
+        }
+
+        function closeMemberModal() {
+            document.getElementById('member-modal').classList.add('hidden');
+            document.getElementById('member-modal').classList.remove('flex');
+            currentOrgId = null;
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.getElementById(`tab-${tab}`).classList.remove('hidden');
+        }
+
+        async function loadOrgUsers() {
+            try {
+                const res = await fetch(`${API_BASE}/organizations/${currentOrgId}/users`, {
+                    headers: { 'Authorization': 'Bearer ' + getToken() }
+                });
+                const users = await res.json();
+                const list = document.getElementById('user-list');
+                if (users.length === 0) {
+                    list.innerHTML = '<div class="text-gray-500 text-sm">暂无用户</div>';
+                    return;
+                }
+                list.innerHTML = users.map(u => `
+                    <div class="flex items-center justify-between p-2 bg-[#111] border border-[#333]">
+                        <div>
+                            <span class="text-white text-sm">${u.displayName}</span>
+                            <span class="text-gray-500 text-xs ml-2">@${u.username}</span>
+                            <span class="text-gray-600 text-xs ml-2">${u.role}</span>
+                        </div>
+                        <button onclick="removeUser(${u.id})" class="btn-danger-ghost">移除</button>
+                    </div>
+                `).join('');
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadOrgTeams() {
+            try {
+                const res = await fetch(`${API_BASE}/organizations/${currentOrgId}/teams`, {
+                    headers: { 'Authorization': 'Bearer ' + getToken() }
+                });
+                const teams = await res.json();
+                const list = document.getElementById('team-list');
+                if (teams.length === 0) {
+                    list.innerHTML = '<div class="text-gray-500 text-sm">暂无队伍</div>';
+                    return;
+                }
+                list.innerHTML = teams.map(t => `
+                    <div class="flex items-center justify-between p-2 bg-[#111] border border-[#333]">
+                        <div>
+                            <span class="text-white text-sm">${t.name}</span>
+                            <span class="text-gray-500 text-xs ml-2">${t.memberCount}人</span>
+                        </div>
+                        <button onclick="removeTeam(${t.id})" class="btn-danger-ghost">移除</button>
+                    </div>
+                `).join('');
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadAvailableUsers() {
+            try {
+                const res = await fetch(`${API_BASE}/users-without-organization`, {
+                    headers: { 'Authorization': 'Bearer ' + getToken() }
+                });
+                const users = await res.json();
+                const select = document.getElementById('user-select');
+                select.innerHTML = '<option value="">选择用户...</option>' + 
+                    users.map(u => `<option value="${u.id}">${u.displayName} (@${u.username})</option>`).join('');
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadAvailableTeams() {
+            try {
+                const res = await fetch(`${API_BASE}/teams-without-organization`, {
+                    headers: { 'Authorization': 'Bearer ' + getToken() }
+                });
+                const teams = await res.json();
+                const select = document.getElementById('team-select');
+                select.innerHTML = '<option value="">选择队伍...</option>' + 
+                    teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+            } catch (e) { console.error(e); }
+        }
+
+        async function addUser() {
+            const userId = document.getElementById('user-select').value;
+            if (!userId) { alert('请选择用户'); return; }
+            try {
+                const res = await fetch(`${API_BASE}/organizations/${currentOrgId}/users`, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: parseInt(userId) })
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    alert(err.message || '添加失败');
+                    return;
+                }
+                loadOrgUsers();
+                loadAvailableUsers();
+                fetchOrgs();
+            } catch (e) { alert('添加失败'); }
+        }
+
+        async function removeUser(userId) {
+            try {
+                const res = await fetch(`${API_BASE}/organizations/${currentOrgId}/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + getToken() }
+                });
+                if (!res.ok) throw new Error();
+                loadOrgUsers();
+                loadAvailableUsers();
+                fetchOrgs();
+            } catch (e) { alert('移除失败'); }
+        }
+
+        async function addTeam() {
+            const teamId = document.getElementById('team-select').value;
+            if (!teamId) { alert('请选择队伍'); return; }
+            try {
+                const res = await fetch(`${API_BASE}/organizations/${currentOrgId}/teams`, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ teamId: parseInt(teamId) })
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    alert(err.message || '添加失败');
+                    return;
+                }
+                loadOrgTeams();
+                loadAvailableTeams();
+                fetchOrgs();
+            } catch (e) { alert('添加失败'); }
+        }
+
+        async function removeTeam(teamId) {
+            try {
+                const res = await fetch(`${API_BASE}/organizations/${currentOrgId}/teams/${teamId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + getToken() }
+                });
+                if (!res.ok) throw new Error();
+                loadOrgTeams();
+                loadAvailableTeams();
+                fetchOrgs();
+            } catch (e) { alert('移除失败'); }
+        }
+
+        // ========== 确认弹窗 ==========
+        function showConfirm(message, callback) {
+            document.getElementById('confirm-message').textContent = message;
+            confirmCallback = callback;
+            document.getElementById('confirm-overlay').classList.remove('hidden');
+            document.getElementById('confirm-overlay').classList.add('flex');
+        }
+
+        function hideConfirm() {
+            document.getElementById('confirm-overlay').classList.add('hidden');
+            document.getElementById('confirm-overlay').classList.remove('flex');
+            confirmCallback = null;
+        }
+
+        document.getElementById('confirm-ok-btn').onclick = function() {
+            const cb = confirmCallback;
+            hideConfirm();
+            if (cb) cb();
+        };
+
+        // ========== 初始化 ==========
+        document.getElementById('search-input').addEventListener('input', renderOrgs);
+        document.getElementById('status-filter').addEventListener('change', renderOrgs);
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('tg_token');
+            localStorage.removeItem('tg_user');
+            window.location.href = '/login.html';
+        });
+
+        // 页面加载检查登录
+        if (!getToken()) {
+            window.location.href = '/login.html';
+        } else {
+            fetchOrgs();
+        }
+    </script>
+</body>
+</html>

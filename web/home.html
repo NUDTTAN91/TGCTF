@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="author" content="tan91">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'JetBrains Mono';
+            src: url('admin/fonts/JetBrainsMono-Regular.woff2') format('woff2');
+            font-weight: 400;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'JetBrains Mono';
+            src: url('admin/fonts/JetBrainsMono-Bold.woff2') format('woff2');
+            font-weight: 700;
+            font-style: normal;
+        }
+        :root {
+            --bg-dark: #191919;
+            --bg-panel: #262626;
+            --accent: #ff6b00;
+            --text-main: #e0e0e0;
+            --text-dim: #737373;
+        }
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Noto Sans SC', sans-serif; }
+        .font-eng { font-family: 'Chakra Petch', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .striped-bg { background-image: repeating-linear-gradient(45deg,rgba(0,0,0,0),rgba(0,0,0,0) 10px,rgba(0,0,0,0.4) 10px,rgba(0,0,0,0.4) 20px); }
+        
+        .tactical-border { position: relative; border: 1px solid #404040; background: var(--bg-panel); transition: all 0.3s ease; }
+        .tactical-border::before, .tactical-border::after { content: ''; position: absolute; width: 8px; height: 8px; border-color: var(--accent); border-style: solid; transition: all 0.3s ease; }
+        .tactical-border::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+        .tactical-border::after { top: -1px; right: -1px; border-width: 2px 2px 0 0; }
+        .tactical-border:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 10px 30px -10px rgba(0,0,0,0.8); }
+
+        .scan-line { width: 100%; height: 3px; background: linear-gradient(to right, transparent, var(--accent), transparent); position: fixed; top: 0; left: 0; z-index: 9999; opacity: 0.2; animation: scan 6s linear infinite; pointer-events: none; }
+        @keyframes scan { 0% { top: -10%; } 100% { top: 110%; } }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col relative overflow-x-hidden selection:bg-[#ff6b00] selection:text-black pb-20">
+
+    <div class="scan-line"></div>
+
+    <header class="border-b border-[#333] bg-[#191919] z-50 sticky top-0 backdrop-blur-sm bg-opacity-95">
+        <div class="container mx-auto px-4 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-6">
+                <div class="bg-[#ff6b00] text-black font-black text-2xl px-3 py-1 font-eng tracking-tighter hover:bg-white transition-colors cursor-pointer">TG</div>
+                <div class="hidden md:block h-6 w-[1px] bg-[#444]"></div>
+                <div class="hidden md:block text-xs text-[#737373] font-mono leading-tight">
+                    <p>系统状态: <span class="text-green-500">稳定</span></p>
+                    <p>SYSTEM: ONLINE</p>
+                </div>
+            </div>
+            <nav class="hidden md:flex items-center gap-8 font-bold text-sm tracking-widest text-gray-400">
+                <a href="/contests.html" class="hover:text-[#ff6b00] transition-colors">靶场中心</a>
+                <a href="#" class="hover:text-[#ff6b00] transition-colors">战态感知</a>
+                <a href="#" class="hover:text-[#ff6b00] transition-colors">特勤战队</a>
+                <a href="/profile.html" class="hover:text-[#ff6b00] transition-colors">档案库</a>
+                <a href="/admin/admin.html" id="admin-entry" class="hidden bg-[#ff6b00] text-black px-3 py-1 hover:bg-white transition-colors">管理后台</a>
+            </nav>
+            <div>
+                <button class="font-mono text-xs font-bold border border-[#ff6b00] text-[#ff6b00] px-4 py-2 hover:bg-[#ff6b00] hover:text-black transition-all uppercase tracking-wider" id="logout-btn">Logout_离线</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-16 flex-grow">
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-8 relative">
+            <div class="absolute -top-10 -left-10 text-[12rem] font-black text-white opacity-[0.02] select-none pointer-events-none z-0 font-eng">TG</div>
+
+            <div class="lg:col-span-7 flex flex-col justify-center relative z-10">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-2 h-2 bg-[#ff6b00]"></div>
+                    <div class="w-2 h-2 bg-[#ff6b00] opacity-50"></div>
+                    <!-- 修改：成立于 2020 -->
+                    <span class="text-[#ff6b00] text-sm font-mono tracking-[0.3em]">EST. 2020</span>
+                </div>
+                
+                <!-- 修改：极简 TG -->
+                <h1 class="text-6xl md:text-8xl font-black text-white mb-6 leading-none">
+                    <span class="tracking-[0.2em] shadow-lg">天格</span><span class="text-[#ff6b00]">.</span>
+                    <span class="block text-xl md:text-2xl text-gray-500 font-eng tracking-normal mt-4 font-normal">
+                        // <span class="text-gray-300">TG</span>
+                    </span>
+                </h1>
+                
+                <div class="bg-[#202020] p-6 border-l-4 border-[#ff6b00] mb-10 striped-bg max-w-2xl">
+                    <p class="text-gray-400 text-sm md:text-base leading-relaxed font-mono">
+                        >> <span class="text-white">天道酬勤 · 格物致知</span><br>
+                        >> 正在连接至神经网络...<br>
+                        >> 这里没有绝对的安全，只有不断进化的攻防。欢迎接入。
+                    </p>
+                </div>
+
+                <div class="flex flex-wrap gap-4">
+                    <button onclick="window.location.href='/contests.html'" class="bg-[#ff6b00] text-black font-black px-8 py-4 uppercase text-sm tracking-widest hover:bg-white transition-colors shadow-[0_0_15px_rgba(255,107,0,0.3)]">
+                        立即部署 / START
+                    </button>
+                    <button class="border border-gray-600 text-gray-300 font-bold px-8 py-4 uppercase text-sm tracking-widest hover:border-white hover:text-white transition-colors">
+                        查看规则 / RULES
+                    </button>
+                </div>
+            </div>
+
+            <div class="lg:col-span-5 hidden lg:flex flex-col justify-end items-end font-mono text-xs text-gray-500 space-y-4">
+                <div class="w-full bg-[#1c1c1c] border border-[#333] p-4">
+                    <div class="flex justify-between border-b border-[#333] pb-2 mb-2">
+                        <span>节点监控</span>
+                        <span class="text-green-500">ACTIVE</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><span class="block text-[#737373]">在线战队</span><span class="text-xl text-white font-eng" id="stat-teams">1,024</span></div>
+                        <div><span class="block text-[#737373]">已捕获Flag</span><span class="text-xl text-[#ff6b00] font-eng" id="stat-flags">8,902</span></div>
+                        <div class="col-span-2"><span class="block text-[#737373] mb-1">系统负载</span><div class="w-full h-1 bg-[#333]"><div class="w-[45%] h-full bg-white" id="stat-load"></div></div></div>
+                    </div>
+                </div>
+                <div class="text-right opacity-50">
+                    <p>LATENCY: <span id="stat-latency">23</span>ms</p>
+                    <p>ENCRYPTION: AES-256-GCM</p>
+                    <p>SERVER: TG_MAIN_NODE_01</p>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="flex items-end justify-between mb-8 border-b border-[#333] pb-4">
+                <div>
+                    <h2 class="text-3xl font-black text-white tracking-wider">实战演练</h2>
+                    <p class="text-xs text-[#ff6b00] font-mono mt-1">/// LIVE CONTESTS</p>
+                </div>
+                <a href="/contests.html" class="text-xs text-gray-500 hover:text-[#ff6b00] font-mono transition-colors">查看全部 >></a>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="contest-list">
+                <!-- 动态加载比赛卡片 -->
+            </div>
+        </section>
+    </main>
+    
+    <footer class="fixed bottom-0 w-full z-50 bg-[#111] bg-opacity-90 backdrop-blur-md border-t border-[#333] py-3">
+        <div class="container mx-auto px-4 flex justify-between items-center text-[10px] text-[#555] font-mono">
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 bg-[#ff6b00]"></div>
+                <span class="text-base text-white font-bold font-mono" style="text-shadow: 0 0 10px rgba(255,255,255,0.5), 0 0 20px rgba(255,255,255,0.3);">Copyright © 2021-present tan91. All Rights Reserved.</span>
+                <a href="https://github.com/NUDTTAN91" target="_blank" class="ml-2 px-2 py-0.5 bg-[#333] text-[#ff6b00] hover:bg-[#ff6b00] hover:text-black transition-colors flex items-center gap-1">
+                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                    GitHub
+                </a>
+                <a href="https://blog.csdn.net/ZXW_NUDT" target="_blank" class="px-2 py-0.5 bg-[#333] text-[#ff6b00] hover:bg-[#ff6b00] hover:text-black transition-colors flex items-center gap-1">
+                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                    Blog
+                </a>
+            </div>
+            <div class="flex gap-4 uppercase tracking-widest">
+                <a href="https://github.com/NUDTTAN91" target="_blank" class="hover:text-white transition-colors flex items-center gap-1">
+                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                    Github
+                </a>
+                <span class="text-[#333]">/</span>
+                <a href="#" class="hover:text-white transition-colors">Discord</a>
+                <span class="text-[#333]">/</span>
+                <a href="#" class="hover:text-white transition-colors">QQ Group</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 解析 JWT Token 获取用户信息
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // 登录检查：未登录则跳转到登录页
+        const token = localStorage.getItem('tg_token');
+        if (!token) {
+            window.location.href = '/login.html';
+        }
+        
+        // 验证 token 是否有效（重置密码后会失效）
+        async function validateToken() {
+            try {
+                const resp = await fetch('/api/profile', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (resp.status === 401) {
+                    localStorage.removeItem('tg_token');
+                    localStorage.removeItem('tg_must_change_password');
+                    window.location.href = '/login.html';
+                }
+            } catch (e) {
+                console.error('Token validation failed', e);
+            }
+        }
+        validateToken();
+        
+        // 检查是否需要强制修改密码（防绕过）
+        if (localStorage.getItem('tg_must_change_password') === 'true') {
+            alert('请先修改密码后再访问系统');
+            window.location.href = '/change-password.html';
+        }
+        
+        // 如果是超级管理员，显示后台入口
+        const payload = parseJwt(token);
+        if (payload && payload.role === 'super') {
+            document.getElementById('admin-entry').classList.remove('hidden');
+        }
+
+        // 加载统计数据
+        async function loadStats() {
+            try {
+                const resp = await fetch('/api/admin/overview', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    document.getElementById('stat-teams').textContent = (data.teams || 0).toLocaleString();
+                    document.getElementById('stat-flags').textContent = (data.docker || 0).toLocaleString();
+                }
+            } catch (e) {
+                console.error('加载统计失败', e);
+            }
+        }
+
+        // 创建比赛卡片
+        function createContestCard(c) {
+            const article = document.createElement('article');
+            
+            // 有海报则作为背景
+            const hasPoster = !!c.coverImage;
+            const bgStyle = hasPoster ? `background-image: url('${c.coverImage}'); background-size: cover; background-position: center;` : '';
+            
+            article.className = 'tactical-border p-6 cursor-pointer group flex flex-col h-full justify-between relative overflow-hidden';
+            article.style.cssText = bgStyle;
+            // 根据比赛模式跳转到对应页面
+            const targetPage = c.mode === 'awd-f' ? 'contest-challenges-awdf.html' : 'contest-challenges.html';
+            article.onclick = () => window.location.href = `/${targetPage}?id=${c.id}`;
+
+            const statusConfig = {
+                running: { badge: 'bg-green-500 text-black', text: '进行中' },
+                pending: { badge: 'bg-yellow-500 text-black', text: '筹备中' },
+                paused: { badge: 'bg-orange-500 text-black', text: '暂停中' },
+                ended: { badge: 'bg-gray-600 text-white', text: '已结束' }
+            };
+            const cfg = statusConfig[c.status] || statusConfig.pending;
+            const modeText = c.mode === 'awd' ? 'AWD' : c.mode === 'awd-f' ? 'AWD-F' : 'Jeopardy';
+
+            // 有海报时添加暗色遮罩层
+            const overlayClass = hasPoster ? 'absolute inset-0 bg-black/60' : '';
+
+            article.innerHTML = `
+                ${hasPoster ? `<div class="${overlayClass}"></div>` : ''}
+                <div class="relative z-10">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="${cfg.badge} text-[10px] font-bold px-2 py-0.5 font-mono">${cfg.text}</span>
+                        <span class="bg-[#333] text-gray-300 text-[10px] font-bold px-2 py-0.5 font-mono">${modeText}</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2 group-hover:text-[#ff6b00] transition-colors tracking-wide">${escapeHtml(c.name)}</h3>
+                    <p class="text-sm text-gray-300 mb-4 leading-relaxed line-clamp-2">${escapeHtml(c.description || '暂无描述')}</p>
+                </div>
+                <div class="text-xs text-gray-400 font-mono space-y-1 relative z-10">
+                    <div><span>开始: </span><span>${c.startTime}</span></div>
+                    <div><span>结束: </span><span>${c.endTime}</span></div>
+                </div>
+            `;
+            return article;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
+
+        // 加载比赛列表
+        async function loadContests() {
+            const container = document.getElementById('contest-list');
+            container.innerHTML = '<p class="text-gray-500 text-sm col-span-full text-center py-8">加载中...</p>';
+
+            try {
+                const resp = await fetch('/api/contests', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!resp.ok) throw new Error('加载失败');
+                const data = await resp.json();
+                const contests = data.contests || [];
+
+                container.innerHTML = '';
+                if (contests.length === 0) {
+                    container.innerHTML = '<p class="text-gray-500 text-sm col-span-full text-center py-8">暂无可用比赛</p>';
+                    return;
+                }
+
+                // 最多显示6个比赛
+                contests.slice(0, 6).forEach(c => {
+                    container.appendChild(createContestCard(c));
+                });
+            } catch (err) {
+                container.innerHTML = '<p class="text-gray-500 text-sm col-span-full text-center py-8">无法加载比赛列表</p>';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStats();
+            loadContests();
+
+            const logoutBtn = document.getElementById('logout-btn');
+            logoutBtn.addEventListener('click', () => {
+                localStorage.removeItem('tg_token');
+                window.location.href = '/login.html';
+            });
+        });
+    </script>
+
+</body>
+</html>

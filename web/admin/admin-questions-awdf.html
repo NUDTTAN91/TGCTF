@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="author" content="tan91">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/fonts.css">
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --bg-panel: #1e1e1e;
+            --border-color: #333;
+            --accent: #ff6b00;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --info: #3b82f6;
+            --text-main: #e0e0e0;
+            --text-dim: #737373;
+        }
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Noto Sans SC', sans-serif; }
+        .font-eng { font-family: 'Chakra Petch', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .sidebar-item { border-left: 2px solid transparent; transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { background: rgba(255, 107, 0, 0.05); border-left-color: var(--accent); color: white; }
+        .sidebar-item.active .icon { color: var(--accent); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+
+        .admin-table { width: 100%; border-collapse: collapse; }
+        .admin-table th, .admin-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #333; }
+        .admin-table th { background: #1a1a1a; font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.1em; color: #888; }
+        .admin-table tr:hover { background: rgba(255, 107, 0, 0.03); }
+
+        .btn-action { padding: 6px 12px; font-size: 11px; font-family: 'JetBrains Mono', monospace; border: 1px solid; transition: all 0.2s; cursor: pointer; }
+        .btn-edit { border-color: #666; color: #888; }
+        .btn-edit:hover { border-color: var(--accent); color: var(--accent); }
+        .btn-delete { border-color: #666; color: #888; }
+        .btn-delete:hover { border-color: var(--danger); color: var(--danger); }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden selection:bg-[#ff6b00] selection:text-black">
+
+    <!-- 左侧侧边栏 -->
+    <aside class="w-48 bg-[#161616] border-r border-[#333] flex flex-col z-20 shadow-xl">
+        <div class="h-16 flex items-center px-6 border-b border-[#333]">
+            <div class="bg-[#ff6b00] text-black font-black text-xl px-2 py-0.5 font-eng tracking-tighter mr-3">TG</div>
+            <span class="font-bold text-gray-300 tracking-wider text-sm">管理中枢</span>
+        </div>
+        <nav class="flex-1 py-6 space-y-1 font-mono text-xs overflow-y-auto">
+            <a href="/admin/admin.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⌂</span> 概览</a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-4">赛事核心</p>
+            <a href="/admin/admin-contests.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚑</span> 比赛管理</a>
+            <a href="/admin/admin-question-bank.html" class="sidebar-item active flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">☷</span> 题库</a>
+            <a href="/admin/admin-users.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">웃</span> 用户管理</a>
+            <a href="/admin/admin-teams.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">◈</span> 队伍管理</a>
+            <a href="/admin/admin-organizations.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🏢</span> 组织管理</a>
+            <a href="/admin/admin-data-import.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">📥</span> 数据导入</a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-6">运维监控</p>
+            <a href="/admin/admin-docker.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🐳</span> docker实例管理</a>
+            <a href="/admin/admin-anti-cheat.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🛡️</span> 防作弊系统</a>
+            <a href="/admin/admin-logs.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚠</span> 系统日志</a>
+            <a href="/admin/admin-settings.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚙</span> 系统设置</a>
+        </nav>
+        <div class="p-4 border-t border-[#333]">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-[#333] rounded-full flex items-center justify-center text-[#ff6b00] font-bold">A</div>
+                <div><p class="text-xs text-white font-bold">超级管理员</p><p class="text-[10px] text-green-500">● 连接稳定</p></div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 右侧内容区 -->
+    <div class="flex-1 flex flex-col min-w-0 bg-[#121212]">
+        <header class="h-16 bg-[#161616] border-b border-[#333] flex items-center justify-between px-8 z-10">
+            <div class="flex items-center gap-4 text-xs font-mono">
+                <span class="text-gray-500">位置:</span>
+                <a href="/admin/admin-question-bank.html" class="text-[#ff6b00] hover:text-white">题库</a>
+                <span class="text-gray-600">/</span>
+                <span class="text-purple-400">AWD-F题库</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="/home.html" class="font-mono text-xs font-bold border border-gray-500 text-gray-400 px-4 py-2 hover:border-white hover:text-white transition-all uppercase tracking-wider">← 返回前台</a>
+                <button id="logout-btn" class="font-mono text-xs font-bold border border-[#ff6b00] text-[#ff6b00] px-4 py-2 hover:bg-[#ff6b00] hover:text-black transition-all uppercase tracking-wider">Logout_离线</button>
+            </div>
+        </header>
+
+        <main class="flex-1 flex flex-col pt-6 px-8 relative overflow-hidden">
+            <div class="absolute inset-0 z-0 opacity-10 pointer-events-none" style="background-image: radial-gradient(#333 1px, transparent 1px); background-size: 20px 20px;"></div>
+            
+            <div class="relative z-10 w-full max-w-[1600px] mx-auto flex-1 flex flex-col">
+                
+                <!-- 操作栏 -->
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-4">
+                        <a href="/admin/admin-question-bank.html" class="text-gray-500 hover:text-white font-mono text-sm">← 返回题库</a>
+                        <h1 class="text-xl font-bold font-eng text-white">⚔️ AWD-F 题库管理</h1>
+                        <span class="text-gray-500 font-mono text-sm" id="total-count"></span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="location.href='/admin/admin-question-edit-awdf.html'" class="bg-[#ff6b00] text-black font-bold px-6 py-3 font-mono text-sm hover:bg-white transition-all" style="clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%, 0 8px);">
+                            + 新增 AWD-F 题目
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 筛选栏 -->
+                <div class="flex items-center gap-4 mb-6 flex-wrap">
+                    <span class="text-xs text-gray-500 font-mono">类别筛选:</span>
+                    <select id="filter-category" class="bg-[#111] border border-[#333] text-white px-3 py-2 text-xs font-mono outline-none">
+                        <option value="">全部类别</option>
+                    </select>
+                </div>
+
+                <!-- 表格 -->
+                <div class="bg-[#1a1a1a] border border-[#333] overflow-hidden">
+                    <div style="max-height: 700px; overflow-y: auto;">
+                    <table class="admin-table w-full">
+                        <thead>
+                            <tr>
+                                <th class="whitespace-nowrap">ID</th>
+                                <th class="whitespace-nowrap">题目标题</th>
+                                <th class="whitespace-nowrap">类别</th>
+                                <th class="whitespace-nowrap">难度</th>
+                                <th class="whitespace-nowrap">Docker镜像</th>
+                                <th class="whitespace-nowrap">端口</th>
+                                <th class="whitespace-nowrap">EXP脚本</th>
+                                <th class="whitespace-nowrap">镜像状态</th>
+                                <th class="whitespace-nowrap">创建时间</th>
+                                <th class="whitespace-nowrap">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="question-list">
+                            <tr><td colspan="10" class="text-center text-gray-500 py-8">加载中...</td></tr>
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <footer class="py-1 border-t border-[#333] flex items-center justify-center flex-shrink-0 mt-auto">
+                <div class="flex items-center justify-center gap-4 text-xs flex-wrap">
+                    <div class="flex items-center gap-1">
+                        <div class="bg-[#ff6b00] text-black font-black px-1.5 py-0.5 font-eng tracking-tighter">TG</div>
+                        <span class="text-gray-500">天格后台管理系统</span>
+                    </div>
+                    <span class="text-white font-mono">Copyright © 2021-present tan91. All Rights Reserved.</span>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <script>
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) { return null; }
+        }
+
+        const token = localStorage.getItem('tg_token');
+        if (!token) {
+            window.location.href = '/login.html';
+        } else {
+            const payload = parseJwt(token);
+            if (!payload || payload.role !== 'super') {
+                alert('权限不足');
+                window.location.href = '/home.html';
+            }
+        }
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('tg_token');
+            window.location.href = '/login.html';
+        });
+
+        let questions = [];
+        let categories = [];
+        let currentCategory = '';
+
+        // 根据类别ID获取发光颜色
+        function getCategoryColor(categoryId) {
+            const cat = categories.find(c => c.id === categoryId);
+            return cat && cat.glowColor ? cat.glowColor : '#ff6b00';
+        }
+
+        async function loadData() {
+            try {
+                const [questRes, catRes] = await Promise.all([
+                    fetch('/api/admin/awdf/questions', { headers: { 'Authorization': 'Bearer ' + token } }),
+                    fetch('/api/admin/categories', { headers: { 'Authorization': 'Bearer ' + token } })
+                ]);
+                
+                if (questRes.ok) questions = await questRes.json();
+                if (catRes.ok) {
+                    categories = await catRes.json();
+                    renderCategoryFilter();
+                }
+                
+                renderQuestions();
+            } catch (e) {
+                console.error(e);
+                document.getElementById('question-list').innerHTML = '<tr><td colspan="10" class="text-center text-red-500 py-8">加载失败</td></tr>';
+            }
+        }
+
+        function renderCategoryFilter() {
+            const select = document.getElementById('filter-category');
+            select.innerHTML = '<option value="">全部类别</option>' + 
+                categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        }
+
+        function renderQuestions() {
+            let filtered = questions;
+            
+            if (currentCategory) {
+                filtered = filtered.filter(q => q.categoryId == currentCategory);
+            }
+            
+            document.getElementById('total-count').textContent = `(${filtered.length}/${questions.length})`;
+            
+            const tbody = document.getElementById('question-list');
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" class="text-center text-gray-500 py-8">暂无数据</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(q => {
+                // 解析端口显示
+                let portsDisplay = '--';
+                if (q.ports) {
+                    try {
+                        const portArr = JSON.parse(q.ports);
+                        portsDisplay = portArr.join(', ');
+                    } catch (e) {
+                        portsDisplay = q.ports;
+                    }
+                }
+                
+                // 镜像状态显示
+                let imageStatus = '<span class="text-gray-500">未测试</span>';
+                if (q.imageStatus === 'exists') {
+                    imageStatus = '<span class="text-green-400">✓ 存在</span>';
+                } else if (q.imageStatus === 'not_found') {
+                    imageStatus = '<span class="text-red-400">✗ 不存在</span>';
+                }
+                
+                // EXP脚本状态
+                const hasExp = q.expScript ? '<span class="text-green-400">✓ 已配置</span>' : '<span class="text-yellow-400">⚠ 未配置</span>';
+                
+                return `
+                <tr>
+                    <td class="font-mono text-gray-500 whitespace-nowrap">${q.id}</td>
+                    <td class="whitespace-nowrap">
+                        <div class="font-bold text-white">${q.title}</div>
+                    </td>
+                    <td class="whitespace-nowrap"><span class="font-mono text-xs" style="color: ${getCategoryColor(q.categoryId)};">${q.categoryName || '--'}</span></td>
+                    <td class="whitespace-nowrap"><span class="font-mono text-xs">${q.difficulty || '--'}⭐</span></td>
+                    <td class="whitespace-nowrap font-mono text-xs text-gray-400 max-w-[200px] truncate">${q.dockerImage || '--'}</td>
+                    <td class="whitespace-nowrap font-mono text-xs text-gray-400">${portsDisplay}</td>
+                    <td class="whitespace-nowrap text-xs">${hasExp}</td>
+                    <td class="whitespace-nowrap text-xs">${imageStatus}</td>
+                    <td class="whitespace-nowrap font-mono text-xs text-gray-500">${new Date(q.createdAt).toLocaleDateString()}</td>
+                    <td class="whitespace-nowrap">
+                        <div class="flex gap-2">
+                            <button onclick="editQuestion(${q.id})" class="btn-action btn-edit">编辑</button>
+                            <button onclick="deleteQuestion(${q.id}, '${q.title}')" class="btn-action btn-delete">删除</button>
+                        </div>
+                    </td>
+                </tr>
+            `}).join('');
+        }
+
+        function editQuestion(id) {
+            window.location.href = `/admin/admin-question-edit-awdf.html?id=${id}`;
+        }
+
+        async function deleteQuestion(id, title) {
+            if (!confirm(`确定要删除题目"${title}"吗？`)) return;
+            
+            try {
+                const res = await fetch(`/api/admin/awdf/questions/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                
+                if (!res.ok) {
+                    const data = await res.json();
+                    if (data.error === 'QUESTION_IN_USE') {
+                        alert(`该题目正在被${data.count}个比赛使用，无法删除`);
+                    } else {
+                        alert('删除失败: ' + data.error);
+                    }
+                    return;
+                }
+                
+                loadData();
+            } catch (e) {
+                console.error(e);
+                alert('删除失败');
+            }
+        }
+
+        document.getElementById('filter-category').addEventListener('change', (e) => {
+            currentCategory = e.target.value;
+            renderQuestions();
+        });
+
+        loadData();
+    </script>
+
+</body>
+</html>

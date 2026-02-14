@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="author" content="tan91">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/fonts.css">
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --bg-panel: #1e1e1e;
+            --border-color: #333;
+            --accent: #ff6b00;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --info: #3b82f6;
+            --text-main: #e0e0e0;
+            --text-dim: #737373;
+        }
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Noto Sans SC', sans-serif; }
+        .font-eng { font-family: 'Chakra Petch', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .sidebar-item { border-left: 2px solid transparent; transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { background: rgba(255, 107, 0, 0.05); border-left-color: var(--accent); color: white; }
+        .sidebar-item.active .icon { color: var(--accent); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+
+        .form-section { background: #1a1a1a; border: 1px solid #333; padding: 16px; margin-bottom: 12px; }
+        .form-section-title { font-size: 12px; font-weight: bold; color: white; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .form-section-title::before { content: ''; width: 3px; height: 14px; background: var(--accent); }
+
+        .form-input { background: #111; border: 1px solid #333; color: white; padding: 8px 12px; width: 100%; outline: none; font-family: 'JetBrains Mono', monospace; transition: 0.2s; font-size: 12px; }
+        .form-input:focus { border-color: var(--accent); }
+        .form-input:disabled { opacity: 0.5; cursor: not-allowed; }
+        .form-label { display: block; font-size: 12px; font-weight: bold; color: #888; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+        .form-hint { font-size: 10px; color: #555; margin-top: 4px; }
+        .form-required { color: var(--danger); }
+
+        .form-select { background: #111 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 12px center; appearance: none; }
+
+        .type-card { background: #111; border: 2px solid #333; padding: 8px 12px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
+        .type-card:hover { border-color: #666; }
+        .type-card.selected { border-color: var(--accent); background: rgba(255, 107, 0, 0.05); }
+        .type-card-icon { font-size: 18px; }
+        .type-card-title { font-size: 11px; font-weight: bold; color: white; }
+        .type-card-desc { font-size: 9px; color: #666; }
+
+        .star-rating { display: flex; gap: 2px; }
+        .star-rating .star { cursor: pointer; font-size: 16px; color: #333; transition: color 0.15s; }
+        .star-rating .star:hover, .star-rating .star.active { color: var(--accent); }
+        .star-rating .star.hover-preview { color: #666; }
+
+        .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; inset: 0; background: #333; transition: 0.3s; border-radius: 24px; }
+        .toggle-slider:before { content: ''; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: #888; transition: 0.3s; border-radius: 50%; }
+        input:checked + .toggle-slider { background: rgba(255, 107, 0, 0.3); }
+        input:checked + .toggle-slider:before { transform: translateX(20px); background: var(--accent); }
+
+        .port-item { display: flex; gap: 8px; margin-bottom: 8px; }
+        .port-item .form-input { flex: 1; }
+        .btn-remove-port { background: none; border: 1px solid #555; color: #888; padding: 8px 12px; cursor: pointer; }
+        .btn-remove-port:hover { border-color: var(--danger); color: var(--danger); }
+
+        .test-section { background: rgba(59, 130, 246, 0.05); border: 1px dashed rgba(59, 130, 246, 0.3); padding: 12px; margin-top: 12px; }
+        .test-btn { padding: 6px 14px; font-size: 11px; font-family: 'JetBrains Mono', monospace; border: 1px solid; cursor: pointer; transition: all 0.2s; }
+        .test-btn-check { border-color: var(--info); color: var(--info); }
+        .test-btn-check:hover { background: var(--info); color: white; }
+        .test-btn-create { border-color: var(--success); color: var(--success); }
+        .test-btn-create:hover { background: var(--success); color: white; }
+        .test-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .test-result { margin-top: 8px; padding: 8px; font-size: 11px; font-family: 'JetBrains Mono', monospace; }
+        .test-result.success { background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); color: var(--success); }
+        .test-result.error { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: var(--danger); }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden selection:bg-[#ff6b00] selection:text-black">
+
+    <!-- 左侧侧边栏 -->
+    <aside class="w-48 bg-[#161616] border-r border-[#333] flex flex-col z-20 shadow-xl">
+        <div class="h-16 flex items-center px-6 border-b border-[#333]">
+            <div class="bg-[#ff6b00] text-black font-black text-xl px-2 py-0.5 font-eng tracking-tighter mr-3">TG</div>
+            <span class="font-bold text-gray-300 tracking-wider text-sm">管理中枢</span>
+        </div>
+        <nav class="flex-1 py-6 space-y-1 font-mono text-xs overflow-y-auto">
+            <a href="/admin/admin.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⌂</span> 概览</a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-4">赛事核心</p>
+            <a href="/admin/admin-contests.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚑</span> 比赛管理</a>
+            <a href="/admin/admin-question-bank.html" class="sidebar-item active flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">☷</span> 题库</a>
+            <a href="/admin/admin-users.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">웃</span> 用户管理</a>
+            <a href="/admin/admin-teams.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">◈</span> 队伍管理</a>
+            <a href="/admin/admin-organizations.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🏢</span> 组织管理</a>
+            <a href="/admin/admin-data-import.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">📥</span> 数据导入</a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-6">运维监控</p>
+            <a href="/admin/admin-docker.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🐳</span> docker实例管理</a>
+            <a href="/admin/admin-anti-cheat.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🛡️</span> 防作弊系统</a>
+            <a href="/admin/admin-logs.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚠</span> 系统日志</a>
+            <a href="/admin/admin-settings.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚙</span> 系统设置</a>
+        </nav>
+        <div class="p-4 border-t border-[#333]">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-[#333] rounded-full flex items-center justify-center text-[#ff6b00] font-bold">A</div>
+                <div><p class="text-xs text-white font-bold">超级管理员</p><p class="text-[10px] text-green-500">● 连接稳定</p></div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 右侧内容区 -->
+    <div class="flex-1 flex flex-col min-w-0 bg-[#121212]">
+        <header class="h-16 bg-[#161616] border-b border-[#333] flex items-center justify-between px-8 z-10">
+            <div class="flex items-center gap-4 text-xs font-mono">
+                <span class="text-gray-500">位置:</span>
+                <a href="/admin/admin-question-bank.html" class="text-[#ff6b00] hover:text-white">题库</a>
+                <span class="text-gray-600">/</span>
+                <a href="/admin/admin-questions.html" class="text-[#ff6b00] hover:text-white">题目列表</a>
+                <span class="text-gray-600">/</span>
+                <span class="text-white" id="page-title">新增题目</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="/home.html" class="font-mono text-xs font-bold border border-gray-500 text-gray-400 px-4 py-2 hover:border-white hover:text-white transition-all uppercase tracking-wider">← 返回前台</a>
+                <button id="logout-btn" class="font-mono text-xs font-bold border border-[#ff6b00] text-[#ff6b00] px-4 py-2 hover:bg-[#ff6b00] hover:text-black transition-all uppercase tracking-wider">Logout_离线</button>
+            </div>
+        </header>
+
+        <main class="flex-1 flex flex-col pt-4 px-6 relative overflow-y-auto">
+            <div class="absolute inset-0 z-0 opacity-10 pointer-events-none" style="background-image: radial-gradient(#333 1px, transparent 1px); background-size: 20px 20px;"></div>
+            
+            <div class="relative z-10 w-full max-w-[1200px] mx-auto">
+                
+                <form id="question-form">
+                    <!-- 第一行：标题、类型、类别、难度 -->
+                    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;" class="mb-3 mt-4">
+                        <div>
+                            <label class="form-label">题目标题 <span class="form-required">*</span></label>
+                            <input type="text" id="form-title" class="form-input" placeholder="如：SQL Injection Lab" required>
+                        </div>
+                        <div>
+                            <label class="form-label">题目类型 <span class="form-required">*</span></label>
+                            <select id="form-type" class="form-input form-select" onchange="onTypeChange()" required>
+                                <option value="">请选择类型</option>
+                                <option value="static_attachment">📎 静态附件</option>
+                                <option value="static_container">🐳 静态容器</option>
+                                <option value="dynamic_attachment">📦 动态附件</option>
+                                <option value="dynamic_container">⚡ 动态容器</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">题目类别 <span class="form-required">*</span></label>
+                            <select id="form-category" class="form-input form-select" required>
+                                <option value="">请选择类别</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">题目难度 <span id="difficulty-value" class="text-[#ff6b00] ml-1">5</span></label>
+                            <div class="star-rating" id="star-rating">
+                                <span class="star" data-value="1">★</span>
+                                <span class="star" data-value="2">★</span>
+                                <span class="star" data-value="3">★</span>
+                                <span class="star" data-value="4">★</span>
+                                <span class="star" data-value="5">★</span>
+                                <span class="star" data-value="6">★</span>
+                                <span class="star" data-value="7">★</span>
+                                <span class="star" data-value="8">★</span>
+                                <span class="star" data-value="9">★</span>
+                                <span class="star" data-value="10">★</span>
+                            </div>
+                            <input type="hidden" id="form-difficulty" value="5">
+                        </div>
+                    </div>
+
+                    <!-- 题目描述（支持Markdown） -->
+                    <div class="mb-3">
+                        <label class="form-label">题目描述 <span class="text-gray-500 font-normal">(支持Markdown)</span></label>
+                        <textarea id="form-description" class="form-input" rows="5" placeholder="题目描述、解题提示等..."></textarea>
+                    </div>
+
+                    <!-- Flag设置 -->
+                    <div class="flex items-center gap-3 mb-3" id="flag-section">
+                        <label class="form-label whitespace-nowrap mb-0">Flag设置 <span class="form-required" id="flag-required">*</span></label>
+                        <input type="text" id="form-flag" class="form-input flex-1" placeholder="flag{...}">
+                        <p class="form-hint mb-0 whitespace-nowrap" id="flag-hint">静态题目需设置固定Flag</p>
+                    </div>
+
+                    <!-- 附件设置（所有题目类型都可添加附件） -->
+                    <div class="form-section mb-3" id="attachment-section">
+                        <h3 class="form-section-title">附件设置 <span class="text-gray-500 font-normal text-xs">(可选)</span></h3>
+                        <div class="flex items-center gap-4 mb-3">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="attachment-type" value="url" checked onchange="onAttachmentTypeChange()" class="w-4 h-4 accent-[#ff6b00]">
+                                <span class="text-sm text-gray-400">外部链接</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="attachment-type" value="local" onchange="onAttachmentTypeChange()" class="w-4 h-4 accent-[#ff6b00]">
+                                <span class="text-sm text-gray-400">本地上传</span>
+                            </label>
+                        </div>
+                        <!-- URL输入 -->
+                        <div id="attachment-url-input">
+                            <input type="text" id="form-attachment" class="form-input" placeholder="https://...">
+                            <p class="form-hint">输入附件的外部下载链接</p>
+                        </div>
+                        <!-- 本地上传 -->
+                        <div id="attachment-upload-input" class="hidden">
+                            <div class="flex items-center gap-3">
+                                <input type="file" id="form-attachment-file" class="hidden" onchange="handleAttachmentUpload(this)">
+                                <button type="button" onclick="document.getElementById('form-attachment-file').click()" class="border border-[#ff6b00] text-[#ff6b00] px-4 py-2 text-sm font-mono hover:bg-[#ff6b00] hover:text-black transition-all">
+                                    选择文件
+                                </button>
+                                <span id="attachment-filename" class="text-gray-500 text-sm font-mono">未选择文件</span>
+                                <span id="attachment-upload-status" class="text-xs font-mono hidden"></span>
+                            </div>
+                            <p class="form-hint">上传附件到服务器，用户可直接下载</p>
+                            <input type="hidden" id="form-attachment-path">
+                        </div>
+                    </div>
+
+                    <!-- 容器设置 -->
+                    <div class="form-section hidden" id="container-section">
+                        <h3 class="form-section-title">容器设置</h3>
+                        
+                        <!-- Docker镜像名（整行） -->
+                        <div class="mb-3">
+                            <label class="form-label">Docker镜像名 <span class="form-required">*</span></label>
+                            <input type="text" id="form-docker-image" class="form-input" placeholder="ctf/web-sqli:latest">
+                        </div>
+
+                        <!-- 服务端口 | Flag注入方式 -->
+                        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;" class="mb-3">
+                            <div>
+                                <label class="form-label">服务端口</label>
+                                <div id="ports-container">
+                                    <div class="port-item">
+                                        <input type="text" class="form-input port-input" placeholder="80">
+                                        <button type="button" class="btn-remove-port" onclick="removePort(this)" style="display:none;">&times;</button>
+                                    </div>
+                                </div>
+                                <button type="button" onclick="addPort()" class="text-[#ff6b00] text-xs font-mono hover:text-white">+ 添加端口</button>
+                            </div>
+                            <div>
+                                <label class="form-label">Flag注入方式 <span class="text-gray-500 font-normal">(可多选)</span></label>
+                                <div id="flag-env-list" class="flex flex-wrap gap-2">
+                                    <!-- 动态加载环境变量列表 -->
+                                </div>
+                                <p id="flag-env-empty" class="form-hint text-yellow-500 hidden">暂无可选，请先在 <a href="/admin/admin-flag-env.html" class="underline text-[#ff6b00]">环境变量管理</a> 添加</p>
+                                <!-- Flag脚本注入 -->
+                                <div class="mt-3">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" id="use-flag-script" class="w-4 h-4 accent-[#ff6b00]" onchange="toggleFlagScript()">
+                                        <span class="text-xs text-gray-400">使用 flag.sh 脚本注入</span>
+                                    </label>
+                                    <div id="flag-script-input" class="hidden mt-2">
+                                        <input type="text" id="form-flag-script" class="form-input font-mono text-xs" placeholder="/flag.sh">
+                                        <p class="form-hint">容器启动后执行该脚本，Flag作为第一个参数传入</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 资源限制 | 环境测试 -->
+                        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;">
+                            <!-- 资源限制块 -->
+                            <div class="bg-[#111] border border-[#333] p-3">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs font-bold text-white">资源限制</span>
+                                    <div class="flex items-center gap-2">
+                                        <label class="toggle-switch" style="width:36px;height:20px;">
+                                            <input type="checkbox" id="form-no-limit" onchange="toggleResourceLimit()">
+                                            <span class="toggle-slider" style="border-radius:20px;"></span>
+                                        </label>
+                                        <span class="text-gray-500 text-xs">不限制</span>
+                                    </div>
+                                </div>
+                                <div id="resource-limits" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;">
+                                    <div>
+                                        <label class="form-label">CPU</label>
+                                        <input type="text" id="form-cpu" class="form-input" placeholder="1.0">
+                                    </div>
+                                    <div>
+                                        <label class="form-label">内存</label>
+                                        <input type="text" id="form-memory" class="form-input" placeholder="512m">
+                                    </div>
+                                    <div>
+                                        <label class="form-label">存储</label>
+                                        <input type="text" id="form-storage" class="form-input" placeholder="1g">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 环境测试块 -->
+                            <div class="test-section">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <span class="text-xs font-bold text-white">🧪 环境测试</span>
+                                    <button type="button" id="btn-check-image" class="test-btn test-btn-check" onclick="checkImage()">检测镜像</button>
+                                    <button type="button" id="btn-create-test" class="test-btn test-btn-create" onclick="createTestContainer()" disabled>创建测试容器</button>
+                                </div>
+                                <div id="test-result" class="test-result hidden"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 保存按钮 -->
+                    <div class="flex gap-3 mt-4">
+                        <button type="button" id="btn-prev" onclick="goToPrevQuestion()" class="border border-[#333] text-gray-400 px-4 py-3 hover:border-white hover:text-white transition-all font-mono text-sm disabled:opacity-30 disabled:cursor-not-allowed" disabled>← 上一题</button>
+                        <a href="/admin/admin-questions.html" class="flex-1 border border-[#333] text-gray-400 py-3 text-center hover:border-white hover:text-white transition-all font-mono text-sm">返回列表</a>
+                        <button type="submit" class="flex-1 bg-[#ff6b00] text-black py-3 font-bold hover:bg-white transition-all font-mono text-sm text-center">保存题目</button>
+                        <button type="button" id="btn-next" onclick="goToNextQuestion()" class="border border-[#333] text-gray-400 px-4 py-3 hover:border-white hover:text-white transition-all font-mono text-sm disabled:opacity-30 disabled:cursor-not-allowed" disabled>下一题 →</button>
+                    </div>
+                </form>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) { return null; }
+        }
+
+        const token = localStorage.getItem('tg_token');
+        if (!token) {
+            window.location.href = '/login.html';
+        } else {
+            const payload = parseJwt(token);
+            if (!payload || payload.role !== 'super') {
+                alert('权限不足');
+                window.location.href = '/home.html';
+            }
+        }
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('tg_token');
+            window.location.href = '/login.html';
+        });
+
+        // 复制到剪贴板
+        function copyToClipboard(text) {
+            // 尝试现代API
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showCopyToast(text);
+                }).catch(() => {
+                    fallbackCopy(text);
+                });
+            } else {
+                fallbackCopy(text);
+            }
+        }
+        
+        function fallbackCopy(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showCopyToast(text);
+            } catch (e) {
+                alert('复制失败');
+            }
+            document.body.removeChild(textarea);
+        }
+        
+        function showCopyToast(text) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-4 right-4 bg-green-600 text-white px-4 py-2 text-sm z-50';
+            toast.textContent = '✓ 已复制: ' + text;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        }
+
+        // 获取URL参数
+        const urlParams = new URLSearchParams(window.location.search);
+        const editId = urlParams.get('id');
+        let currentType = '';
+        let imageExists = false;
+        let currentDifficulty = 5;
+        let currentTestContainer = null; // 当前测试容器信息
+
+        // 星级评分
+        const starRating = document.getElementById('star-rating');
+        const stars = starRating.querySelectorAll('.star');
+        
+        function setDifficulty(value) {
+            currentDifficulty = value;
+            document.getElementById('form-difficulty').value = value;
+            document.getElementById('difficulty-value').textContent = value;
+            stars.forEach((star, i) => {
+                star.classList.toggle('active', i < value);
+            });
+        }
+        
+        stars.forEach(star => {
+            star.addEventListener('click', () => {
+                setDifficulty(parseInt(star.dataset.value));
+            });
+            star.addEventListener('mouseenter', () => {
+                const val = parseInt(star.dataset.value);
+                stars.forEach((s, i) => {
+                    s.classList.toggle('hover-preview', i < val && i >= currentDifficulty);
+                });
+            });
+            star.addEventListener('mouseleave', () => {
+                stars.forEach(s => s.classList.remove('hover-preview'));
+            });
+        });
+        setDifficulty(5); // 默认难度
+
+        // Flag注入环境变量 - 从 localStorage 读取 (与 admin-flag-env.html 共享)
+        const FLAG_ENV_STORAGE_KEY = 'tg_flag_envs';
+        
+        function getFlagEnvList() {
+            const stored = localStorage.getItem(FLAG_ENV_STORAGE_KEY);
+            if (!stored) return [];
+            try {
+                return JSON.parse(stored);
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function renderFlagEnvCheckboxes() {
+            const container = document.getElementById('flag-env-list');
+            const emptyHint = document.getElementById('flag-env-empty');
+            const envList = getFlagEnvList();
+            
+            if (envList.length === 0) {
+                container.innerHTML = '';
+                emptyHint.classList.remove('hidden');
+                return;
+            }
+            
+            emptyHint.classList.add('hidden');
+            container.innerHTML = envList.map(env => {
+                // CMDARG 显示为 $1
+                const displayName = env.name === 'CMDARG' ? '$1' : '$' + env.name;
+                return `
+                <label class="flex items-center gap-2 px-3 py-2 bg-[#111] border border-[#333] cursor-pointer hover:border-[#ff6b00] transition-colors">
+                    <input type="checkbox" name="flag-env" value="${env.name}" class="w-4 h-4 accent-[#ff6b00]" ${env.isDefault ? 'checked' : ''}>
+                    <span class="font-mono text-xs text-[#ff6b00]">${displayName}</span>
+                    <span class="text-xs text-gray-500">${env.desc || ''}</span>
+                </label>
+            `}).join('');
+        }
+
+        function getFlagEnv() {
+            // 返回选中的环境变量，用逗号分隔
+            const checked = document.querySelectorAll('input[name="flag-env"]:checked');
+            const values = Array.from(checked).map(cb => cb.value);
+            return values.join(',') || 'FLAG'; // 默认FLAG
+        }
+
+        function setFlagEnv(value) {
+            if (!value) return;
+            const values = value.split(',').map(v => v.trim());
+            document.querySelectorAll('input[name="flag-env"]').forEach(cb => {
+                cb.checked = values.includes(cb.value);
+            });
+        }
+
+        // Flag脚本注入
+        function toggleFlagScript() {
+            const checkbox = document.getElementById('use-flag-script');
+            const inputDiv = document.getElementById('flag-script-input');
+            inputDiv.classList.toggle('hidden', !checkbox.checked);
+            if (!checkbox.checked) {
+                document.getElementById('form-flag-script').value = '';
+            }
+        }
+
+        function setFlagScript(value) {
+            const checkbox = document.getElementById('use-flag-script');
+            const input = document.getElementById('form-flag-script');
+            if (value) {
+                checkbox.checked = true;
+                input.value = value;
+                document.getElementById('flag-script-input').classList.remove('hidden');
+            } else {
+                checkbox.checked = false;
+                input.value = '';
+                document.getElementById('flag-script-input').classList.add('hidden');
+            }
+        }
+
+        function getFlagScript() {
+            const checkbox = document.getElementById('use-flag-script');
+            if (!checkbox.checked) return '';
+            return document.getElementById('form-flag-script').value.trim();
+        }
+
+        // 加载类别
+        async function loadCategories() {
+            try {
+                const res = await fetch('/api/admin/categories', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    const categories = await res.json();
+                    const select = document.getElementById('form-category');
+                    select.innerHTML = '<option value="">请选择类别</option>' + 
+                        categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // 加载编辑数据
+        async function loadQuestion() {
+            if (!editId) return;
+            
+            document.getElementById('page-title').textContent = '编辑题目';
+            
+            try {
+                const res = await fetch(`/api/admin/questions/${editId}`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Failed');
+                
+                const q = await res.json();
+                
+                document.getElementById('form-title').value = q.title;
+                document.getElementById('form-category').value = q.categoryId;
+                document.getElementById('form-difficulty').value = q.difficulty;
+                setDifficulty(parseInt(q.difficulty) || 5);
+                document.getElementById('form-description').value = q.description || '';
+                document.getElementById('form-flag').value = q.flag || '';
+                document.getElementById('form-attachment').value = q.attachmentUrl || '';
+                document.getElementById('form-docker-image').value = q.dockerImage || '';
+                
+                // 加载附件类型
+                const attachmentType = q.attachmentType || 'url';
+                document.querySelector(`input[name="attachment-type"][value="${attachmentType}"]`).checked = true;
+                onAttachmentTypeChange();
+                if (attachmentType === 'local' && q.attachmentUrl) {
+                    document.getElementById('form-attachment-path').value = q.attachmentUrl;
+                    const filename = q.attachmentUrl.split('/').pop();
+                    document.getElementById('attachment-filename').textContent = filename || '已上传';
+                }
+                
+                document.getElementById('form-cpu').value = q.cpuLimit || '';
+                document.getElementById('form-memory').value = q.memoryLimit || '';
+                document.getElementById('form-storage').value = q.storageLimit || '';
+                document.getElementById('form-no-limit').checked = q.noResourceLimit;
+                setFlagEnv(q.flagEnv || 'FLAG');
+                setFlagScript(q.flagScript || '');
+                
+                // 加载端口
+                if (q.ports) {
+                    try {
+                        const ports = JSON.parse(q.ports);
+                        const container = document.getElementById('ports-container');
+                        container.innerHTML = '';
+                        ports.forEach((port, i) => {
+                            const div = document.createElement('div');
+                            div.className = 'port-item';
+                            div.innerHTML = `
+                                <input type="text" class="form-input port-input" value="${port}" placeholder="80">
+                                <button type="button" class="btn-remove-port" onclick="removePort(this)" ${i === 0 ? 'style="display:none;"' : ''}>&times;</button>
+                            `;
+                            container.appendChild(div);
+                        });
+                    } catch (e) {}
+                }
+                
+                selectType(q.type);
+                toggleResourceLimit();
+            } catch (e) {
+                console.error(e);
+                alert('加载题目失败');
+            }
+        }
+
+        function selectType(type) {
+            currentType = type;
+            document.getElementById('form-type').value = type;
+            updateTypeUI();
+        }
+
+        function onTypeChange() {
+            const type = document.getElementById('form-type').value;
+            selectType(type);
+        }
+
+        function updateTypeUI() {
+            const type = currentType;
+            
+            document.querySelectorAll('.type-card').forEach(card => {
+                card.classList.toggle('selected', card.dataset.type === type);
+            });
+            
+            // 显示/隐藏相关区域（附件区域始终显示）
+            const isContainer = type.includes('container');
+            const isDynamic = type.includes('dynamic');
+            
+            document.getElementById('container-section').classList.toggle('hidden', !isContainer);
+            
+            // Flag提示
+            if (isDynamic) {
+                document.getElementById('flag-required').style.display = 'none';
+                document.getElementById('flag-hint').textContent = '动态题目的Flag由容器生成，此处可留空';
+                document.getElementById('form-flag').required = false;
+            } else {
+                document.getElementById('flag-required').style.display = '';
+                document.getElementById('flag-hint').textContent = '静态题目需要设置固定Flag';
+                document.getElementById('form-flag').required = true;
+            }
+        }
+
+        function addPort() {
+            const container = document.getElementById('ports-container');
+            const div = document.createElement('div');
+            div.className = 'port-item';
+            div.innerHTML = `
+                <input type="text" class="form-input port-input" placeholder="8080">
+                <button type="button" class="btn-remove-port" onclick="removePort(this)">&times;</button>
+            `;
+            container.appendChild(div);
+        }
+
+        function removePort(btn) {
+            btn.parentElement.remove();
+        }
+
+        function toggleResourceLimit() {
+            const noLimit = document.getElementById('form-no-limit').checked;
+            const limits = document.getElementById('resource-limits');
+            limits.style.display = noLimit ? 'none' : 'grid';
+        }
+
+        // ========== 附件管理 ==========
+        let currentAttachmentType = 'url';
+        let uploadedAttachmentPath = '';
+
+        function onAttachmentTypeChange() {
+            const type = document.querySelector('input[name="attachment-type"]:checked').value;
+            currentAttachmentType = type;
+            document.getElementById('attachment-url-input').classList.toggle('hidden', type !== 'url');
+            document.getElementById('attachment-upload-input').classList.toggle('hidden', type !== 'local');
+        }
+
+        async function handleAttachmentUpload(input) {
+            if (!input.files || !input.files[0]) return;
+            
+            const file = input.files[0];
+            const filenameSpan = document.getElementById('attachment-filename');
+            const statusSpan = document.getElementById('attachment-upload-status');
+            
+            filenameSpan.textContent = file.name;
+            statusSpan.textContent = '上传中...';
+            statusSpan.className = 'text-xs font-mono text-yellow-500';
+            statusSpan.classList.remove('hidden');
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', file, file.name);
+                
+                const res = await fetch('/api/admin/attachments/upload', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body: formData
+                });
+                
+                const data = await res.json();
+                
+                if (!res.ok) {
+                    statusSpan.textContent = '上传失败: ' + (data.error || '未知错误');
+                    statusSpan.className = 'text-xs font-mono text-red-500';
+                    return;
+                }
+                
+                uploadedAttachmentPath = data.url;
+                document.getElementById('form-attachment-path').value = data.url;
+                statusSpan.textContent = '✓ 上传成功';
+                statusSpan.className = 'text-xs font-mono text-green-500';
+            } catch (e) {
+                console.error(e);
+                statusSpan.textContent = '上传失败: ' + e.message;
+                statusSpan.className = 'text-xs font-mono text-red-500';
+            }
+        }
+
+        function getAttachmentData() {
+            const type = currentAttachmentType;
+            let url = '';
+            if (type === 'url') {
+                url = document.getElementById('form-attachment').value;
+            } else {
+                url = document.getElementById('form-attachment-path').value;
+            }
+            return { attachmentUrl: url, attachmentType: type };
+        }
+
+        async function checkImage() {
+            const imageName = document.getElementById('form-docker-image').value;
+            if (!imageName) {
+                alert('请先填写Docker镜像名');
+                return;
+            }
+            
+            const resultDiv = document.getElementById('test-result');
+            resultDiv.classList.remove('hidden', 'success', 'error');
+            resultDiv.textContent = '检测中...';
+            
+            try {
+                const res = await fetch('/api/admin/docker/check-image', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ image: imageName })
+                });
+                
+                const data = await res.json();
+                
+                if (!res.ok) {
+                    resultDiv.classList.add('error');
+                    resultDiv.textContent = `× ${data.message || data.error}`;
+                    imageExists = false;
+                    document.getElementById('btn-create-test').disabled = true;
+                    return;
+                }
+                
+                if (data.exists) {
+                    imageExists = true;
+                    resultDiv.classList.add('success');
+                    resultDiv.textContent = `✓ 镜像 "${imageName}" 存在 (大小: ${data.size || 'N/A'})`;
+                    document.getElementById('btn-create-test').disabled = false;
+                } else {
+                    imageExists = false;
+                    resultDiv.classList.add('error');
+                    resultDiv.innerHTML = `× 镜像不存在于本地 <button type="button" onclick="pullImage()" class="ml-2 underline">拉取镜像</button>`;
+                    document.getElementById('btn-create-test').disabled = true;
+                }
+            } catch (e) {
+                console.error(e);
+                resultDiv.classList.add('error');
+                resultDiv.textContent = '× 检测失败，请确认Docker服务正常运行';
+                imageExists = false;
+            }
+        }
+        
+        async function pullImage() {
+            const imageName = document.getElementById('form-docker-image').value;
+            if (!imageName) return;
+            
+            const resultDiv = document.getElementById('test-result');
+            resultDiv.classList.remove('success', 'error');
+            resultDiv.textContent = '正在拉取镜像，请稍候...';
+            
+            try {
+                const res = await fetch('/api/admin/docker/pull-image', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ image: imageName })
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    imageExists = true;
+                    resultDiv.classList.add('success');
+                    resultDiv.textContent = `✓ 镜像拉取成功`;
+                    document.getElementById('btn-create-test').disabled = false;
+                } else {
+                    resultDiv.classList.add('error');
+                    resultDiv.textContent = `× 拉取失败: ${data.message || data.error}`;
+                }
+            } catch (e) {
+                console.error(e);
+                resultDiv.classList.add('error');
+                resultDiv.textContent = '× 拉取失败';
+            }
+        }
+
+        async function createTestContainer() {
+            if (!imageExists) {
+                alert('请先检测镜像是否存在');
+                return;
+            }
+            
+            // 检查是否已有运行中的容器
+            if (currentTestContainer) {
+                alert('已有测试容器运行中，请先停止并删除');
+                return;
+            }
+            
+            const resultDiv = document.getElementById('test-result');
+            resultDiv.classList.remove('success', 'error', 'hidden');
+            resultDiv.textContent = '正在创建测试容器...';
+            
+            // 收集端口
+            const ports = [];
+            document.querySelectorAll('.port-input').forEach(input => {
+                if (input.value.trim()) ports.push(input.value.trim());
+            });
+            
+            const questionId = editId ? parseInt(editId) : 0;
+            
+            // 收集Flag环境变量
+            const flagEnvs = [];
+            document.querySelectorAll('input[name="flag-env"]:checked').forEach(cb => {
+                flagEnvs.push(cb.value);
+            });
+            // 获取flag，动态容器自动生成测试flag
+            let flag = document.getElementById('form-flag').value;
+            if (!flag && currentType && currentType.includes('dynamic')) {
+                // 生成UUID格式的flag
+                const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                    const r = Math.random() * 16 | 0;
+                    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                });
+                flag = 'flag{' + uuid + '}';
+            }
+            
+            try {
+                const res = await fetch('/api/admin/docker/test-container', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        questionId: questionId,
+                        image: document.getElementById('form-docker-image').value,
+                        ports: ports,
+                        cpuLimit: document.getElementById('form-cpu').value,
+                        memoryLimit: document.getElementById('form-memory').value,
+                        flag: flag,
+                        flagEnvs: flagEnvs,
+                        flagScript: getFlagScript()
+                    })
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    // 保存容器信息
+                    currentTestContainer = {
+                        id: data.containerId,
+                        ports: data.ports,
+                        questionId: questionId
+                    };
+                    // 存储到localStorage
+                    localStorage.setItem(`tg_test_container_${questionId}`, JSON.stringify(currentTestContainer));
+                    
+                    showTestContainerInfo(data.containerId, data.ports);
+                    document.getElementById('btn-create-test').disabled = true;
+                } else {
+                    resultDiv.classList.add('error');
+                    resultDiv.textContent = `× 创建失败: ${data.message || data.error}`;
+                }
+            } catch (e) {
+                console.error(e);
+                resultDiv.classList.add('error');
+                resultDiv.textContent = '× 创建失败';
+            }
+        }
+        
+        function showTestContainerInfo(containerId, ports) {
+            const resultDiv = document.getElementById('test-result');
+            const hostIp = window.location.hostname;
+            let portsHtml = '';
+            if (ports && Object.keys(ports).length > 0) {
+                portsHtml = '<div class="mt-2" style="display: flex; flex-direction: column; gap: 8px;">';
+                for (const [containerPort, hostPort] of Object.entries(ports)) {
+                    const addr = `${hostIp}:${hostPort}`;
+                    portsHtml += `
+                        <div style="display: inline-flex; align-items: center; gap: 4px;">
+                            <code class="bg-black px-2 py-1 text-[#ff6b00] font-mono text-sm">${addr}</code>
+                            <button type="button" onclick="copyToClipboard('${addr}')" class="px-2 py-1 border border-[#555] text-gray-400 text-xs hover:border-[#ff6b00] hover:text-[#ff6b00]">复制</button>
+                            <a href="http://${addr}" target="_blank" class="px-2 py-1 border border-[#555] text-gray-400 text-xs hover:border-[#ff6b00] hover:text-[#ff6b00]">访问</a>
+                        </div>
+                    `;
+                }
+                portsHtml += '</div>';
+            }
+            resultDiv.classList.remove('hidden', 'error');
+            resultDiv.classList.add('success');
+            resultDiv.innerHTML = `
+                ✓ 测试容器运行中 <span class="text-gray-500">(${containerId})</span>
+                ${portsHtml}
+                <button type="button" onclick="stopTestContainer('${containerId}')" class="mt-2 px-3 py-1 border border-red-500 text-red-500 text-xs hover:bg-red-500 hover:text-white">停止并删除容器</button>
+            `;
+        }
+        
+        async function stopTestContainer(containerId) {
+            try {
+                const res = await fetch(`/api/admin/docker/test-container/${containerId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                
+                const resultDiv = document.getElementById('test-result');
+                if (res.ok) {
+                    // 清除状态
+                    const questionId = editId ? parseInt(editId) : 0;
+                    localStorage.removeItem(`tg_test_container_${questionId}`);
+                    currentTestContainer = null;
+                    
+                    resultDiv.classList.remove('error');
+                    resultDiv.classList.add('success');
+                    resultDiv.textContent = '✓ 容器已删除';
+                    document.getElementById('btn-create-test').disabled = false;
+                } else {
+                    const data = await res.json();
+                    resultDiv.classList.remove('success');
+                    resultDiv.classList.add('error');
+                    resultDiv.textContent = `× 删除失败: ${data.message || data.error}`;
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+        
+        // 检查并恢复测试容器状态
+        async function checkExistingTestContainer() {
+            const questionId = editId ? parseInt(editId) : 0;
+            const stored = localStorage.getItem(`tg_test_container_${questionId}`);
+            if (!stored) return;
+            
+            try {
+                const containerInfo = JSON.parse(stored);
+                // 验证容器是否还在运行
+                const res = await fetch('/api/admin/docker/test-containers', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    const containers = await res.json();
+                    const running = containers.find(c => c.id.startsWith(containerInfo.id) && c.status.includes('Up'));
+                    if (running) {
+                        currentTestContainer = containerInfo;
+                        showTestContainerInfo(containerInfo.id, containerInfo.ports);
+                        document.getElementById('btn-create-test').disabled = true;
+                    } else {
+                        // 容器已不存在，清除存储
+                        localStorage.removeItem(`tg_test_container_${questionId}`);
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // 表单提交
+        document.getElementById('question-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!currentType) {
+                alert('请选择题目类型');
+                return;
+            }
+            
+            // 收集端口
+            const ports = [];
+            document.querySelectorAll('.port-input').forEach(input => {
+                if (input.value.trim()) ports.push(input.value.trim());
+            });
+            
+            // 获取附件数据
+            const attachmentData = getAttachmentData();
+            
+            const data = {
+                title: document.getElementById('form-title').value,
+                type: currentType,
+                categoryId: parseInt(document.getElementById('form-category').value),
+                difficulty: parseInt(document.getElementById('form-difficulty').value),
+                description: document.getElementById('form-description').value,
+                flag: document.getElementById('form-flag').value,
+                flagType: currentType.includes('dynamic') ? 'dynamic' : 'static',
+                attachmentUrl: attachmentData.attachmentUrl,
+                attachmentType: attachmentData.attachmentType,
+                dockerImage: document.getElementById('form-docker-image').value,
+                ports: ports.length > 0 ? JSON.stringify(ports) : '',
+                cpuLimit: document.getElementById('form-cpu').value,
+                memoryLimit: document.getElementById('form-memory').value,
+                storageLimit: document.getElementById('form-storage').value,
+                noResourceLimit: document.getElementById('form-no-limit').checked,
+                flagEnv: getFlagEnv(),
+                flagScript: getFlagScript()
+            };
+            
+            try {
+                const res = await fetch(editId ? `/api/admin/questions/${editId}` : '/api/admin/questions', {
+                    method: editId ? 'PUT' : 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!res.ok) {
+                    const err = await res.json();
+                    alert('保存失败: ' + err.error);
+                    return;
+                }
+                
+                // 显示保存成功提示
+                const toast = document.createElement('div');
+                toast.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 font-mono text-sm z-50';
+                toast.textContent = '✓ 保存成功';
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 2000);
+                
+                // 如果是新增题目，更新URL为编辑模式
+                if (!editId) {
+                    const result = await res.json();
+                    if (result.id) {
+                        history.replaceState(null, '', `/admin/admin-question-edit.html?id=${result.id}`);
+                        editId = result.id.toString();
+                        document.getElementById('page-title').textContent = '编辑题目';
+                        loadQuestionList(); // 重新加载列表以更新导航
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+                alert('保存失败');
+            }
+        });
+
+        // 题目导航相关
+        let questionList = [];
+        let currentIndex = -1;
+
+        async function loadQuestionList() {
+            try {
+                const res = await fetch('/api/admin/questions', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    questionList = await res.json();
+                    updateNavButtons();
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function updateNavButtons() {
+            if (!editId || questionList.length === 0) {
+                document.getElementById('btn-prev').disabled = true;
+                document.getElementById('btn-next').disabled = true;
+                return;
+            }
+            currentIndex = questionList.findIndex(q => q.id == editId);
+            document.getElementById('btn-prev').disabled = currentIndex <= 0;
+            document.getElementById('btn-next').disabled = currentIndex < 0 || currentIndex >= questionList.length - 1;
+        }
+
+        function goToPrevQuestion() {
+            if (currentIndex > 0) {
+                window.location.href = `/admin/admin-question-edit.html?id=${questionList[currentIndex - 1].id}`;
+            }
+        }
+
+        function goToNextQuestion() {
+            if (currentIndex < questionList.length - 1) {
+                window.location.href = `/admin/admin-question-edit.html?id=${questionList[currentIndex + 1].id}`;
+            }
+        }
+
+        // 初始化
+        renderFlagEnvCheckboxes(); // 加载环境变量checkbox列表
+        loadCategories().then(() => {
+            loadQuestion();
+        });
+        loadQuestionList(); // 加载题目列表用于导航
+        // 检查现有测试容器
+        checkExistingTestContainer();
+    </script>
+
+</body>
+</html>

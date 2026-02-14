@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="author" content="tan91">
+    <title>注册 - TG</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=JetBrains+Mono:wght@400;700&family=Noto+Sans+SC:wght@100;400;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #050505;
+            --accent: #ff6b00;
+            --text-main: #e0e0e0;
+        }
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Noto Sans SC', sans-serif; }
+        .font-eng { font-family: 'Chakra Petch', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* 战术 HUD 边角 */
+        .hud-corner {
+            position: fixed;
+            width: 40px;
+            height: 40px;
+            border: 2px solid rgba(255, 107, 0, 0.4);
+            z-index: 10;
+        }
+        .tl { top: 20px; left: 20px; border-right: 0; border-bottom: 0; }
+        .tr { top: 20px; right: 20px; border-left: 0; border-bottom: 0; }
+        .bl { bottom: 20px; left: 20px; border-right: 0; border-top: 0; }
+        .br { bottom: 20px; right: 20px; border-left: 0; border-top: 0; }
+
+        /* 暗角晕影 */
+        .vignette {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, transparent 50%, #000 100%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* 动画 */
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+        .animate-pulse-slow { animation: pulse-slow 2s infinite; }
+    </style>
+</head>
+<body class="h-screen flex flex-col relative selection:bg-[#ff6b00] selection:text-black">
+
+    <div class="vignette"></div>
+
+    <!-- 战术 HUD 边角 -->
+    <div class="hud-corner tl"></div>
+    <div class="hud-corner tr"></div>
+    <div class="hud-corner bl"></div>
+    <div class="hud-corner br"></div>
+
+    <!-- 核心内容 -->
+    <main class="flex-grow flex flex-col justify-center items-center text-center z-10 px-4">
+        
+        <!-- 状态图标 -->
+        <div class="mb-8">
+            <div class="w-24 h-24 border-2 border-[#ff6b00] rounded-full flex items-center justify-center mx-auto animate-pulse-slow">
+                <span class="text-5xl">🚧</span>
+            </div>
+        </div>
+
+        <!-- 提示标签 -->
+        <div class="mb-6">
+            <div class="inline-block border border-[#ff6b00] bg-[#ff6b00] bg-opacity-10 text-[#ff6b00] px-4 py-1 text-xs font-bold font-eng tracking-[0.3em] backdrop-blur-sm">
+                SYSTEM_NOTICE
+            </div>
+        </div>
+
+        <!-- 主标题 -->
+        <h1 class="text-4xl md:text-6xl font-black text-white mb-6 tracking-wider">
+            功能暂未开放
+        </h1>
+
+        <!-- 说明文字 -->
+        <p class="text-gray-400 text-base md:text-lg font-mono mb-12 max-w-md">
+            >> 注册功能正在建设中...<br>
+            >> 请联系管理员获取账户
+        </p>
+
+        <!-- 返回按钮 -->
+        <a href="/" class="bg-[#ff6b00] text-black font-bold px-8 py-4 uppercase text-sm tracking-widest hover:bg-white transition-colors shadow-[0_0_15px_rgba(255,107,0,0.3)] font-mono">
+            ← 返回首页 / BACK
+        </a>
+
+    </main>
+
+    <!-- 底部版权 -->
+    <footer class="absolute bottom-6 w-full text-center z-20">
+        <p class="text-base text-white font-bold font-mono tracking-[0.2em] uppercase" style="text-shadow: 0 0 10px rgba(255,255,255,0.5), 0 0 20px rgba(255,255,255,0.3);">
+            Copyright © 2021-present tan91. All Rights Reserved.
+        </p>
+    </footer>
+
+</body>
+</html>

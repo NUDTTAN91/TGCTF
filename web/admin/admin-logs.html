@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="author" content="tan91">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/fonts.css">
+    <style>
+        :root { --bg-dark: #121212; --bg-panel: #1e1e1e; --border-color: #333; --accent: #ff6b00; --danger: #ef4444; --success: #22c55e; --text-main: #e0e0e0; --text-dim: #737373; }
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Noto Sans SC', sans-serif; }
+        .font-eng { font-family: 'Chakra Petch', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .sidebar-item { border-left: 2px solid transparent; transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { background: rgba(255, 107, 0, 0.05); border-left-color: var(--accent); color: white; }
+        .sidebar-item.active .icon { color: var(--accent); }
+        .admin-card { background: var(--bg-panel); border: 1px solid var(--border-color); position: relative; }
+        .log-table { width: 100%; border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; }
+        .log-table th { background: #151515; border-bottom: 1px solid #333; padding: 0.75rem 1rem; text-align: left; color: #666; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500; white-space: nowrap; }
+        .log-table td { border-bottom: 1px solid #2a2a2a; padding: 0.6rem 1rem; vertical-align: middle; }
+        .log-table tr:hover td { background: rgba(255,255,255,0.02); }
+        .log-table .col-time { width: 170px; white-space: nowrap; }
+        .log-table .col-ip { width: 140px; white-space: nowrap; }
+        .log-table .col-user { width: 110px; color: #ff6b00; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .log-table .col-msg { color: #ddd; }
+        .log-table .col-status { width: 90px; text-align: center; white-space: nowrap; }
+        .tag { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 500; font-family: 'JetBrains Mono', monospace; }
+        .tag-time { background: #1a2332; color: #60a5fa; border: 1px solid #2563eb33; }
+        .tag-ip { background: #1f2420; color: #86efac; border: 1px solid #22c55e33; }
+        .tag-success { background: #14532d; color: #4ade80; border: 1px solid #22c55e55; }
+        .tag-failed { background: #450a0a; color: #f87171; border: 1px solid #ef444455; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden selection:bg-[#ff6b00] selection:text-black">
+
+    <aside class="w-48 bg-[#161616] border-r border-[#333] flex flex-col z-20 shadow-xl">
+        <div class="h-16 flex items-center px-6 border-b border-[#333]">
+            <div class="bg-[#ff6b00] text-black font-black text-xl px-2 py-0.5 font-eng tracking-tighter mr-3">TG</div>
+            <span class="font-bold text-gray-300 tracking-wider text-sm">管理中枢</span>
+        </div>
+        <nav class="flex-1 py-6 space-y-1 font-mono text-xs overflow-y-auto">
+            <a href="/admin/admin.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⌂</span> 概览</a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-4">赛事核心</p>
+            <a href="/admin/admin-contests.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚑</span> 比赛管理</a>
+            <a href="/admin/admin-question-bank.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">☷</span> 题库</a>
+            <a href="/admin/admin-users.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">웃</span> 用户管理</a>
+            <a href="/admin/admin-teams.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">◈</span> 队伍管理</a>
+            <a href="/admin/admin-organizations.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🏢</span> 组织管理</a>
+            <a href="/admin/admin-data-import.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">📥</span> 数据导入</a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-6">运维监控</p>
+            <a href="/admin/admin-docker.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🐳</span> docker实例管理</a>
+            <a href="/admin/admin-anti-cheat.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🛡️</span> 防作弊系统</a>
+            <a href="/admin/admin-logs.html" class="sidebar-item active flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚠</span> 系统日志</a>
+            <a href="/admin/admin-settings.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚙</span> 系统设置</a>
+        </nav>
+        <div class="p-4 border-t border-[#333]">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-[#333] rounded-full flex items-center justify-center text-[#ff6b00] font-bold">A</div>
+                <div><p class="text-xs text-white font-bold">超级管理员</p><p class="text-[10px] text-green-500">● 连接稳定</p></div>
+            </div>
+        </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col min-w-0 bg-[#121212]">
+        <header class="h-16 bg-[#161616] border-b border-[#333] flex items-center justify-between px-8 z-10">
+            <div class="flex items-center gap-4 text-xs font-mono">
+                <span class="text-gray-500">位置:</span><span class="text-[#ff6b00]">运维监控</span><span class="text-gray-600">/</span><span class="text-white">系统日志</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="/home.html" class="font-mono text-xs font-bold border border-gray-500 text-gray-400 px-4 py-2 hover:border-white hover:text-white transition-all uppercase tracking-wider">← 返回前台</a>
+                <button id="logout-btn" class="font-mono text-xs font-bold border border-[#ff6b00] text-[#ff6b00] px-4 py-2 hover:bg-[#ff6b00] hover:text-black transition-all uppercase tracking-wider">Logout_离线</button>
+            </div>
+        </header>
+
+        <main class="flex-1 flex flex-col pt-6 px-8 relative overflow-y-auto">
+            
+            <div class="admin-card flex flex-col" style="height: calc(100vh - 160px);">
+                <div class="p-4 border-b border-[#333] bg-[#1a1a1a] flex justify-between items-center flex-shrink-0">
+                    <h2 class="text-sm font-bold text-white tracking-wider">SYSTEM_LOGS_STREAM</h2>
+                    <div class="flex gap-2">
+                        <select id="type-filter" class="bg-[#111] border border-[#333] text-xs px-3 py-1.5 text-white outline-none font-mono">
+                            <option value="">全部类型</option>
+                            <option value="login">登录</option>
+                            <option value="challenge_view">题目查看</option>
+                            <option value="flag_submit">Flag提交</option>
+                            <option value="container_create">容器创建</option>
+                            <option value="container_destroy">容器销毁</option>
+                            <option value="container_extend">容器续期</option>
+                            <option value="cheating">作弊检测</option>
+                        </select>
+                        <select id="level-filter" class="bg-[#111] border border-[#333] text-xs px-3 py-1.5 text-white outline-none font-mono">
+                            <option value="">全部级别</option>
+                            <option value="success">成功</option>
+                            <option value="error">错误</option>
+                            <option value="warning">警告</option>
+                            <option value="info">信息</option>
+                        </select>
+                        <input id="search-input" type="text" placeholder="搜索日志..." class="bg-[#111] border border-[#333] text-xs px-3 py-1.5 text-white outline-none w-48 font-mono">
+                        <button onclick="loadLogs()" class="bg-[#333] border border-[#333] text-xs text-gray-300 px-4 py-1.5 hover:text-white">刷新</button>
+                    </div>
+                </div>
+
+                <div id="logs-container" class="flex-1 overflow-y-auto bg-[#1e1e1e]">
+                    <table class="log-table">
+                        <thead class="sticky top-0 z-10"><tr><th>时间</th><th>IP</th><th>用户</th><th>信息</th><th>状态</th></tr></thead>
+                        <tbody id="logs-tbody"><tr><td colspan="5" class="text-center text-gray-500 py-8">加载中...</td></tr></tbody>
+                    </table>
+                </div>
+
+                <div class="p-3 border-t border-[#333] flex justify-between items-center bg-[#1a1a1a] text-xs font-mono text-gray-500 flex-shrink-0">
+                    <span id="total-info">共 0 条记录</span>
+                    <div class="flex items-center gap-4">
+                        <button onclick="prevPage()" class="hover:text-white">&lt; 上一页</button>
+                        <span id="page-info">PAGE 1 / 1</span>
+                        <button onclick="nextPage()" class="hover:text-white">下一页 &gt;</button>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="py-1 border-t border-[#333] flex items-center justify-center flex-shrink-0 mt-auto">
+                <div class="flex items-center justify-center gap-4 text-xs flex-wrap">
+                    <div class="flex items-center gap-1">
+                        <div class="bg-[#ff6b00] text-black font-black px-1.5 py-0.5 font-eng tracking-tighter">TG</div>
+                        <span class="text-gray-500">天格后台管理系统</span>
+                    </div>
+                    <span class="text-white font-mono">Copyright © 2021-present tan91. All Rights Reserved.</span>
+                    <a href="https://github.com/NUDTTAN91" target="_blank" class="text-[#ff6b00] hover:text-white transition-colors"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg></a>
+                    <a href="https://blog.csdn.net/ZXW_NUDT" target="_blank" class="text-[#ff6b00] hover:text-white transition-colors"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></a>
+                </div>
+            </footer>
+
+        </main>
+    </div>
+
+    <script>
+        function parseJwt(token) { try { const base64Url = token.split('.')[1]; const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/'); const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')); return JSON.parse(jsonPayload); } catch (e) { return null; } }
+        const token = localStorage.getItem('tg_token');
+        if (!token) { window.location.href = '/login.html'; } else { const payload = parseJwt(token); if (!payload || payload.role !== 'super') { window.location.href = '/home.html'; } }
+        document.getElementById('logout-btn').addEventListener('click', () => { localStorage.removeItem('tg_token'); window.location.href = '/login.html'; });
+
+        let currentPage = 1;
+        let totalPages = 1;
+        const pageSize = 50;
+
+
+
+        async function loadLogs() {
+            const type = document.getElementById('type-filter').value;
+            const level = document.getElementById('level-filter').value;
+            const search = document.getElementById('search-input').value;
+            
+            let url = `/api/admin/logs?page=${currentPage}&pageSize=${pageSize}`;
+            if (type) url += `&type=${type}`;
+            if (level) url += `&level=${level}`;
+            if (search) url += `&search=${encodeURIComponent(search)}`;
+
+            try {
+                const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+                const data = await res.json();
+                
+                totalPages = data.totalPages || 1;
+                document.getElementById('total-info').textContent = `共 ${data.total || 0} 条记录`;
+                document.getElementById('page-info').textContent = `PAGE ${currentPage} / ${totalPages}`;
+                
+                const tbody = document.getElementById('logs-tbody');
+                if (!data.logs || data.logs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-500 py-8">暂无日志记录</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = data.logs.map(log => {
+                    const time = log.createdAt || '-';
+                    const isSuccess = log.level === 'success' || log.level === 'info';
+                    const statusTag = isSuccess ? 'tag-success' : 'tag-failed';
+                    const statusText = isSuccess ? 'SUCCESS' : 'FAILED';
+                    
+                    return `<tr>
+                        <td class="col-time"><span class="tag tag-time">${time}</span></td>
+                        <td class="col-ip"><span class="tag tag-ip">${log.ipAddress || '-'}</span></td>
+                        <td class="col-user">${log.userName || '-'}</td>
+                        <td class="col-msg">${escapeHtml(log.message)}</td>
+                        <td class="col-status"><span class="tag ${statusTag}">${statusText}</span></td>
+                    </tr>`;
+                }).join('');
+            } catch (e) {
+                console.error(e);
+                document.getElementById('logs-tbody').innerHTML = '<tr><td colspan="5" class="text-center text-red-500 py-8">加载失败</td></tr>';
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
+
+        function prevPage() { if (currentPage > 1) { currentPage--; loadLogs(); } }
+        function nextPage() { if (currentPage < totalPages) { currentPage++; loadLogs(); } }
+
+        // 筛选器事件
+        document.getElementById('type-filter').addEventListener('change', () => { currentPage = 1; loadLogs(); });
+        document.getElementById('level-filter').addEventListener('change', () => { currentPage = 1; loadLogs(); });
+        document.getElementById('search-input').addEventListener('keyup', (e) => { if (e.key === 'Enter') { currentPage = 1; loadLogs(); } });
+
+        // 初始化
+        loadLogs();
+
+        // WebSocket 实时推送
+        function connectWebSocket() {
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const ws = new WebSocket(`${wsProtocol}//${location.host}/api/admin/logs/ws?token=${encodeURIComponent(token)}`);
+            
+            ws.onmessage = (event) => {
+                const log = JSON.parse(event.data);
+                // 在表格顶部插入新日志
+                const tbody = document.getElementById('logs-tbody');
+                const isSuccess = log.level === 'success' || log.level === 'info';
+                const statusTag = isSuccess ? 'tag-success' : 'tag-failed';
+                const statusText = isSuccess ? 'SUCCESS' : 'FAILED';
+                
+                const newRow = document.createElement('tr');
+                newRow.innerHTML = `
+                    <td class="col-time"><span class="tag tag-time">${log.createdAt || '-'}</span></td>
+                    <td class="col-ip"><span class="tag tag-ip">${log.ipAddress || '-'}</span></td>
+                    <td class="col-user">${log.userName || '-'}</td>
+                    <td class="col-msg">${escapeHtml(log.message)}</td>
+                    <td class="col-status"><span class="tag ${statusTag}">${statusText}</span></td>
+                `;
+                newRow.style.animation = 'fadeIn 0.3s ease-in';
+                
+                // 插入到顶部
+                if (tbody.firstChild) {
+                    tbody.insertBefore(newRow, tbody.firstChild);
+                } else {
+                    tbody.appendChild(newRow);
+                }
+                
+                // 更新计数
+                const totalInfo = document.getElementById('total-info');
+                const match = totalInfo.textContent.match(/\d+/);
+                if (match) {
+                    totalInfo.textContent = `共 ${parseInt(match[0]) + 1} 条记录`;
+                }
+            };
+            
+            ws.onclose = () => {
+                // 断线重连
+                setTimeout(connectWebSocket, 2000);
+            };
+            
+            ws.onerror = () => ws.close();
+        }
+        
+        connectWebSocket();
+    </script>
+</body>
+</html>

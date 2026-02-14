@@ -1,0 +1,21 @@
+<svg width="500" height="500" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF4B4B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#A80000;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- 背景 -->
+  <rect width="500" height="500" fill="#1a1a1a" rx="20" />
+
+  <g transform="translate(100, 50)">
+    <!-- G: 外部盾形轮廓 -->
+    <path d="M50 50 L250 50 L250 100 L280 100 L280 20 L20 20 L20 250 C20 350 150 420 150 420 C150 420 230 380 260 300 L260 220 L180 220 L180 260 L210 260 C200 300 170 330 150 340 C100 320 70 250 70 250 L70 50 Z" 
+          fill="#D3D3D3" />
+    
+    <!-- T: 内部剑体 -->
+    <path d="M110 50 L190 50 L190 80 L170 80 L170 300 L150 380 L130 300 L130 80 L110 80 Z" 
+          fill="url(#grad2)" stroke="#1a1a1a" stroke-width="4"/>
+  </g>
+</svg>

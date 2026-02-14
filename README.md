@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="web/assets/hacker.png" width="120" alt="TGCTF Logo">
+  <img src="TeamIco.svg" width="120" alt="TGCTF Logo">
 </p>
 
 <h1 align="center">🏴 TGCTF - 天格CTF平台</h1>

@@ -19,6 +19,7 @@ import (
 )
 
 // ensureAdmin 确保超级管理员账户、TG_AdminX组织和队伍存在
+// 超级管理员固定使用 ID=1，由 docker-compose.yml 完全控制
 func ensureAdmin(db *sql.DB) error {
 	username := os.Getenv("ADMIN_USERNAME")
 	password := os.Getenv("ADMIN_PASSWORD")
@@ -72,10 +73,10 @@ func ensureAdmin(db *sql.DB) error {
 		return hashErr
 	}
 
-	// 4. 删除所有其他超管（确保只有一个超管，由docker-compose.yml完全控制）
+	// 4. 删除所有其他超管（确保只有一个超管，ID=1 由 docker-compose.yml 完全控制）
 	// 先清理外键引用
 	var otherSuperIDs []int64
-	otherRows, _ := db.Query(`SELECT id FROM users WHERE role = 'super' AND username != $1`, username)
+	otherRows, _ := db.Query(`SELECT id FROM users WHERE role = 'super' AND id != 1`)
 	if otherRows != nil {
 		for otherRows.Next() {
 			var uid int64
@@ -96,30 +97,33 @@ func ensureAdmin(db *sql.DB) error {
 		log.Printf("[ensureAdmin] Deleted redundant super admin (ID: %d)", uid)
 	}
 
-	// 5. 按 username 查找用户
-	var existingID int64
-	err = db.QueryRow(`SELECT id FROM users WHERE username = $1`, username).Scan(&existingID)
+	// 5. 按 ID=1 查找超级管理员（超管固定使用ID=1）
+	var existingUsername string
+	err = db.QueryRow(`SELECT username FROM users WHERE id = 1`).Scan(&existingUsername)
 
 	if err == sql.ErrNoRows {
-		// 用户不存在，创建新超管
-		var newID int64
-		err = db.QueryRow(`INSERT INTO users (username, display_name, role, password_hash, team_id, organization_id, avatar, status, created_at, updated_at) 
-			VALUES ($1, $2, 'super', $3, $4, $5, $6, 'active', NOW(), NOW()) RETURNING id`,
-			username, displayName, string(hash), teamID, orgID, hackerAvatar).Scan(&newID)
+		// ID=1 不存在，显式插入超管（ID=1）
+		_, err = db.Exec(`INSERT INTO users (id, username, display_name, role, password_hash, team_id, organization_id, avatar, status, created_at, updated_at) 
+			VALUES (1, $1, $2, 'super', $3, $4, $5, $6, 'active', NOW(), NOW())`,
+			username, displayName, string(hash), teamID, orgID, hackerAvatar)
 		if err != nil {
 			return err
 		}
-		db.Exec(`UPDATE teams SET captain_id = $1 WHERE id = $2`, newID, teamID)
-		log.Printf("[ensureAdmin] Created super admin: %s (ID: %d)", username, newID)
+		db.Exec(`UPDATE teams SET captain_id = 1 WHERE id = $1`, teamID)
+		log.Printf("[ensureAdmin] Created super admin: %s (ID: 1)", username)
 	} else if err == nil {
-		// 用户已存在，更新为超管并更新密码
-		_, err = db.Exec(`UPDATE users SET role = 'super', display_name = $1, password_hash = $2, team_id = $3, organization_id = $4, avatar = COALESCE(avatar, $5), status = 'active', updated_at = NOW() WHERE id = $6`,
-			displayName, string(hash), teamID, orgID, hackerAvatar, existingID)
+		// ID=1 存在，更新用户名、密码等信息
+		_, err = db.Exec(`UPDATE users SET username = $1, display_name = $2, role = 'super', password_hash = $3, team_id = $4, organization_id = $5, avatar = COALESCE(avatar, $6), status = 'active', updated_at = NOW() WHERE id = 1`,
+			username, displayName, string(hash), teamID, orgID, hackerAvatar)
 		if err != nil {
 			return err
 		}
-		db.Exec(`UPDATE teams SET captain_id = $1 WHERE id = $2`, existingID, teamID)
-		log.Printf("[ensureAdmin] Updated super admin: %s (ID: %d)", username, existingID)
+		db.Exec(`UPDATE teams SET captain_id = 1 WHERE id = $1`, teamID)
+		if existingUsername != username {
+			log.Printf("[ensureAdmin] Updated super admin: %s -> %s (ID: 1)", existingUsername, username)
+		} else {
+			log.Printf("[ensureAdmin] Updated super admin: %s (ID: 1)", username)
+		}
 	} else {
 		return err
 	}

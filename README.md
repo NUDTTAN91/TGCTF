@@ -196,8 +196,8 @@ vim docker-compose.yml
 docker-compose up -d
 
 # 4. 访问平台
-# 前台: http://localhost:8081
-# 后台: http://localhost:8081/admin/admin.html
+# 前台: http://localhost
+# 后台: http://localhost/admin/admin.html
 ```
 
 ### 🔑 默认账号
@@ -282,7 +282,7 @@ services:
       ADMIN_USERNAME: admin
       ADMIN_PASSWORD: "your-admin-password"
     ports:
-      - "8081:80"
+      - "80:80"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
 ```
@@ -370,7 +370,9 @@ S(N) = Smin + (Smax - Smin) × e^(-(N-1)/(10×D))
 
 本项目采用 **AGPL-3.0 License** 开源协议。
 
-> ⚠️ 如果你修改了本项目并通过网络提供服务，你必须公开你的修改后的源代码。
+> [!warning]
+>
+> 如果你修改了本项目并通过网络提供服务，你必须公开你的修改后的源代码。
 
 详见 [LICENSE](LICENSE) 文件。
 

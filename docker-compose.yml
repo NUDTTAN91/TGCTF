@@ -2,7 +2,7 @@ services:
   db:
     image: postgres:16-alpine
     container_name: tgctf-db
-    restart: unless-stopped
+    restart: always
     environment:
       POSTGRES_DB: tgctf
       POSTGRES_USER: tgctf
@@ -16,7 +16,7 @@ services:
   app:
     build: .
     container_name: tgctf-app
-    restart: unless-stopped
+    restart: always
     environment:
       SERVER_PORT: "80"
       DATABASE_URL: postgres://tgctf:tgctf@db:5432/tgctf?sslmode=disable&TimeZone=Asia/Shanghai

@@ -201,17 +201,17 @@
     </div>
 
     <!-- 镜像测试结果弹窗 -->
-    <div id="test-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50" style="display:none">
-        <div class="bg-[#1a1a1a] border border-[#333] w-[700px] max-h-[80vh] overflow-hidden flex flex-col">
-            <div class="p-4 border-b border-[#333] flex items-center justify-between">
+    <div id="test-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" style="display:none" onclick="if(event.target===this)closeTestModal()">
+        <div class="bg-[#1a1a1a] border border-[#333] w-[700px] max-w-full flex flex-col" style="max-height: calc(100vh - 2rem);">
+            <div class="p-4 border-b border-[#333] flex items-center justify-between flex-shrink-0">
                 <h3 class="font-bold text-white font-eng">🔍 镜像测试结果</h3>
-                <button onclick="closeTestModal()" class="text-gray-500 hover:text-white">✕</button>
+                <button onclick="closeTestModal()" class="text-gray-500 hover:text-white text-xl px-2">✕</button>
             </div>
-            <div class="p-4 flex-1 overflow-y-auto">
+            <div class="p-4 flex-1 overflow-y-auto min-h-0">
                 <div id="test-summary" class="mb-4 p-3 bg-[#111] border border-[#333] font-mono text-sm"></div>
-                <div id="test-details" class="space-y-2 text-sm font-mono max-h-[400px] overflow-y-auto"></div>
+                <div id="test-details" class="space-y-2 text-sm font-mono"></div>
             </div>
-            <div class="p-4 border-t border-[#333]">
+            <div class="p-4 border-t border-[#333] flex-shrink-0">
                 <button onclick="closeTestModal()" class="bg-[#ff6b00] text-black font-bold px-6 py-2 font-mono text-sm hover:bg-white transition-all">确定</button>
             </div>
         </div>
@@ -573,6 +573,16 @@
         function closeTestModal() {
             document.getElementById('test-modal').style.display = 'none';
         }
+
+        // ESC键关闭弹窗
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const testModal = document.getElementById('test-modal');
+                if (testModal.style.display !== 'none') {
+                    closeTestModal();
+                }
+            }
+        });
 
         function showLoading(text) {
             document.getElementById('loading-text').textContent = text || '处理中...';

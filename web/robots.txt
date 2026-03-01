@@ -1,0 +1,3 @@
+# 禁止所有搜索引擎收录本站
+User-agent: *
+Disallow: /

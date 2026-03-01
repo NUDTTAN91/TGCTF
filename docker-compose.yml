@@ -26,8 +26,8 @@ services:
     environment:
       SERVER_PORT: "80"
       DATABASE_URL: postgres://tgctf:tgctf@db:5432/tgctf?sslmode=disable&TimeZone=Asia/Shanghai
-      ADMIN_USERNAME: root
-      ADMIN_PASSWORD: root
+      ADMIN_USERNAME: tan91
+      ADMIN_PASSWORD: tan91
       JWT_SECRET: "change-this-secret"
       TZ: Asia/Shanghai
     depends_on:

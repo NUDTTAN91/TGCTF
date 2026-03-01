@@ -206,7 +206,7 @@ docker-compose up -d
 
 | 账号 | 密码 | 说明 |
 |------|------|------|
-| `root` | `root` | 超级管理员（请修改） |
+| `tan91` | `tan91` | 超级管理员（请修改） |
 
 ---
 
@@ -259,7 +259,7 @@ TGCTF/
 |--------|--------|------|
 | `DATABASE_URL` | - | PostgreSQL 连接串 |
 | `JWT_SECRET` | `change-this-secret` | JWT 签名密钥 |
-| `ADMIN_USERNAME` | `root` | 超级管理员用户名 |
+| `ADMIN_USERNAME` | `tan91` | 超级管理员用户名 |
 | `ADMIN_PASSWORD` | - | 超级管理员密码 |
 | `SERVER_PORT` | `80` | 服务端口 |
 

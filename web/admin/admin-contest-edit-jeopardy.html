@@ -218,40 +218,6 @@
                                     <p class="text-[10px] text-gray-600 mt-1 ml-1">* 0 表示不限制</p>
                                 </div>
 
-                                <!-- AWD-F 模式专属配置 -->
-                                <div id="awdf-config-section" class="hidden border-t border-[#333] pt-4">
-                                    <div class="text-xs text-[#ff6b00] mb-3 flex items-center gap-2">
-                                        <span>⚔️</span>
-                                        <span class="font-bold">AWD-F 模式配置</span>
-                                    </div>
-                                    <div class="space-y-4">
-                                        <div>
-                                            <label class="form-label">防守间隔（全局倒计时）</label>
-                                            <div class="flex">
-                                                <input type="number" id="edit-defense-interval" value="60" min="10" class="tactical-input border-r-0 text-center rounded-l-sm">
-                                                <div class="bg-[#222] border border-[#333] text-gray-400 text-xs px-4 flex items-center h-[42px] border-l-0">秒</div>
-                                            </div>
-                                            <p class="text-[10px] text-gray-600 mt-1 ml-1">* 每轮攻击的时间间隔，最小 10 秒，建议 60~300 秒</p>
-                                        </div>
-                                        <div>
-                                            <label class="form-label">并发判题数</label>
-                                            <div class="flex">
-                                                <input type="number" id="edit-judge-concurrency" value="5" min="1" max="50" class="tactical-input border-r-0 text-center rounded-l-sm">
-                                                <div class="bg-[#222] border border-[#333] text-gray-400 text-xs px-4 flex items-center h-[42px] border-l-0">个</div>
-                                            </div>
-                                            <p class="text-[10px] text-gray-600 mt-1 ml-1">* 同时执行攻击判定的容器数</p>
-                                        </div>
-                                        <div class="bg-[#111] p-3 border border-[#333] mt-2">
-                                            <div class="text-xs text-gray-400 mb-2">调度器状态</div>
-                                            <div id="awdf-scheduler-status" class="text-xs font-mono text-gray-500">加载中...</div>
-                                            <div class="flex gap-2 mt-3">
-                                                <button onclick="triggerNextRound()" class="btn-outline text-xs px-3 py-1 flex-1">▶ 手动触发下一轮</button>
-                                                <button onclick="updateDefenseIntervalNow()" class="btn-outline text-xs px-3 py-1 flex-1">↑ 立即更新间隔</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
                                 <div>
                                     <label class="form-label">邀请码 (访问控制)</label>
                                     <div class="flex">
@@ -901,17 +867,6 @@
                 document.getElementById('edit-team-limit').value = contestData.teamLimit || 4;
                 document.getElementById('edit-container-limit').value = contestData.containerLimit || 1;
                 
-                // AWD-F 模式配置
-                if (contestData.mode === 'awd-f') {
-                    document.getElementById('awdf-config-section').classList.remove('hidden');
-                    document.getElementById('edit-defense-interval').value = contestData.defenseInterval || 60;
-                    document.getElementById('edit-judge-concurrency').value = contestData.judgeConcurrency || 5;
-                    // 加载调度器状态
-                    loadSchedulerStatus();
-                } else {
-                    document.getElementById('awdf-config-section').classList.add('hidden');
-                }
-                
                 // 状态显示
                 updateStatusDisplay(contestData.status);
                 
@@ -1013,15 +968,6 @@
                 return;
             }
 
-            // AWD-F 配置
-            let awdfConfig = {};
-            if (contestData && contestData.mode === 'awd-f') {
-                awdfConfig = {
-                    defenseInterval: parseInt(document.getElementById('edit-defense-interval').value) || 300,
-                    judgeConcurrency: parseInt(document.getElementById('edit-judge-concurrency').value) || 5
-                };
-            }
-
             try {
                 // 保存基础配置
                 const res = await fetch(`/api/admin/contests/${contestId}`, {
@@ -1030,7 +976,7 @@
                         'Authorization': 'Bearer ' + token,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ name, description, startTime, endTime, coverImage, teamLimit, containerLimit, ...awdfConfig })
+                    body: JSON.stringify({ name, description, startTime, endTime, coverImage, teamLimit, containerLimit })
                 });
                 if (!res.ok) throw new Error('Failed');
                 
@@ -1080,96 +1026,6 @@
             result = result.split('').sort(() => Math.random() - 0.5).join('');
             document.getElementById('edit-invite-code').value = result;
         }
-
-        // ========== AWD-F 模式管理功能 ==========
-        
-        // 加载调度器状态
-        async function loadSchedulerStatus() {
-            if (!contestData || contestData.mode !== 'awd-f') return;
-            try {
-                const res = await fetch(`/api/admin/contests/${contestId}/awdf/scheduler-status`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (res.ok) {
-                    const status = await res.json();
-                    const statusEl = document.getElementById('awdf-scheduler-status');
-                    if (status.running) {
-                        const nextSec = status.nextAttackSeconds || 0;
-                        statusEl.innerHTML = `
-                            <div class="text-green-500">● 调度器运行中</div>
-                            <div class="text-gray-400 mt-1">当前轮次: ${status.currentRound || 0}</div>
-                            <div class="text-gray-400">下次攻击: ${nextSec > 0 ? formatTime(nextSec) : '等待中...'}</div>
-                            ${status.judging ? '<div class="text-yellow-500 mt-1">⚠ 正在判题中...</div>' : ''}
-                        `;
-                    } else {
-                        statusEl.innerHTML = '<div class="text-gray-500">○ 调度器未运行</div><div class="text-gray-600 text-[10px] mt-1">比赛开始后自动启动</div>';
-                    }
-                }
-            } catch (e) {
-                document.getElementById('awdf-scheduler-status').innerHTML = '<div class="text-red-500">加载失败</div>';
-            }
-        }
-
-        function formatTime(seconds) {
-            const min = Math.floor(seconds / 60);
-            const sec = seconds % 60;
-            return min > 0 ? `${min}分${sec}秒` : `${sec}秒`;
-        }
-
-        // 手动触发下一轮攻击
-        async function triggerNextRound() {
-            if (!confirm('确定要立即触发下一轮攻击吗？')) return;
-            try {
-                const res = await fetch(`/api/admin/contests/${contestId}/awdf/trigger-next-round`, {
-                    method: 'POST',
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    showToast(data.message || '已触发下一轮攻击', 'success');
-                    loadSchedulerStatus();
-                } else {
-                    showToast(data.error || '触发失败', 'error');
-                }
-            } catch (e) {
-                showToast('触发失败', 'error');
-            }
-        }
-
-        // 立即更新防守间隔
-        async function updateDefenseIntervalNow() {
-            const interval = parseInt(document.getElementById('edit-defense-interval').value) || 60;
-            if (interval < 10) {
-                showToast('防守间隔不能小于 10 秒', 'warning');
-                return;
-            }
-            try {
-                const res = await fetch(`/api/admin/contests/${contestId}/awdf/defense-interval`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': 'Bearer ' + token,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ interval })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    showToast('防守间隔已更新', 'success');
-                    loadSchedulerStatus();
-                } else {
-                    showToast(data.error || '更新失败', 'error');
-                }
-            } catch (e) {
-                showToast('更新失败', 'error');
-            }
-        }
-
-        // 定时刷新 AWD-F 调度器状态
-        setInterval(() => {
-            if (contestData && contestData.mode === 'awd-f' && contestData.status === 'running') {
-                loadSchedulerStatus();
-            }
-        }, 5000); // 每 5 秒刷新一次
 
         // 文件上传区域点击
         document.getElementById('upload-zone').addEventListener('click', () => {
@@ -1334,16 +1190,10 @@
             }
         }
 
-        // 加载比赛题目列表（新版API，支持 AWD-F）
+        // 加载比赛题目列表
         async function loadChallenges() {
             try {
-                // 根据比赛模式选择不同的 API
-                const isAWDF = contestData && contestData.mode === 'awd-f';
-                const apiUrl = isAWDF 
-                    ? `/api/admin/contests/${contestId}/awdf-challenges`
-                    : `/api/admin/contests/${contestId}/contest-challenges`;
-                
-                const res = await fetch(apiUrl, {
+                const res = await fetch(`/api/admin/contests/${contestId}/contest-challenges`, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
                 if (!res.ok) throw new Error('Failed');
@@ -1661,15 +1511,6 @@
             document.getElementById('bank-initial-score').value = '500';
             document.getElementById('bank-min-score').value = '17';
             
-            // 根据比赛模式更新弹窗标题
-            const isAWDF = contestData && contestData.mode === 'awd-f';
-            const modalTitle = document.querySelector('#add-from-bank-modal h3');
-            if (modalTitle) {
-                modalTitle.innerHTML = isAWDF 
-                    ? '从 <span class="text-purple-400">AWD-F 题库</span> 添加题目'
-                    : '从 <span class="text-[#ff6b00]">Jeopardy 题库</span> 添加题目';
-            }
-            
             document.getElementById('add-from-bank-modal').classList.remove('hidden');
             loadQuestionBank();
         }
@@ -1678,15 +1519,11 @@
             document.getElementById('add-from-bank-modal').classList.add('hidden');
         }
 
-        // 加载题库列表（全量加载，支持 AWD-F）
+        // 加载题库列表
         let allQuestionBank = [];
         async function loadQuestionBank() {
             try {
-                // 根据比赛模式选择不同的题库 API
-                const isAWDF = contestData && contestData.mode === 'awd-f';
-                const apiUrl = isAWDF ? '/api/admin/awdf/questions' : '/api/admin/questions';
-                
-                const res = await fetch(apiUrl, {
+                const res = await fetch('/api/admin/questions', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
                 if (!res.ok) throw new Error('Failed');
@@ -1788,7 +1625,7 @@
             document.getElementById('selected-count').textContent = `已选择: ${selectedQuestions.size} 道题目`;
         }
 
-        // 添加选中的题目到比赛（支持 AWD-F）
+        // 添加选中的题目到比赛
         async function addSelectedQuestions() {
             if (selectedQuestions.size === 0) {
                 showToast('请选择至少一道题目', 'warning');
@@ -1799,49 +1636,22 @@
             const minScore = parseInt(document.getElementById('bank-min-score').value) || 17;
             const questionIds = Array.from(selectedQuestions);
             
-            // 根据比赛模式选择不同的 API
-            const isAWDF = contestData && contestData.mode === 'awd-f';
-            const apiUrl = isAWDF 
-                ? `/api/admin/contests/${contestId}/awdf-challenges`
-                : `/api/admin/contests/${contestId}/contest-challenges`;
-            
             try {
-                // AWD-F 模式需要逐个添加（因为 API 设计不同）
-                if (isAWDF) {
-                    let addedCount = 0;
-                    for (const qid of questionIds) {
-                        try {
-                            const res = await fetch(apiUrl, {
-                                method: 'POST',
-                                headers: {
-                                    'Authorization': 'Bearer ' + token,
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({ questionId: qid, initialScore, minScore })
-                            });
-                            if (res.ok) addedCount++;
-                        } catch (e) { console.error(e); }
-                    }
-                    hideAddFromBankModal();
-                    loadChallenges();
-                    showToast(`成功添加 ${addedCount} 道 AWD-F 题目`, 'success');
+                const res = await fetch(`/api/admin/contests/${contestId}/contest-challenges`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ questionIds, initialScore, minScore })
+                });
+                const data = await res.json();
+                hideAddFromBankModal();
+                loadChallenges();
+                if (res.ok) {
+                    showToast(`成功添加 ${data.added || 0} 道题目`, 'success');
                 } else {
-                    const res = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': 'Bearer ' + token,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ questionIds, initialScore, minScore })
-                    });
-                    const data = await res.json();
-                    hideAddFromBankModal();
-                    loadChallenges();
-                    if (res.ok) {
-                        showToast(`成功添加 ${data.added || 0} 道题目`, 'success');
-                    } else {
-                        showToast(data.error || '添加失败', 'error');
-                    }
+                    showToast(data.error || '添加失败', 'error');
                 }
             } catch (e) {
                 console.error(e);
@@ -2067,13 +1877,7 @@
         async function toggleChallengeStatus(id, currentStatus) {
             const newStatus = currentStatus === 'public' ? 'hidden' : 'public';
             try {
-                // 根据比赛模式选择不同的 API
-                const isAWDF = contestData && contestData.mode === 'awd-f';
-                const apiUrl = isAWDF 
-                    ? `/api/admin/awdf-challenges/${id}`
-                    : `/api/admin/contest-challenges/${id}`;
-                
-                const res = await fetch(apiUrl, {
+                const res = await fetch(`/api/admin/contest-challenges/${id}`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': 'Bearer ' + token,
@@ -2091,13 +1895,7 @@
         async function removeContestChallenge(id) {
             if (!confirm('确定要从比赛中移除这道题目吗？')) return;
             try {
-                // 根据比赛模式选择不同的 API
-                const isAWDF = contestData && contestData.mode === 'awd-f';
-                const apiUrl = isAWDF 
-                    ? `/api/admin/awdf-challenges/${id}`
-                    : `/api/admin/contest-challenges/${id}`;
-                
-                const res = await fetch(apiUrl, {
+                const res = await fetch(`/api/admin/contest-challenges/${id}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
@@ -2116,9 +1914,7 @@
             document.getElementById('flags-count').textContent = '共 0 条记录';
             
             try {
-                // 传递比赛模式参数，用于后端区分 jeopardy 和 awdf 表
-                const mode = contestData && contestData.mode ? contestData.mode : 'jeopardy';
-                const res = await fetch(`/api/admin/contest-challenges/${challengeId}/flags?mode=${mode}`, {
+                const res = await fetch(`/api/admin/contest-challenges/${challengeId}/flags?mode=jeopardy`, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
                 if (!res.ok) throw new Error('Failed');

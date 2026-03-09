@@ -475,12 +475,12 @@
             const timeColor = c.status === 'ended' ? 'text-gray-600' : 'text-gray-500';
         
             const actionButtons = c.status === 'running' 
-                ? `<button onclick="goToMonitor(${c.id}, '${c.mode}')" class="btn-outline px-3 py-1.5 text-xs font-mono">进入大屏</button><button onclick="goToEdit(${c.id})" class="btn-primary px-3 py-1.5 text-xs font-mono">管理</button>`
+                ? `<button onclick="goToMonitor(${c.id}, '${c.mode}')" class="btn-outline px-3 py-1.5 text-xs font-mono">进入大屏</button><button onclick="goToEdit(${c.id}, '${c.mode}')" class="btn-primary px-3 py-1.5 text-xs font-mono">管理</button>`
                 : (c.status === 'pending'
-                    ? `<button onclick="goToMonitor(${c.id}, '${c.mode}')" class="btn-outline px-3 py-1.5 text-xs font-mono">进入大屏</button><button onclick="deleteContest(${c.id})" class="btn-danger-ghost px-2 py-1.5 text-xs font-mono">删除</button><button onclick="goToEdit(${c.id})" class="btn-outline px-3 py-1.5 text-xs font-mono">编辑配置</button>`
+                    ? `<button onclick="goToMonitor(${c.id}, '${c.mode}')" class="btn-outline px-3 py-1.5 text-xs font-mono">进入大屏</button><button onclick="deleteContest(${c.id})" class="btn-danger-ghost px-2 py-1.5 text-xs font-mono">删除</button><button onclick="goToEdit(${c.id}, '${c.mode}')" class="btn-outline px-3 py-1.5 text-xs font-mono">编辑配置</button>`
                     : (c.status === 'paused'
-                        ? `<button onclick="goToMonitor(${c.id}, '${c.mode}')" class="btn-outline px-3 py-1.5 text-xs font-mono">进入大屏</button><button onclick="goToEdit(${c.id})" class="btn-outline px-3 py-1.5 text-xs font-mono">编辑配置</button>`
-                        : `<button onclick="goToMonitor(${c.id}, '${c.mode}')" class="btn-outline px-3 py-1.5 text-xs font-mono">进入大屏</button><button onclick="deleteContest(${c.id})" class="btn-danger-ghost px-2 py-1.5 text-xs font-mono">删除记录</button><button onclick="goToEdit(${c.id})" class="btn-outline px-3 py-1.5 text-xs font-mono">查看归档</button>`));
+                        ? `<button onclick="goToMonitor(${c.id}, '${c.mode}')" class="btn-outline px-3 py-1.5 text-xs font-mono">进入大屏</button><button onclick="goToEdit(${c.id}, '${c.mode}')" class="btn-outline px-3 py-1.5 text-xs font-mono">编辑配置</button>`
+                        : `<button onclick="goToMonitor(${c.id}, '${c.mode}')" class="btn-outline px-3 py-1.5 text-xs font-mono">进入大屏</button><button onclick="deleteContest(${c.id})" class="btn-danger-ghost px-2 py-1.5 text-xs font-mono">删除记录</button><button onclick="goToEdit(${c.id}, '${c.mode}')" class="btn-outline px-3 py-1.5 text-xs font-mono">查看归档</button>`));
         
             // 状态切换下拉菜单
             const statusOptions = [
@@ -561,9 +561,10 @@
             return div.innerHTML;
         }
 
-        // 跳转到编辑页面
-        function goToEdit(id) {
-            window.location.href = `/admin/admin-contest-edit.html?id=${id}`;
+        // 跳转到编辑页面（根据模式选择不同的编辑页）
+        function goToEdit(id, mode) {
+            const page = mode === 'awd-f' ? 'admin-contest-edit-awdf.html' : 'admin-contest-edit-jeopardy.html';
+            window.location.href = `/admin/${page}?id=${id}`;
         }
 
         // 跳转到大屏页面

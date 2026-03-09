@@ -368,7 +368,6 @@
                         <span id="audit-count" class="text-xs text-gray-500">共 0 支队伍</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <button onclick="allocatePorts()" class="bg-cyan-600 hover:bg-cyan-700 text-white text-xs px-3 py-1 transition-colors">预分配端口</button>
                         <button onclick="batchApprove()" class="btn-primary text-xs px-3 py-1">批量通过</button>
                         <button onclick="batchReject()" class="btn-outline text-xs px-3 py-1">批量拒绝</button>
                         <button onclick="batchBan()" class="bg-orange-600 hover:bg-orange-700 text-white text-xs px-3 py-1 transition-colors">批量封禁</button>
@@ -385,7 +384,6 @@
                                 <th class="p-3">ID</th>
                                 <th class="p-3">队伍名称</th>
                                 <th class="p-3">所属组织</th>
-                                <th class="p-3">预分配端口</th>
                                 <th class="p-3">状态</th>
                                 <th class="p-3">申请时间</th>
                                 <th class="p-3">审核时间</th>
@@ -393,7 +391,7 @@
                             </tr>
                         </thead>
                         <tbody id="audit-teams-tbody" class="divide-y divide-[#222]">
-                            <tr><td colspan="9" class="p-8 text-center text-gray-500">加载中...</td></tr>
+                            <tr><td colspan="8" class="p-8 text-center text-gray-500">加载中...</td></tr>
                         </tbody>
                     </table>
                     </div>
@@ -2128,10 +2126,6 @@
 
             tbody.innerHTML = contestTeams.map(team => {
                 const cfg = statusConfig[team.status] || statusConfig.pending;
-                // 格式化预分配端口显示
-                const portsDisplay = team.allocatedPorts && team.allocatedPorts.length > 0 
-                    ? `<span class="text-cyan-400">${team.allocatedPorts.join(', ')}</span>` 
-                    : '<span class="text-gray-600">-</span>';
                 return `
                     <tr class="table-row hover:bg-[#1a1a1a]">
                         <td class="p-3">
@@ -2140,7 +2134,6 @@
                         <td class="p-3 text-gray-500">${team.teamId}</td>
                         <td class="p-3 text-white font-bold">${team.teamName || 'N/A'}</td>
                         <td class="p-3 text-gray-400">${team.orgName || '-'}</td>
-                        <td class="p-3">${portsDisplay}</td>
                         <td class="p-3 ${cfg.class}">${cfg.text}</td>
                         <td class="p-3 text-gray-400">${team.createdAt || '-'}</td>
                         <td class="p-3 text-gray-400">${team.reviewedAt || '-'}</td>
@@ -2312,30 +2305,6 @@
                 loadContestTeams();
             } catch (e) {
                 showToast('批量作弊封禁失败', 'error');
-            }
-        }
-
-        // 预分配端口
-        async function allocatePorts() {
-            if (!confirm('确定为所有已审核队伍预分配端口？\n\n端口将根据系统设置的端口范围自动分配，已分配端口的队伍会跳过。')) return;
-
-            try {
-                const res = await fetch(`/api/admin/contests/${contestId}/allocate-ports`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': 'Bearer ' + token,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                const result = await res.json();
-                if (!res.ok) {
-                    showToast(result.message || '端口分配失败', 'error');
-                    return;
-                }
-                showToast(`${result.message}（每队 ${result.portsPerTeam} 个端口）`, 'success');
-                loadContestTeams();
-            } catch (e) {
-                showToast('端口分配失败', 'error');
             }
         }
 

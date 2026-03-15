@@ -873,16 +873,22 @@ func HandleGetScoreboard(c *gin.Context, db *sql.DB) {
 	}
 	defer rows.Close()
 
+	type TeamSolveInfo struct {
+		ChallengeID int64  `json:"challengeId"`
+		Blood       string `json:"blood,omitempty"` // "first", "second", "third", or empty
+	}
+
 	type TeamScore struct {
-		Rank         int     `json:"rank"`
-		TeamID       int64   `json:"teamId"`
-		TeamName     string  `json:"teamName"`
-		Avatar       *string `json:"avatar"`
-		TotalScore   int     `json:"totalScore"`
-		AttackScore  int     `json:"attackScore,omitempty"`  // AWD-F: 攻击得分（解题）
-		DefenseScore int     `json:"defenseScore,omitempty"` // AWD-F: 防守得分
-		SolveCount   int     `json:"solveCount"`
-		LastSolve    string  `json:"lastSolve"`
+		Rank         int              `json:"rank"`
+		TeamID       int64            `json:"teamId"`
+		TeamName     string           `json:"teamName"`
+		Avatar       *string          `json:"avatar"`
+		TotalScore   int              `json:"totalScore"`
+		AttackScore  int              `json:"attackScore,omitempty"`  // AWD-F: 攻击得分（解题）
+		DefenseScore int              `json:"defenseScore,omitempty"` // AWD-F: 防守得分
+		SolveCount   int              `json:"solveCount"`
+		LastSolve    string           `json:"lastSolve"`
+		Solves       []TeamSolveInfo  `json:"solves,omitempty"` // 解题详情
 	}
 
 	teamScoreMap := make(map[int64]*TeamScore)
@@ -924,6 +930,20 @@ func HandleGetScoreboard(c *gin.Context, db *sql.DB) {
 
 		teamScoreMap[teamID].AttackScore += score
 		teamScoreMap[teamID].SolveCount++
+
+		// 添加解题详情
+		blood := ""
+		if solveOrder == 1 {
+			blood = "first"
+		} else if solveOrder == 2 {
+			blood = "second"
+		} else if solveOrder == 3 {
+			blood = "third"
+		}
+		teamScoreMap[teamID].Solves = append(teamScoreMap[teamID].Solves, TeamSolveInfo{
+			ChallengeID: challengeID,
+			Blood:       blood,
+		})
 
 		// 记录最后解题时间
 		if solvedAt.After(teamLastSolveMap[teamID]) {

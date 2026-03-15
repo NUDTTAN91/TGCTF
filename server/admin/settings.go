@@ -13,10 +13,14 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
+
+// 端口分配全局锁，防止并发分配冲突
+var portAllocMutex sync.Mutex
 
 // SystemSettings Docker容器策略设置
 type SystemSettings struct {
@@ -216,8 +220,11 @@ func isPortAvailable(port int) bool {
 	return true
 }
 
-// AllocatePorts 批量分配端口
+// AllocatePorts 批量分配端口（加锁防止并发冲突）
 func AllocatePorts(db *sql.DB, count int) ([]int, error) {
+	portAllocMutex.Lock()
+	defer portAllocMutex.Unlock()
+	
 	start, end := GetPortRange(db)
 	
 	// 查询所有正在使用的端口（平台管理的容器）

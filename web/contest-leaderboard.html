@@ -105,6 +105,111 @@
         ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
         .hidden-section { display: none; }
+
+        /* === 4. 解题矩阵样式 === */
+        .solve-matrix { border-collapse: separate; border-spacing: 0; width: auto; }
+        .solve-matrix th, .solve-matrix td { 
+            border: 1px solid #222; 
+            text-align: center; 
+            padding: 8px 4px;
+            font-size: 12px;
+        }
+        .solve-matrix th { 
+            background: #1a1a1a; 
+            color: #888; 
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+        }
+        /* 题目表头 - 斜向效果 */
+        .solve-matrix th.challenge-header {
+            min-width: 40px;
+            max-width: 40px;
+            height: 120px;
+            padding: 0;
+            position: relative;
+            vertical-align: bottom;
+            transform: skewX(-45deg);
+            transform-origin: bottom right;
+            background: rgba(100, 100, 100, 0.2);
+            border: none;
+            border-left: 1px solid #333;
+            border-right: 1px solid #333;
+        }
+        .solve-matrix th.challenge-header .header-inner {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%) skewX(45deg) rotateZ(-45deg);
+            white-space: nowrap;
+            font-size: 12px;
+            font-weight: normal;
+            width: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: center;
+        }
+        .solve-matrix tbody tr:hover { background: rgba(255,255,255,0.03); }
+        /* 固定列样式 */
+        .solve-matrix .team-rank { 
+            font-family: 'Chakra Petch', sans-serif; 
+            font-weight: 900; 
+            color: #444;
+            position: sticky;
+            left: 0;
+            z-index: 2;
+            background: #111;
+        }
+        .solve-matrix .team-rank.r1 { color: var(--gold); }
+        .solve-matrix .team-rank.r2 { color: var(--silver); }
+        .solve-matrix .team-rank.r3 { color: var(--bronze); }
+        .solve-matrix .team-name { 
+            text-align: left; 
+            padding: 8px 12px;
+            font-weight: bold;
+            color: #fff;
+            white-space: nowrap;
+            position: sticky;
+            z-index: 2;
+            background: #111;
+        }
+        .solve-matrix .team-score {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent);
+            font-weight: bold;
+            white-space: nowrap;
+            padding: 8px 12px;
+            position: sticky;
+            z-index: 2;
+            background: #111;
+            border-right: 2px solid #333;
+        }
+        /* 固定列表头 */
+        .solve-matrix thead th.sticky-rank { position: sticky; left: 0; z-index: 3; background: #1a1a1a; }
+        .solve-matrix thead th.sticky-team { position: sticky; z-index: 3; background: #1a1a1a; }
+        .solve-matrix thead th.sticky-score { position: sticky; z-index: 3; background: #1a1a1a; border-right: 2px solid #333; }
+        /* hover时保持背景色 */
+        .solve-matrix tbody tr:hover .team-rank,
+        .solve-matrix tbody tr:hover .team-name,
+        .solve-matrix tbody tr:hover .team-score { background: #1a1a1a; }
+        .solve-cell { width: 36px; height: 36px; font-size: 16px; }
+        .solve-cell.first-blood { background: rgba(255, 215, 0, 0.15); color: var(--gold); }
+        .solve-cell.second-blood { background: rgba(192, 192, 192, 0.1); color: var(--silver); }
+        .solve-cell.third-blood { background: rgba(205, 127, 50, 0.1); color: var(--bronze); }
+        .solve-cell.solved { color: #22c55e; }
+        .solve-cell.unsolved { color: #333; }
+        .matrix-scroll {
+            overflow-x: auto;
+        }
+        .matrix-scroll::-webkit-scrollbar { height: 6px; }
+        .matrix-scroll::-webkit-scrollbar-track { background: #111; }
+        .matrix-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        .matrix-scroll::-webkit-scrollbar-thumb:hover { background: #555; }
+        .my-team-row { background: rgba(255, 107, 0, 0.1) !important; }
+        .my-team-row .team-rank,
+        .my-team-row .team-name,
+        .my-team-row .team-score { background: rgba(255, 107, 0, 0.15) !important; }
+        .my-team-row td:first-child { border-left: 2px solid var(--accent) !important; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col relative">
@@ -170,14 +275,28 @@
                 <div class="h-64 w-full"><canvas id="teamChart"></canvas></div>
             </div>
 
-            <!-- 排名表格 -->
-            <div class="bg-[#111] border border-[#333] p-1">
-                <table class="rank-table">
-                    <thead><tr><th class="w-20 text-center">Rank</th><th>Team Name</th><th class="w-32 text-right">Solved</th><th class="w-48">Progress</th><th class="w-40 text-right">Score</th></tr></thead>
-                    <tbody id="team-ranking-body">
-                        <!-- 动态填充 -->
-                    </tbody>
-                </table>
+            <!-- 解题矩阵 -->
+            <div class="bg-[#111] border border-[#333]">
+                <div class="p-4 border-b border-[#333] flex justify-between items-center">
+                    <h3 class="text-sm font-bold text-gray-400 font-mono uppercase">Solve Matrix</h3>
+                    <div class="text-xs text-gray-600 font-mono">
+                        <span class="mr-4">🥇 一血</span>
+                        <span class="mr-4">🥈 二血</span>
+                        <span class="mr-4">🥉 三血</span>
+                        <span class="mr-4">🚩 已解</span>
+                        <span>- 未解</span>
+                    </div>
+                </div>
+                <div class="matrix-scroll">
+                    <table class="solve-matrix">
+                        <thead id="matrix-thead">
+                            <!-- 动态填充表头 -->
+                        </thead>
+                        <tbody id="team-ranking-body">
+                            <!-- 动态填充 -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -214,6 +333,8 @@
         let contestData = null;
         let teamScoreboard = [];
         let soloScoreboard = [];
+        let challenges = [];  // 题目列表
+        let matrixData = {};  // 解题矩阵数据: { teamId: { challengeId: 'first'|'second'|'third'|'solved'|null } }
         let myTeamId = null;
         let myUserId = null;
         let teamChart = null;
@@ -283,7 +404,9 @@
         async function init() {
             await loadContest();
             await loadMyTeam();
+            await loadChallenges();  // 加载题目列表
             await loadTeamScoreboard();
+            await loadMatrixData();  // 加载解题矩阵数据
             await loadSoloScoreboard();
             await loadScoreTrend();
             renderTeamRanking();
@@ -318,6 +441,34 @@
                 }
             } catch (e) {
                 console.error('Load my team error:', e);
+            }
+        }
+
+        // 加载题目列表
+        async function loadChallenges() {
+            try {
+                const res = await fetch(`/api/contests/${contestId}/challenges`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    challenges = await res.json() || [];
+                }
+            } catch (e) {
+                console.error('Load challenges error:', e);
+            }
+        }
+
+        // 加载解题矩阵数据
+        async function loadMatrixData() {
+            matrixData = {};
+            // 从 scoreboard 数据中提取每个队伍的解题情况
+            for (const team of teamScoreboard) {
+                matrixData[team.teamId] = {};
+                if (team.solves) {
+                    for (const solve of team.solves) {
+                        matrixData[team.teamId][solve.challengeId] = solve.blood || 'solved';
+                    }
+                }
             }
         }
 
@@ -437,41 +588,97 @@
                 podiumDiv.innerHTML = '<div class="col-span-3 text-center text-gray-500 py-10">暂无解题记录</div>';
             }
 
-            // 排名表格
-            const maxScore = filtered.length > 0 ? filtered[0].totalScore : 1;
+            // 解题矩阵
             const tbody = document.getElementById('team-ranking-body');
-            if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-500 py-10">暂无数据</td></tr>';
+            const thead = document.getElementById('matrix-thead');
+            
+            if (filtered.length === 0 || challenges.length === 0) {
+                thead.innerHTML = '';
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-gray-500 py-10">暂无数据</td></tr>';
                 return;
             }
 
+            // 生成表头：Rank | Team | Score | 题目1 | 题目2 | ...
+            const categoryColors = {
+                'web': '#3b82f6',
+                'pwn': '#ef4444', 
+                'reverse': '#22c55e',
+                'crypto': '#a855f7',
+                'misc': '#f59e0b',
+                'forensics': '#06b6d4',
+                'blockchain': '#ec4899'
+            };
+            thead.innerHTML = `<tr>
+                <th class="sticky-rank">Rank</th>
+                <th class="sticky-team">Team</th>
+                <th class="sticky-score">Score</th>
+                ${challenges.map(c => {
+                    const color = categoryColors[(c.category || '').toLowerCase()] || '#888';
+                    return `<th class="challenge-header"><div class="header-inner" style="color: ${color};" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</div></th>`;
+                }).join('')}
+            </tr>`;
+
+            // 生成数据行
             tbody.innerHTML = filtered.map((t, i) => {
                 const rank = i + 1;
                 const isMe = t.teamId === myTeamId;
-                const rankClass = rank === 1 ? 'rank-badge-1' : rank === 2 ? 'rank-badge-2' : rank === 3 ? 'rank-badge-3' : '';
-                const scoreClass = rank === 1 ? 'text-[#ffd700]' : rank === 2 ? 'text-[#c0c0c0]' : rank === 3 ? 'text-[#cd7f32]' : 'text-white';
-                const progress = maxScore > 0 ? (t.totalScore / maxScore * 100) : 0;
+                const rankClass = rank === 1 ? 'r1' : rank === 2 ? 'r2' : rank === 3 ? 'r3' : '';
+                const teamSolves = matrixData[t.teamId] || {};
                 
-                return `
-                <tr class="rank-row ${isMe ? 'my-team' : ''}">
-                    <td class="text-center"><span class="rank-badge ${rankClass}">${String(rank).padStart(2, '0')}</span></td>
-                    <td>
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 ${isMe ? 'bg-[#ff6b00]' : 'bg-[#222]'} flex items-center justify-center text-xs font-bold ${isMe ? 'text-black' : 'text-gray-400'} rounded-sm border border-[#333] overflow-hidden">
-                                ${t.avatar ? `<img src="${t.avatar}" class="w-full h-full object-cover">` : t.teamName[0].toUpperCase()}
-                            </div>
-                            <div>
-                                <div class="text-sm font-bold text-white">${escapeHtml(t.teamName)}</div>
-                                ${isMe ? '<div class="text-[10px] text-[#ff6b00] font-mono">You</div>' : ''}
-                            </div>
-                        </div>
-                    </td>
-                    <td class="text-right font-mono text-gray-400">${t.solveCount}</td>
-                    <td><div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${progress}%"></div></div></td>
-                    <td class="text-right font-bold font-eng ${scoreClass} text-lg">${t.totalScore.toLocaleString()}</td>
-                </tr>
-                `;
+                // 生成每个题目的解题状态单元格
+                const solveCells = challenges.map(c => {
+                    const status = teamSolves[c.id];
+                    let cellClass = 'solve-cell unsolved';
+                    let icon = '-';
+                    if (status === 'first') {
+                        cellClass = 'solve-cell first-blood';
+                        icon = '🥇';
+                    } else if (status === 'second') {
+                        cellClass = 'solve-cell second-blood';
+                        icon = '🥈';
+                    } else if (status === 'third') {
+                        cellClass = 'solve-cell third-blood';
+                        icon = '🥉';
+                    } else if (status === 'solved') {
+                        cellClass = 'solve-cell solved';
+                        icon = '🚩';
+                    }
+                    return `<td class="${cellClass}">${icon}</td>`;
+                }).join('');
+                
+                return `<tr class="${isMe ? 'my-team-row' : ''}">
+                    <td class="team-rank ${rankClass}">${String(rank).padStart(2, '0')}</td>
+                    <td class="team-name">${escapeHtml(t.teamName)}</td>
+                    <td class="team-score">${t.totalScore.toLocaleString()}</td>
+                    ${solveCells}
+                </tr>`;
             }).join('');
+
+            // 动态计算固定列的 left 值
+            requestAnimationFrame(() => {
+                const table = document.querySelector('.solve-matrix');
+                if (!table) return;
+                const firstRow = table.querySelector('tbody tr');
+                if (!firstRow) return;
+                
+                const rankCell = firstRow.querySelector('.team-rank');
+                const nameCell = firstRow.querySelector('.team-name');
+                const scoreCell = firstRow.querySelector('.team-score');
+                if (!rankCell || !nameCell || !scoreCell) return;
+                
+                const rankWidth = rankCell.offsetWidth;
+                const nameWidth = nameCell.offsetWidth;
+                
+                // 设置数据行的 left
+                document.querySelectorAll('.solve-matrix .team-name').forEach(el => el.style.left = rankWidth + 'px');
+                document.querySelectorAll('.solve-matrix .team-score').forEach(el => el.style.left = (rankWidth + nameWidth) + 'px');
+                
+                // 设置表头的 left
+                const thTeam = table.querySelector('th.sticky-team');
+                const thScore = table.querySelector('th.sticky-score');
+                if (thTeam) thTeam.style.left = rankWidth + 'px';
+                if (thScore) thScore.style.left = (rankWidth + nameWidth) + 'px';
+            });
         }
 
         // 渲染个人排行榜

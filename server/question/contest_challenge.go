@@ -30,7 +30,8 @@ var GenerateTeamChallengeFlag GenerateFlagsFunc
 type ContestChallenge struct {
 	ID                int64          `json:"id"`
 	ContestID         int64          `json:"contestId"`
-	QuestionID        int64          `json:"questionId"`
+	QuestionID        *int64         `json:"questionId"`        // 指针类型，允许 NULL（临时题目）
+	IsInline          bool           `json:"isInline"`          // 是否为临时题目
 	Title             string         `json:"title"`
 	Type              string         `json:"type"`
 	CategoryID        int64          `json:"categoryId"`
@@ -41,7 +42,12 @@ type ContestChallenge struct {
 	FlagType          string         `json:"flagType"`
 	DockerImage       sql.NullString `json:"dockerImage"`
 	Attachment        sql.NullString `json:"attachmentUrl"`
+	AttachmentType    string         `json:"attachmentType"`    // 附件类型: url | local
 	Ports             sql.NullString `json:"ports"`
+	CPULimit          sql.NullString `json:"cpuLimit"`
+	MemoryLimit       sql.NullString `json:"memoryLimit"`
+	FlagEnv           string         `json:"flagEnv"`
+	FlagScript        sql.NullString `json:"flagScript"`
 	InitialScore      int            `json:"initialScore"`
 	MinScore          int            `json:"minScore"`
 	DisplayOrder      int            `json:"displayOrder"`      // 显示顺序
@@ -58,15 +64,32 @@ func HandleListContestChallenges(c *gin.Context, db *sql.DB) {
 	contestID := c.Param("id")
 
 	rows, err := db.Query(`
-		SELECT cc.id, cc.contest_id, cc.question_id, q.title, q.type, q.category_id, cat.name,
-			cc.difficulty, q.description, q.flag, q.flag_type, q.docker_image, q.attachment_url, q.ports,
+		SELECT cc.id, cc.contest_id, cc.question_id,
+			COALESCE(q.title, cc.inline_title) as title,
+			COALESCE(q.type, cc.inline_type) as type,
+			COALESCE(q.category_id, cc.inline_category_id) as category_id,
+			COALESCE(cat.name, icat.name) as category_name,
+			cc.difficulty,
+			COALESCE(q.description, cc.inline_description) as description,
+			COALESCE(q.flag, cc.inline_flag) as flag,
+			COALESCE(q.flag_type, cc.inline_flag_type) as flag_type,
+			COALESCE(q.docker_image, cc.inline_docker_image) as docker_image,
+			COALESCE(q.attachment_url, cc.inline_attachment_url) as attachment_url,
+			COALESCE(q.attachment_type, cc.inline_attachment_type, 'url') as attachment_type,
+			COALESCE(q.ports, cc.inline_ports) as ports,
+			COALESCE(q.cpu_limit, cc.inline_cpu_limit) as cpu_limit,
+			COALESCE(q.memory_limit, cc.inline_memory_limit) as memory_limit,
+			COALESCE(q.flag_env, cc.inline_flag_env, 'FLAG') as flag_env,
+			COALESCE(q.flag_script, cc.inline_flag_script) as flag_script,
 			cc.initial_score, COALESCE(cc.min_score, 17), COALESCE(cc.display_order, 0),
 			cc.status, cc.release_time, cc.created_at, cc.updated_at,
 			(SELECT COUNT(*) FROM contest_challenge_hints WHERE challenge_id = cc.id) as hint_count,
-			(SELECT COUNT(*) FROM contest_challenge_hints WHERE challenge_id = cc.id AND released = true) as hint_released_count
+			(SELECT COUNT(*) FROM contest_challenge_hints WHERE challenge_id = cc.id AND released = true) as hint_released_count,
+			(cc.question_id IS NULL) as is_inline
 		FROM contest_challenges cc
-		JOIN question_bank q ON cc.question_id = q.id
+		LEFT JOIN question_bank q ON cc.question_id = q.id
 		LEFT JOIN categories cat ON q.category_id = cat.id
+		LEFT JOIN categories icat ON cc.inline_category_id = icat.id
 		WHERE cc.contest_id = $1
 		ORDER BY CASE WHEN cc.display_order = 0 THEN 999999 ELSE cc.display_order END, cc.id`, contestID)
 	if err != nil {
@@ -80,10 +103,14 @@ func HandleListContestChallenges(c *gin.Context, db *sql.DB) {
 		var cc ContestChallenge
 		var createdAt, updatedAt time.Time
 		var releaseTime sql.NullTime
-		if err := rows.Scan(&cc.ID, &cc.ContestID, &cc.QuestionID, &cc.Title, &cc.Type, &cc.CategoryID, &cc.CategoryName,
-			&cc.Difficulty, &cc.Description, &cc.Flag, &cc.FlagType, &cc.DockerImage, &cc.Attachment, &cc.Ports,
-			&cc.InitialScore, &cc.MinScore, &cc.DisplayOrder, &cc.Status, &releaseTime, &createdAt, &updatedAt,
-			&cc.HintCount, &cc.HintReleasedCount); err != nil {
+		if err := rows.Scan(&cc.ID, &cc.ContestID, &cc.QuestionID,
+			&cc.Title, &cc.Type, &cc.CategoryID, &cc.CategoryName,
+			&cc.Difficulty, &cc.Description, &cc.Flag, &cc.FlagType,
+			&cc.DockerImage, &cc.Attachment, &cc.AttachmentType, &cc.Ports,
+			&cc.CPULimit, &cc.MemoryLimit, &cc.FlagEnv, &cc.FlagScript,
+			&cc.InitialScore, &cc.MinScore, &cc.DisplayOrder,
+			&cc.Status, &releaseTime, &createdAt, &updatedAt,
+			&cc.HintCount, &cc.HintReleasedCount, &cc.IsInline); err != nil {
 			continue
 		}
 		cc.CreatedAt = createdAt.Format(time.RFC3339)
@@ -208,8 +235,8 @@ func HandleUpdateContestChallenge(c *gin.Context, db *sql.DB) {
 	var oldStatus string
 	var contestID int64
 	var challengeName string
-	db.QueryRow(`SELECT cc.status, cc.contest_id, q.title FROM contest_challenges cc 
-		JOIN question_bank q ON cc.question_id = q.id WHERE cc.id = $1`, id).Scan(&oldStatus, &contestID, &challengeName)
+	db.QueryRow(`SELECT cc.status, cc.contest_id, COALESCE(q.title, cc.inline_title) FROM contest_challenges cc 
+		LEFT JOIN question_bank q ON cc.question_id = q.id WHERE cc.id = $1`, id).Scan(&oldStatus, &contestID, &challengeName)
 
 	// 构建动态更新SQL
 	updates := []string{"updated_at = CURRENT_TIMESTAMP"}
@@ -367,8 +394,8 @@ func HandleUpdateChallengeHint(c *gin.Context, db *sql.DB) {
 	var contestID int64
 	var challengeName string
 	var oldHintReleased bool
-	err := db.QueryRow(`SELECT cc.contest_id, q.title, COALESCE(cc.hint_released, false) FROM contest_challenges cc 
-		JOIN question_bank q ON cc.question_id = q.id WHERE cc.id = $1`, id).Scan(&contestID, &challengeName, &oldHintReleased)
+	err := db.QueryRow(`SELECT cc.contest_id, COALESCE(q.title, cc.inline_title), COALESCE(cc.hint_released, false) FROM contest_challenges cc 
+		LEFT JOIN question_bank q ON cc.question_id = q.id WHERE cc.id = $1`, id).Scan(&contestID, &challengeName, &oldHintReleased)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "NOT_FOUND"})
 		return
@@ -399,8 +426,8 @@ func HandleReleaseChallengeHint(c *gin.Context, db *sql.DB) {
 	var challengeName string
 	var hint string
 	var oldHintReleased bool
-	err := db.QueryRow(`SELECT cc.contest_id, q.title, COALESCE(cc.hint, ''), COALESCE(cc.hint_released, false) 
-		FROM contest_challenges cc JOIN question_bank q ON cc.question_id = q.id WHERE cc.id = $1`, id).Scan(&contestID, &challengeName, &hint, &oldHintReleased)
+	err := db.QueryRow(`SELECT cc.contest_id, COALESCE(q.title, cc.inline_title), COALESCE(cc.hint, ''), COALESCE(cc.hint_released, false) 
+		FROM contest_challenges cc LEFT JOIN question_bank q ON cc.question_id = q.id WHERE cc.id = $1`, id).Scan(&contestID, &challengeName, &hint, &oldHintReleased)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "NOT_FOUND"})
 		return
@@ -553,8 +580,8 @@ func HandleReleaseSingleHint(c *gin.Context, db *sql.DB) {
 	// 获取题目名称和比赛ID用于发布公告
 	var contestID int64
 	var challengeName string
-	db.QueryRow(`SELECT cc.contest_id, q.title FROM contest_challenges cc 
-		JOIN question_bank q ON cc.question_id = q.id WHERE cc.id = $1`, challengeID).Scan(&contestID, &challengeName)
+	db.QueryRow(`SELECT cc.contest_id, COALESCE(q.title, cc.inline_title) FROM contest_challenges cc 
+		LEFT JOIN question_bank q ON cc.question_id = q.id WHERE cc.id = $1`, challengeID).Scan(&contestID, &challengeName)
 
 	// 发布公告
 	if AnnounceChallenge != nil && contestID > 0 {
@@ -633,11 +660,11 @@ func StartScheduledReleaseChecker(db *sql.DB) {
 func checkAndReleaseScheduledChallenges(db *sql.DB) {
 	now := time.Now()
 
-	// 查找所有已到时间但状态仍为hidden的题目
+	// 查找所有已到时间但状态仍为hidden的题目（包括临时题目）
 	rows, err := db.Query(`
-		SELECT cc.id, cc.contest_id, q.title
+		SELECT cc.id, cc.contest_id, COALESCE(q.title, cc.inline_title)
 		FROM contest_challenges cc
-		JOIN question_bank q ON cc.question_id = q.id
+		LEFT JOIN question_bank q ON cc.question_id = q.id
 		WHERE cc.status = 'hidden'
 		  AND cc.release_time IS NOT NULL
 		  AND cc.release_time <= $1`, now)
@@ -714,4 +741,311 @@ func HandleBatchUpdateChallengeOrder(c *gin.Context, db *sql.DB) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"updated": updated, "message": "更新成功"})
+}
+
+// ========== 临时题目支持 ==========
+
+// CreateInlineChallengeRequest 创建临时题目请求
+type CreateInlineChallengeRequest struct {
+	Title          string `json:"title"`
+	Type           string `json:"type"`           // static_attachment | static_container | dynamic_attachment | dynamic_container
+	CategoryID     int64  `json:"categoryId"`
+	Description    string `json:"description"`
+	Flag           string `json:"flag,omitempty"`
+	FlagType       string `json:"flagType"`       // static | dynamic
+	DockerImage    string `json:"dockerImage,omitempty"`
+	AttachmentURL  string `json:"attachmentUrl,omitempty"`
+	AttachmentType string `json:"attachmentType,omitempty"` // url | local
+	Ports          string `json:"ports,omitempty"`          // JSON数组
+	CPULimit       string `json:"cpuLimit,omitempty"`
+	MemoryLimit    string `json:"memoryLimit,omitempty"`
+	FlagEnv        string `json:"flagEnv,omitempty"`
+	FlagScript     string `json:"flagScript,omitempty"`
+	InitialScore   int    `json:"initialScore"`
+	MinScore       int    `json:"minScore"`
+	Difficulty     int    `json:"difficulty"`
+}
+
+// HandleCreateInlineChallenge 创建临时题目
+func HandleCreateInlineChallenge(c *gin.Context, db *sql.DB) {
+	contestID := c.Param("id")
+
+	var req CreateInlineChallengeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "INVALID_REQUEST"})
+		return
+	}
+
+	// 验证必填字段
+	if req.Title == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "TITLE_REQUIRED"})
+		return
+	}
+	if req.CategoryID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "CATEGORY_REQUIRED"})
+		return
+	}
+	if req.Type == "" {
+		req.Type = "static_attachment"
+	}
+	if req.FlagType == "" {
+		req.FlagType = "static"
+	}
+	if req.AttachmentType == "" {
+		req.AttachmentType = "url"
+	}
+	if req.FlagEnv == "" {
+		req.FlagEnv = "FLAG"
+	}
+
+	// 默认分数
+	if req.InitialScore == 0 {
+		req.InitialScore = 500
+	}
+	if req.MinScore == 0 {
+		req.MinScore = 17
+	}
+	if req.Difficulty == 0 {
+		req.Difficulty = 5
+	}
+
+	// 插入临时题目（question_id 为 NULL）
+	var id int64
+	err := db.QueryRow(`
+		INSERT INTO contest_challenges (
+			contest_id, question_id, initial_score, min_score, difficulty, status,
+			inline_title, inline_type, inline_category_id, inline_description,
+			inline_flag, inline_flag_type, inline_docker_image,
+			inline_attachment_url, inline_attachment_type, inline_ports,
+			inline_cpu_limit, inline_memory_limit, inline_flag_env, inline_flag_script
+		) VALUES (
+			$1, NULL, $2, $3, $4, 'hidden',
+			$5, $6, $7, $8,
+			$9, $10, $11,
+			$12, $13, $14,
+			$15, $16, $17, $18
+		) RETURNING id`,
+		contestID, req.InitialScore, req.MinScore, req.Difficulty,
+		req.Title, req.Type, req.CategoryID, req.Description,
+		req.Flag, req.FlagType, req.DockerImage,
+		req.AttachmentURL, req.AttachmentType, req.Ports,
+		req.CPULimit, req.MemoryLimit, req.FlagEnv, req.FlagScript,
+	).Scan(&id)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "DATABASE_ERROR", "details": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"id": id, "message": "临时题目创建成功"})
+}
+
+// HandleUpdateInlineChallenge 更新临时题目
+func HandleUpdateInlineChallenge(c *gin.Context, db *sql.DB) {
+	id := c.Param("id")
+
+	// 先检查是否为临时题目
+	var questionID sql.NullInt64
+	err := db.QueryRow("SELECT question_id FROM contest_challenges WHERE id = $1", id).Scan(&questionID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "NOT_FOUND"})
+		return
+	}
+	if questionID.Valid {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "NOT_INLINE_CHALLENGE", "message": "该题目不是临时题目，不能通过此接口修改"})
+		return
+	}
+
+	var req CreateInlineChallengeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "INVALID_REQUEST"})
+		return
+	}
+
+	// 构建动态更新SQL
+	updates := []string{"updated_at = CURRENT_TIMESTAMP"}
+	args := []interface{}{}
+	argIndex := 1
+
+	if req.Title != "" {
+		updates = append(updates, fmt.Sprintf("inline_title = $%d", argIndex))
+		args = append(args, req.Title)
+		argIndex++
+	}
+	if req.Type != "" {
+		updates = append(updates, fmt.Sprintf("inline_type = $%d", argIndex))
+		args = append(args, req.Type)
+		argIndex++
+	}
+	if req.CategoryID > 0 {
+		updates = append(updates, fmt.Sprintf("inline_category_id = $%d", argIndex))
+		args = append(args, req.CategoryID)
+		argIndex++
+	}
+	if req.Description != "" {
+		updates = append(updates, fmt.Sprintf("inline_description = $%d", argIndex))
+		args = append(args, req.Description)
+		argIndex++
+	}
+	// Flag 允许清空，所以不检查空字符串
+	updates = append(updates, fmt.Sprintf("inline_flag = $%d", argIndex))
+	args = append(args, req.Flag)
+	argIndex++
+
+	if req.FlagType != "" {
+		updates = append(updates, fmt.Sprintf("inline_flag_type = $%d", argIndex))
+		args = append(args, req.FlagType)
+		argIndex++
+	}
+	// DockerImage 允许清空
+	updates = append(updates, fmt.Sprintf("inline_docker_image = $%d", argIndex))
+	args = append(args, req.DockerImage)
+	argIndex++
+
+	// AttachmentURL 允许清空
+	updates = append(updates, fmt.Sprintf("inline_attachment_url = $%d", argIndex))
+	args = append(args, req.AttachmentURL)
+	argIndex++
+
+	if req.AttachmentType != "" {
+		updates = append(updates, fmt.Sprintf("inline_attachment_type = $%d", argIndex))
+		args = append(args, req.AttachmentType)
+		argIndex++
+	}
+	// Ports 允许清空
+	updates = append(updates, fmt.Sprintf("inline_ports = $%d", argIndex))
+	args = append(args, req.Ports)
+	argIndex++
+
+	// CPU/Memory 限制
+	updates = append(updates, fmt.Sprintf("inline_cpu_limit = $%d", argIndex))
+	args = append(args, req.CPULimit)
+	argIndex++
+	updates = append(updates, fmt.Sprintf("inline_memory_limit = $%d", argIndex))
+	args = append(args, req.MemoryLimit)
+	argIndex++
+
+	if req.FlagEnv != "" {
+		updates = append(updates, fmt.Sprintf("inline_flag_env = $%d", argIndex))
+		args = append(args, req.FlagEnv)
+		argIndex++
+	}
+	// FlagScript 允许清空
+	updates = append(updates, fmt.Sprintf("inline_flag_script = $%d", argIndex))
+	args = append(args, req.FlagScript)
+	argIndex++
+
+	// 分数配置
+	if req.InitialScore > 0 {
+		updates = append(updates, fmt.Sprintf("initial_score = $%d", argIndex))
+		args = append(args, req.InitialScore)
+		argIndex++
+	}
+	if req.MinScore > 0 {
+		updates = append(updates, fmt.Sprintf("min_score = $%d", argIndex))
+		args = append(args, req.MinScore)
+		argIndex++
+	}
+	if req.Difficulty > 0 {
+		updates = append(updates, fmt.Sprintf("difficulty = $%d", argIndex))
+		args = append(args, req.Difficulty)
+		argIndex++
+	}
+
+	// 添加 WHERE 条件
+	args = append(args, id)
+	query := fmt.Sprintf("UPDATE contest_challenges SET %s WHERE id = $%d",
+		joinStrings(updates, ", "), argIndex)
+
+	result, err := db.Exec(query, args...)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "DATABASE_ERROR", "details": err.Error()})
+		return
+	}
+
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "NOT_FOUND"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "临时题目更新成功"})
+}
+
+// HandleGetInlineChallenge 获取临时题目详情
+func HandleGetInlineChallenge(c *gin.Context, db *sql.DB) {
+	id := c.Param("id")
+
+	var cc struct {
+		ID             int64          `json:"id"`
+		ContestID      int64          `json:"contestId"`
+		Title          sql.NullString `json:"title"`
+		Type           sql.NullString `json:"type"`
+		CategoryID     sql.NullInt64  `json:"categoryId"`
+		Description    sql.NullString `json:"description"`
+		Flag           sql.NullString `json:"flag"`
+		FlagType       sql.NullString `json:"flagType"`
+		DockerImage    sql.NullString `json:"dockerImage"`
+		AttachmentURL  sql.NullString `json:"attachmentUrl"`
+		AttachmentType sql.NullString `json:"attachmentType"`
+		Ports          sql.NullString `json:"ports"`
+		CPULimit       sql.NullString `json:"cpuLimit"`
+		MemoryLimit    sql.NullString `json:"memoryLimit"`
+		FlagEnv        sql.NullString `json:"flagEnv"`
+		FlagScript     sql.NullString `json:"flagScript"`
+		InitialScore   int            `json:"initialScore"`
+		MinScore       int            `json:"minScore"`
+		Difficulty     int            `json:"difficulty"`
+	}
+
+	err := db.QueryRow(`
+		SELECT id, contest_id,
+			inline_title, inline_type, inline_category_id, inline_description,
+			inline_flag, inline_flag_type, inline_docker_image,
+			inline_attachment_url, inline_attachment_type, inline_ports,
+			inline_cpu_limit, inline_memory_limit, inline_flag_env, inline_flag_script,
+			initial_score, min_score, difficulty
+		FROM contest_challenges
+		WHERE id = $1 AND question_id IS NULL`, id).Scan(
+		&cc.ID, &cc.ContestID,
+		&cc.Title, &cc.Type, &cc.CategoryID, &cc.Description,
+		&cc.Flag, &cc.FlagType, &cc.DockerImage,
+		&cc.AttachmentURL, &cc.AttachmentType, &cc.Ports,
+		&cc.CPULimit, &cc.MemoryLimit, &cc.FlagEnv, &cc.FlagScript,
+		&cc.InitialScore, &cc.MinScore, &cc.Difficulty,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusNotFound, gin.H{"error": "NOT_FOUND", "message": "临时题目不存在"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "DATABASE_ERROR", "details": err.Error()})
+		}
+		return
+	}
+
+	// 转换为普通响应格式
+	result := gin.H{
+		"id":             cc.ID,
+		"contestId":      cc.ContestID,
+		"title":          cc.Title.String,
+		"type":           cc.Type.String,
+		"categoryId":     cc.CategoryID.Int64,
+		"description":    cc.Description.String,
+		"flag":           cc.Flag.String,
+		"flagType":       cc.FlagType.String,
+		"dockerImage":    cc.DockerImage.String,
+		"attachmentUrl":  cc.AttachmentURL.String,
+		"attachmentType": cc.AttachmentType.String,
+		"ports":          cc.Ports.String,
+		"cpuLimit":       cc.CPULimit.String,
+		"memoryLimit":    cc.MemoryLimit.String,
+		"flagEnv":        cc.FlagEnv.String,
+		"flagScript":     cc.FlagScript.String,
+		"initialScore":   cc.InitialScore,
+		"minScore":       cc.MinScore,
+		"difficulty":     cc.Difficulty,
+	}
+
+	c.JSON(http.StatusOK, result)
 }

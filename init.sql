@@ -148,7 +148,7 @@ CREATE INDEX idx_question_bank_difficulty ON question_bank(difficulty);
 CREATE TABLE IF NOT EXISTS contest_challenges (
     id SERIAL PRIMARY KEY,
     contest_id INTEGER NOT NULL REFERENCES contests(id) ON DELETE CASCADE,
-    question_id INTEGER NOT NULL REFERENCES question_bank(id) ON DELETE CASCADE,
+    question_id INTEGER REFERENCES question_bank(id) ON DELETE CASCADE,  -- 允许为空（临时题目无题库关联）
     initial_score INTEGER NOT NULL DEFAULT 500,  -- 初始分数
     min_score INTEGER NOT NULL DEFAULT 100,      -- 最低分数
     difficulty INTEGER NOT NULL DEFAULT 5,       -- 难度系数（用于动态计分）
@@ -157,9 +157,24 @@ CREATE TABLE IF NOT EXISTS contest_challenges (
     hint_released BOOLEAN DEFAULT FALSE,         -- 提示是否已发布
     status VARCHAR(32) NOT NULL DEFAULT 'hidden',  -- hidden | public
     release_time TIMESTAMP,                      -- 题目开放时间
+    -- 临时题目字段（当 question_id 为 NULL 时使用）
+    inline_title VARCHAR(256),                   -- 题目标题
+    inline_type VARCHAR(32),                     -- 题目类型: static_attachment | static_container | dynamic_attachment | dynamic_container
+    inline_category_id INTEGER REFERENCES categories(id),  -- 题目分类
+    inline_description TEXT,                     -- 题目描述
+    inline_flag VARCHAR(512),                    -- 静态flag
+    inline_flag_type VARCHAR(32) DEFAULT 'static',  -- flag类型: static | dynamic
+    inline_docker_image VARCHAR(256),            -- Docker镜像名
+    inline_attachment_url TEXT,                  -- 附件URL或本地路径
+    inline_attachment_type VARCHAR(16) DEFAULT 'url',  -- 附件类型: url | local
+    inline_ports TEXT,                           -- JSON数组: ["80", "8080"]
+    inline_cpu_limit VARCHAR(32),                -- CPU限制
+    inline_memory_limit VARCHAR(32),             -- 内存限制
+    inline_flag_env VARCHAR(64) DEFAULT 'FLAG',  -- Flag注入环境变量名
+    inline_flag_script VARCHAR(256),             -- Flag注入脚本路径
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(contest_id, question_id)
+    UNIQUE(contest_id, question_id)              -- 题库题目唯一约束（question_id为NULL时不参与）
 );
 
 CREATE INDEX idx_contest_challenges_contest ON contest_challenges(contest_id);

@@ -387,6 +387,16 @@ func main() {
 			adminAPI.DELETE("/contest-challenges/:id", func(c *gin.Context) {
 				question.HandleRemoveContestChallenge(c, db)
 			})
+			// ========== 临时题目支持 ==========
+			adminAPI.POST("/contests/:id/inline-challenge", func(c *gin.Context) {
+				question.HandleCreateInlineChallenge(c, db)
+			})
+			adminAPI.PUT("/contest-challenges/:id/inline", func(c *gin.Context) {
+				question.HandleUpdateInlineChallenge(c, db)
+			})
+			adminAPI.GET("/contest-challenges/:id/inline", func(c *gin.Context) {
+				question.HandleGetInlineChallenge(c, db)
+			})
 			// 批量更新题目显示顺序
 			adminAPI.PUT("/contests/:id/contest-challenges/order", func(c *gin.Context) {
 				question.HandleBatchUpdateChallengeOrder(c, db)

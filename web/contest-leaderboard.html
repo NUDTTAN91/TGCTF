@@ -335,6 +335,7 @@
         let soloScoreboard = [];
         let challenges = [];  // 题目列表
         let matrixData = {};  // 解题矩阵数据: { teamId: { challengeId: 'first'|'second'|'third'|'solved'|null } }
+        let categories = [];  // 类别列表（含颜色配置）
         let myTeamId = null;
         let myUserId = null;
         let teamChart = null;
@@ -404,6 +405,7 @@
         async function init() {
             await loadContest();
             await loadMyTeam();
+            await loadCategories();  // 加载类别颜色配置
             await loadChallenges();  // 加载题目列表
             await loadTeamScoreboard();
             await loadMatrixData();  // 加载解题矩阵数据
@@ -456,6 +458,26 @@
             } catch (e) {
                 console.error('Load challenges error:', e);
             }
+        }
+
+        // 加载类别列表（含颜色配置）
+        async function loadCategories() {
+            try {
+                const res = await fetch('/api/categories', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    categories = await res.json() || [];
+                }
+            } catch (e) {
+                console.error('Load categories error:', e);
+            }
+        }
+
+        // 根据类别名获取颜色
+        function getCategoryColor(categoryName) {
+            const cat = categories.find(c => c.name && c.name.toUpperCase() === (categoryName || '').toUpperCase());
+            return cat && cat.glowColor ? cat.glowColor : '#888';
         }
 
         // 加载解题矩阵数据
@@ -599,22 +621,15 @@
             }
 
             // 生成表头：Rank | Team | Score | 题目1 | 题目2 | ...
-            const categoryColors = {
-                'web': '#3b82f6',
-                'pwn': '#ef4444', 
-                'reverse': '#22c55e',
-                'crypto': '#a855f7',
-                'misc': '#f59e0b',
-                'forensics': '#06b6d4',
-                'blockchain': '#ec4899'
-            };
             thead.innerHTML = `<tr>
                 <th class="sticky-rank">Rank</th>
                 <th class="sticky-team">Team</th>
                 <th class="sticky-score">Score</th>
                 ${challenges.map(c => {
-                    const color = categoryColors[(c.category || '').toLowerCase()] || '#888';
-                    return `<th class="challenge-header"><div class="header-inner" style="color: ${color};" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</div></th>`;
+                    const color = getCategoryColor(c.category);
+                    // 生成 15% 透明度的背景色 (hex + 26 ≈ 15%)
+                    const bgColor = color + '26';
+                    return `<th class="challenge-header" style="background: ${bgColor};"><div class="header-inner" style="color: ${color};" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</div></th>`;
                 }).join('')}
             </tr>`;
 

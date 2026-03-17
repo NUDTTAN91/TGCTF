@@ -316,6 +316,7 @@
                 <div class="flex justify-between mb-4 items-center flex-shrink-0">
                     <div class="flex gap-3">
                         <button onclick="showAddFromBankModal()" class="btn-primary text-xs shadow-lg">+ 从题库添加题目</button>
+                        <button onclick="showInlineChallengeModal()" class="btn-outline text-xs bg-[#1a1a1a] text-yellow-400 border-yellow-500/50 hover:border-yellow-400">+ 临时题目</button>
                         <button onclick="toggleBonusModal(true)" class="btn-outline text-xs bg-[#1a1a1a] text-[#ff6b00] border-[#333] hover:border-[#ff6b00]">★ 配置三血奖励</button>
                         <button onclick="batchPublishChallenges()" class="btn-outline text-xs bg-[#1a1a1a] text-green-500 border-[#333] hover:border-green-500">▶ 批量放题</button>
                         <button onclick="batchHideChallenges()" class="btn-outline text-xs bg-[#1a1a1a] text-gray-400 border-[#333] hover:border-gray-400">■ 批量隐藏</button>
@@ -470,6 +471,111 @@
                     <button onclick="hideAddFromBankModal()" class="btn-outline">取消</button>
                     <button onclick="addSelectedQuestions()" class="btn-primary">添加到比赛</button>
                 </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 临时题目编辑弹窗 -->
+    <div id="inline-challenge-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm hidden transition-opacity duration-200">
+        <div class="bg-[#1e1e1e] border border-yellow-500 w-full max-w-4xl shadow-2xl relative p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-yellow-400 font-eng">★ <span id="inline-modal-title">创建临时题目</span></h3>
+                <span class="text-xs text-gray-500 bg-[#111] px-2 py-1 border border-[#333]">临时题目不进入题库</span>
+            </div>
+            <input type="hidden" id="inline-cc-id">
+            
+            <div class="grid grid-cols-2 gap-6">
+                <!-- 左侧：基本信息 -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="form-label">题目标题 <span class="text-red-500">*</span></label>
+                        <input type="text" id="inline-title" class="tactical-input" placeholder="输入题目名称">
+                    </div>
+                    <div>
+                        <label class="form-label">题目分类 <span class="text-red-500">*</span></label>
+                        <select id="inline-category" class="tactical-input">
+                            <option value="">选择分类...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">题目类型</label>
+                        <select id="inline-type" class="tactical-input" onchange="updateInlineTypeUI()">
+                            <option value="static_attachment">静态 + 附件</option>
+                            <option value="static_container">静态 + 容器</option>
+                            <option value="dynamic_attachment">动态 + 附件</option>
+                            <option value="dynamic_container">动态 + 容器</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="form-label">初始分数</label>
+                            <input type="number" id="inline-initial-score" class="tactical-input" value="500" min="0">
+                        </div>
+                        <div>
+                            <label class="form-label">最低分数</label>
+                            <input type="number" id="inline-min-score" class="tactical-input" value="17" min="0">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">题目描述</label>
+                        <textarea id="inline-description" class="tactical-input h-32" placeholder="输入题目描述..."></textarea>
+                    </div>
+                </div>
+                
+                <!-- 右侧：Flag和容器配置 -->
+                <div class="space-y-4">
+                    <!-- Flag 配置 -->
+                    <div class="border border-[#333] p-4 bg-[#161616]">
+                        <label class="form-label mb-2">🏁 Flag 配置</label>
+                        <div id="inline-flag-section">
+                            <input type="text" id="inline-flag" class="tactical-input mb-2" placeholder="flag{...}">
+                            <p class="text-[10px] text-gray-500">静态题目填写固定 flag，动态题目由系统生成</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 附件配置 -->
+                    <div class="border border-[#333] p-4 bg-[#161616]">
+                        <label class="form-label mb-2">📎 附件配置</label>
+                        <input type="text" id="inline-attachment" class="tactical-input mb-2" placeholder="附件URL或本地路径">
+                        <select id="inline-attachment-type" class="tactical-input">
+                            <option value="url">外部链接</option>
+                            <option value="local">本地文件</option>
+                        </select>
+                    </div>
+                    
+                    <!-- 容器配置 -->
+                    <div id="inline-container-section" class="border border-[#333] p-4 bg-[#161616]">
+                        <label class="form-label mb-2">🐳 容器配置</label>
+                        <div class="space-y-2">
+                            <input type="text" id="inline-docker-image" class="tactical-input" placeholder="Docker镜像名">
+                            <input type="text" id="inline-ports" class="tactical-input" placeholder="端口列表，如: 80,8080,22">
+                            <div class="grid grid-cols-2 gap-2">
+                                <input type="text" id="inline-cpu-limit" class="tactical-input" placeholder="CPU限制 (1.0)">
+                                <input type="text" id="inline-memory-limit" class="tactical-input" placeholder="内存限制 (512m)">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Flag 注入配置 -->
+                    <div id="inline-flag-inject-section" class="border border-[#333] p-4 bg-[#161616]">
+                        <label class="form-label mb-2">🔑 Flag 注入</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <input type="text" id="inline-flag-env" class="tactical-input" placeholder="环境变量名" value="FLAG">
+                                <p class="text-[10px] text-gray-500 mt-1">如: FLAG, GZCTF_FLAG</p>
+                            </div>
+                            <div>
+                                <input type="text" id="inline-flag-script" class="tactical-input" placeholder="注入脚本路径">
+                                <p class="text-[10px] text-gray-500 mt-1">如: /flag.sh</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-[#333]">
+                <button onclick="hideInlineChallengeModal()" class="btn-outline">取消</button>
+                <button onclick="saveInlineChallenge()" class="btn-primary bg-yellow-600 hover:bg-yellow-500 border-yellow-500">保存临时题目</button>
             </div>
         </div>
     </div>
@@ -1235,6 +1341,8 @@
                 const statusClass = ch.status === 'public' ? 'text-green-500' : 'text-gray-500';
                 // 显示序号
                 const orderDisplay = `<span class="text-gray-500">${idx + 1}</span>`;
+                // 临时题目标记
+                const inlineBadge = ch.isInline ? '<span class="ml-2 text-[10px] px-1.5 py-0.5 bg-yellow-500/20 text-yellow-400 border border-yellow-500/50">临时</span>' : '';
                 // 提示状态 - 显示数量
                 const hintTotal = ch.hintCount || 0;
                 const hintReleased = ch.hintReleasedCount || 0;
@@ -1258,7 +1366,7 @@
                     <tr class="table-row hover:bg-[#1a1a1a]">
                         <td class="p-4"><input type="checkbox" class="challenge-checkbox accent-[#ff6b00]" data-id="${ch.id}" ${selectedChallenges.has(ch.id) ? 'checked' : ''} onchange="toggleChallengeSelection(${ch.id}, this)"></td>
                         <td class="p-4">${orderDisplay}</td>
-                        <td class="p-4 text-white font-bold">${title}</td>
+                        <td class="p-4 text-white font-bold">${title}${inlineBadge}</td>
                         <td class="p-4"><span class="px-2 py-0.5 border bg-opacity-10" style="color:${color};border-color:${color};background-color:${color}20">${catName}</span></td>
                         <td class="p-4 text-white">${ch.initialScore}</td>
                         <td class="p-4 text-gray-400">${ch.minScore}</td>
@@ -1266,7 +1374,10 @@
                         <td class="p-4 text-center">${hintDisplay}</td>
                         <td class="p-4 text-right">
                             <button onclick="viewChallengeFlags(${ch.id}, '${title.replace(/'/g, "\\'")}')" class="text-[#ff6b00] hover:text-white mr-3">Flag</button>
-                            <button onclick="editContestChallenge(${ch.id})" class="text-gray-400 hover:text-white mr-3">编辑</button>
+                            ${ch.isInline 
+                                ? `<button onclick="showEditInlineChallengeModal(${ch.id})" class="text-yellow-400 hover:text-white mr-3">编辑题目</button>`
+                                : `<button onclick="editContestChallenge(${ch.id})" class="text-gray-400 hover:text-white mr-3">编辑</button>`
+                            }
                             <button onclick="toggleChallengeStatus(${ch.id}, '${ch.status}')" class="text-gray-400 hover:text-white mr-3">${ch.status === 'public' ? '下架' : '上架'}</button>
                             <button onclick="removeContestChallenge(${ch.id})" class="text-red-500 hover:underline">移除</button>
                         </td>
@@ -1497,6 +1608,190 @@
             document.getElementById('select-all-challenges').checked = false;
             loadChallenges();
             showToast(`成功清除 ${successCount} 道题目的定时放题`, 'success');
+        }
+
+        // ========== 临时题目功能 ==========
+        let inlineChallengeId = null; // 编辑时的ID
+
+        // 显示临时题目弹窗（新建）
+        function showInlineChallengeModal() {
+            inlineChallengeId = null;
+            document.getElementById('inline-modal-title').textContent = '创建临时题目';
+            document.getElementById('inline-cc-id').value = '';
+            document.getElementById('inline-title').value = '';
+            document.getElementById('inline-category').value = '';
+            document.getElementById('inline-type').value = 'static_attachment';
+            document.getElementById('inline-initial-score').value = '500';
+            document.getElementById('inline-min-score').value = '17';
+            document.getElementById('inline-description').value = '';
+            document.getElementById('inline-flag').value = '';
+            document.getElementById('inline-attachment').value = '';
+            document.getElementById('inline-attachment-type').value = 'url';
+            document.getElementById('inline-docker-image').value = '';
+            document.getElementById('inline-ports').value = '';
+            document.getElementById('inline-cpu-limit').value = '';
+            document.getElementById('inline-memory-limit').value = '';
+            document.getElementById('inline-flag-env').value = 'FLAG';
+            document.getElementById('inline-flag-script').value = '';
+            
+            loadInlineCategories();
+            updateInlineTypeUI();
+            document.getElementById('inline-challenge-modal').classList.remove('hidden');
+        }
+
+        // 显示临时题目弹窗（编辑）
+        async function showEditInlineChallengeModal(ccId) {
+            try {
+                const res = await fetch(`/api/admin/contest-challenges/${ccId}/inline`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Failed');
+                const data = await res.json();
+                
+                inlineChallengeId = ccId;
+                document.getElementById('inline-modal-title').textContent = '编辑临时题目';
+                document.getElementById('inline-cc-id').value = ccId;
+                document.getElementById('inline-title').value = data.title || '';
+                document.getElementById('inline-category').value = data.categoryId || '';
+                document.getElementById('inline-type').value = data.type || 'static_attachment';
+                document.getElementById('inline-initial-score').value = data.initialScore || 500;
+                document.getElementById('inline-min-score').value = data.minScore || 17;
+                document.getElementById('inline-description').value = data.description || '';
+                document.getElementById('inline-flag').value = data.flag || '';
+                document.getElementById('inline-attachment').value = data.attachmentUrl || '';
+                document.getElementById('inline-attachment-type').value = data.attachmentType || 'url';
+                document.getElementById('inline-docker-image').value = data.dockerImage || '';
+                document.getElementById('inline-ports').value = data.ports || '';
+                document.getElementById('inline-cpu-limit').value = data.cpuLimit || '';
+                document.getElementById('inline-memory-limit').value = data.memoryLimit || '';
+                document.getElementById('inline-flag-env').value = data.flagEnv || 'FLAG';
+                document.getElementById('inline-flag-script').value = data.flagScript || '';
+                
+                await loadInlineCategories();
+                updateInlineTypeUI();
+                document.getElementById('inline-challenge-modal').classList.remove('hidden');
+            } catch (e) {
+                showToast('加载临时题目失败', 'error');
+            }
+        }
+
+        function hideInlineChallengeModal() {
+            document.getElementById('inline-challenge-modal').classList.add('hidden');
+        }
+
+        // 加载分类到临时题目下拉框
+        async function loadInlineCategories() {
+            try {
+                const res = await fetch('/api/categories', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) return;
+                const cats = await res.json() || [];
+                const select = document.getElementById('inline-category');
+                const currentVal = select.value;
+                select.innerHTML = '<option value="">选择分类...</option>';
+                cats.forEach(c => {
+                    select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+                });
+                if (currentVal) select.value = currentVal;
+            } catch (e) {
+                console.error('Load categories error:', e);
+            }
+        }
+
+        // 根据题目类型更新UI
+        function updateInlineTypeUI() {
+            const type = document.getElementById('inline-type').value;
+            const containerSection = document.getElementById('inline-container-section');
+            const flagInjectSection = document.getElementById('inline-flag-inject-section');
+            const flagInput = document.getElementById('inline-flag');
+            
+            // 容器配置区域
+            if (type.includes('container')) {
+                containerSection.classList.remove('hidden');
+                flagInjectSection.classList.remove('hidden');
+            } else {
+                containerSection.classList.add('hidden');
+                flagInjectSection.classList.add('hidden');
+            }
+            
+            // Flag 输入框
+            if (type.startsWith('dynamic')) {
+                flagInput.placeholder = '动态Flag由系统自动生成';
+                flagInput.disabled = true;
+                flagInput.value = '';
+            } else {
+                flagInput.placeholder = 'flag{...}';
+                flagInput.disabled = false;
+            }
+        }
+
+        // 保存临时题目
+        async function saveInlineChallenge() {
+            const title = document.getElementById('inline-title').value.trim();
+            const categoryId = document.getElementById('inline-category').value;
+            
+            if (!title) {
+                showToast('请输入题目标题', 'error');
+                return;
+            }
+            if (!categoryId) {
+                showToast('请选择题目分类', 'error');
+                return;
+            }
+            
+            const type = document.getElementById('inline-type').value;
+            const ports = document.getElementById('inline-ports').value.trim();
+            
+            const data = {
+                title: title,
+                categoryId: parseInt(categoryId),
+                type: type,
+                flagType: type.startsWith('dynamic') ? 'dynamic' : 'static',
+                description: document.getElementById('inline-description').value,
+                flag: document.getElementById('inline-flag').value.trim(),
+                attachmentUrl: document.getElementById('inline-attachment').value.trim(),
+                attachmentType: document.getElementById('inline-attachment-type').value,
+                dockerImage: document.getElementById('inline-docker-image').value.trim(),
+                ports: ports ? JSON.stringify(ports.split(',').map(p => p.trim())) : '',
+                cpuLimit: document.getElementById('inline-cpu-limit').value.trim(),
+                memoryLimit: document.getElementById('inline-memory-limit').value.trim(),
+                flagEnv: document.getElementById('inline-flag-env').value.trim() || 'FLAG',
+                flagScript: document.getElementById('inline-flag-script').value.trim(),
+                initialScore: parseInt(document.getElementById('inline-initial-score').value) || 500,
+                minScore: parseInt(document.getElementById('inline-min-score').value) || 17,
+                difficulty: 5
+            };
+            
+            try {
+                let res;
+                if (inlineChallengeId) {
+                    // 编辑
+                    res = await fetch(`/api/admin/contest-challenges/${inlineChallengeId}/inline`, {
+                        method: 'PUT',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                } else {
+                    // 新建
+                    res = await fetch(`/api/admin/contests/${contestId}/inline-challenge`, {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                }
+                
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.message || err.error || 'Failed');
+                }
+                
+                hideInlineChallengeModal();
+                loadChallenges();
+                showToast(inlineChallengeId ? '临时题目更新成功' : '临时题目创建成功', 'success');
+            } catch (e) {
+                showToast('保存失败: ' + e.message, 'error');
+            }
         }
 
         // 显示从题库添加弹窗

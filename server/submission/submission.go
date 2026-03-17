@@ -94,7 +94,7 @@ func HandleSubmitFlag(c *gin.Context, db *sql.DB) {
 
 	var challengeStatus string
 	var initialScore, minScore int
-	var questionID int64
+	var questionID sql.NullInt64 // 允许为 NULL（临时题目）
 	if contestMode == "awd-f" {
 		err = db.QueryRow(`SELECT status, initial_score, min_score, question_id FROM contest_challenges_awdf WHERE id = $1 AND contest_id = $2`,
 			challengeID, contestID).Scan(&challengeStatus, &initialScore, &minScore, &questionID)
@@ -131,7 +131,13 @@ func HandleSubmitFlag(c *gin.Context, db *sql.DB) {
 		// AWD-F 模式默认使用动态 flag
 		flagType = "dynamic"
 	} else {
-		db.QueryRow(`SELECT flag_type, flag FROM question_bank WHERE id = $1`, questionID).Scan(&flagType, &staticFlag)
+		// 判断是否为临时题目（question_id 为 NULL）
+		if questionID.Valid {
+			db.QueryRow(`SELECT flag_type, flag FROM question_bank WHERE id = $1`, questionID.Int64).Scan(&flagType, &staticFlag)
+		} else {
+			// 临时题目，从 contest_challenges 的 inline_* 字段获取
+			db.QueryRow(`SELECT COALESCE(inline_flag_type, 'static'), inline_flag FROM contest_challenges WHERE id = $1`, challengeID).Scan(&flagType, &staticFlag)
+		}
 	}
 
 	submittedFlag := strings.TrimSpace(req.Flag)

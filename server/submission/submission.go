@@ -43,6 +43,26 @@ type AnnounceBloodFunc func(db *sql.DB, contestID int64, challengeName, teamName
 var AnnounceCheating AnnounceCheatingFunc
 var AnnounceBlood AnnounceBloodFunc
 
+// normalizeChoiceAnswer 标准化选择题答案（排序后比较）
+// 例如 "2,0,1" 和 "0,1,2" 都视为相同答案
+func normalizeChoiceAnswer(answer string) string {
+	answer = strings.TrimSpace(answer)
+	if answer == "" {
+		return ""
+	}
+	parts := strings.Split(answer, ",")
+	// 去除空白并排序
+	var indices []string
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			indices = append(indices, p)
+		}
+	}
+	sort.Strings(indices)
+	return strings.Join(indices, ",")
+}
+
 // HandleSubmitFlag 提交flag
 func HandleSubmitFlag(c *gin.Context, db *sql.DB) {
 	contestID := c.Param("id")
@@ -95,12 +115,19 @@ func HandleSubmitFlag(c *gin.Context, db *sql.DB) {
 	var challengeStatus string
 	var initialScore, minScore int
 	var questionID sql.NullInt64 // 允许为 NULL（临时题目）
+	// 不定项选择题字段
+	var isChoice bool
+	var choiceAnswer sql.NullString
+	var maxAttempts int
 	if contestMode == "awd-f" {
 		err = db.QueryRow(`SELECT status, initial_score, min_score, question_id FROM contest_challenges_awdf WHERE id = $1 AND contest_id = $2`,
 			challengeID, contestID).Scan(&challengeStatus, &initialScore, &minScore, &questionID)
 	} else {
-		err = db.QueryRow(`SELECT status, initial_score, min_score, question_id FROM contest_challenges WHERE id = $1 AND contest_id = $2`,
-			challengeID, contestID).Scan(&challengeStatus, &initialScore, &minScore, &questionID)
+		err = db.QueryRow(`SELECT status, initial_score, min_score, question_id, 
+			COALESCE(inline_is_choice, false), inline_choice_answer, COALESCE(inline_max_attempts, 3)
+			FROM contest_challenges WHERE id = $1 AND contest_id = $2`,
+			challengeID, contestID).Scan(&challengeStatus, &initialScore, &minScore, &questionID,
+			&isChoice, &choiceAnswer, &maxAttempts)
 	}
 	if err == sql.ErrNoRows {
 		c.JSON(http.StatusNotFound, gin.H{"error": "CHALLENGE_NOT_FOUND", "message": "题目不存在"})
@@ -122,6 +149,127 @@ func HandleSubmitFlag(c *gin.Context, db *sql.DB) {
 	}
 	if err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ALREADY_SOLVED", "message": "您的队伍已解出该题"})
+		return
+	}
+
+	// ========== 不定项选择题特殊处理 ==========
+	if isChoice && contestMode != "awd-f" {
+		// 获取已答题次数（错误提交数）
+		var attemptCount int
+		db.QueryRow(`SELECT COUNT(*) FROM submissions WHERE contest_id = $1 AND challenge_id = $2 AND team_id = $3 AND is_correct = false`,
+			contestID, challengeID, teamID.Int64).Scan(&attemptCount)
+		
+		if attemptCount >= maxAttempts {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":   "NO_ATTEMPTS_LEFT",
+				"message": "答题次数已用尽",
+			})
+			return
+		}
+		
+		// 比较用户提交的选项与正确答案
+		submittedAnswer := strings.TrimSpace(req.Flag)
+		isCorrect := false
+		if choiceAnswer.Valid && normalizeChoiceAnswer(submittedAnswer) == normalizeChoiceAnswer(choiceAnswer.String) {
+			isCorrect = true
+		}
+		
+		// 记录提交
+		clientIP := c.ClientIP()
+		score := 0
+		bonusScore := 0
+		solveOrder := 0
+		firstBlood, secondBlood, thirdBlood := false, false, false
+		
+		if isCorrect {
+			var solveCount int
+			db.QueryRow(`SELECT COUNT(*) FROM team_solves WHERE contest_id = $1 AND challenge_id = $2`, contestID, challengeID).Scan(&solveCount)
+			solveOrder = solveCount + 1
+			
+			// 计算动态分数
+			score = initialScore
+			for i := 0; i < solveCount; i++ {
+				score = int(float64(score) * 0.9)
+			}
+			if score < minScore {
+				score = minScore
+			}
+			
+			var firstBonus, secondBonus, thirdBonus int
+			db.QueryRow(`SELECT COALESCE(first_blood_bonus, 5), COALESCE(second_blood_bonus, 3), COALESCE(third_blood_bonus, 1) FROM contests WHERE id = $1`, contestID).Scan(&firstBonus, &secondBonus, &thirdBonus)
+			
+			if solveCount == 0 {
+				firstBlood = true
+				bonusScore = score * firstBonus / 100
+			} else if solveCount == 1 {
+				secondBlood = true
+				bonusScore = score * secondBonus / 100
+			} else if solveCount == 2 {
+				thirdBlood = true
+				bonusScore = score * thirdBonus / 100
+			}
+			score += bonusScore
+		}
+		
+		// 插入提交记录
+		_, err = db.Exec(`INSERT INTO submissions (contest_id, challenge_id, team_id, user_id, flag, is_correct, score, ip_address)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+			contestID, challengeID, teamID.Int64, userID, submittedAnswer, isCorrect, score, clientIP)
+		if err != nil {
+			log.Printf("insert choice submission error: %v", err)
+		}
+		
+		if isCorrect {
+			// 插入解题记录
+			_, err = db.Exec(`INSERT INTO team_solves (contest_id, challenge_id, team_id, first_solver_id, solve_order)
+				VALUES ($1, $2, $3, $4, $5)
+				ON CONFLICT (contest_id, challenge_id, team_id) DO NOTHING`,
+				contestID, challengeID, teamID.Int64, userID, solveOrder)
+			if err != nil {
+				log.Printf("insert team_solve error: %v", err)
+			}
+			
+			// 广播大屏更新
+			go func() {
+				data := monitor.GetMonitorDataForBroadcast(db, contestID)
+				monitor.BroadcastMonitorUpdate(contestID, data)
+			}()
+		}
+		
+		// 计算剩余次数
+		remainingAttempts := maxAttempts - attemptCount
+		if !isCorrect {
+			remainingAttempts-- // 本次错误提交也要计入
+		}
+		
+		resp := gin.H{
+			"correct":           isCorrect,
+			"score":             score,
+			"firstBlood":        firstBlood,
+			"secondBlood":       secondBlood,
+			"thirdBlood":        thirdBlood,
+			"remainingAttempts": remainingAttempts,
+		}
+		
+		if isCorrect {
+			if firstBlood {
+				resp["message"] = "一血！恭喜！"
+			} else if secondBlood {
+				resp["message"] = "二血！恭喜！"
+			} else if thirdBlood {
+				resp["message"] = "三血！恭喜！"
+			} else {
+				resp["message"] = "回答正确！"
+			}
+		} else {
+			if remainingAttempts > 0 {
+				resp["message"] = "回答错误，剩余 " + strconv.Itoa(remainingAttempts) + " 次机会"
+			} else {
+				resp["message"] = "回答错误，答题次数已用尽"
+			}
+		}
+		
+		c.JSON(http.StatusOK, resp)
 		return
 	}
 
@@ -1412,4 +1560,31 @@ func HandleGetScoreTrend(c *gin.Context, db *sql.DB) {
 		"labels": labels,
 		"teams":  teamTrends,
 	})
+}
+
+// HandleGetChoiceAttempts 获取选择题答题次数
+func HandleGetChoiceAttempts(c *gin.Context, db *sql.DB) {
+	contestID, _ := strconv.ParseInt(c.Param("id"), 10, 64)
+	challengeID, _ := strconv.ParseInt(c.Param("challengeId"), 10, 64)
+	userID := c.GetInt64("userID")
+
+	// 获取用户队伍
+	var teamID int64
+	err := db.QueryRow(`SELECT team_id FROM users WHERE id = $1`, userID).Scan(&teamID)
+	if err != nil || teamID == 0 {
+		c.JSON(http.StatusOK, gin.H{"attempts": 0})
+		return
+	}
+
+	// 统计错误提交次数
+	var attempts int
+	err = db.QueryRow(`
+		SELECT COUNT(*) FROM submissions 
+		WHERE contest_id = $1 AND contest_challenge_id = $2 AND team_id = $3 AND is_correct = false`,
+		contestID, challengeID, teamID).Scan(&attempts)
+	if err != nil {
+		attempts = 0
+	}
+
+	c.JSON(http.StatusOK, gin.H{"attempts": attempts})
 }

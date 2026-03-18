@@ -317,6 +317,7 @@
                     <div class="flex gap-3">
                         <button onclick="showAddFromBankModal()" class="btn-primary text-xs shadow-lg">+ 从题库添加题目</button>
                         <button onclick="showInlineChallengeModal()" class="btn-outline text-xs bg-[#1a1a1a] text-yellow-400 border-yellow-500/50 hover:border-yellow-400">+ 临时题目</button>
+                        <button onclick="showChoiceQuestionModal()" class="btn-outline text-xs bg-[#1a1a1a] text-cyan-400 border-cyan-500/50 hover:border-cyan-400">☑ 不定项选择</button>
                         <button onclick="toggleBonusModal(true)" class="btn-outline text-xs bg-[#1a1a1a] text-[#ff6b00] border-[#333] hover:border-[#ff6b00]">★ 配置三血奖励</button>
                         <button onclick="batchPublishChallenges()" class="btn-outline text-xs bg-[#1a1a1a] text-green-500 border-[#333] hover:border-green-500">▶ 批量放题</button>
                         <button onclick="batchHideChallenges()" class="btn-outline text-xs bg-[#1a1a1a] text-gray-400 border-[#333] hover:border-gray-400">■ 批量隐藏</button>
@@ -525,7 +526,7 @@
                 <!-- 右侧：Flag和容器配置 -->
                 <div class="space-y-4">
                     <!-- Flag 配置 -->
-                    <div class="border border-[#333] p-4 bg-[#161616]">
+                    <div id="inline-flag-config" class="border border-[#333] p-4 bg-[#161616]">
                         <label class="form-label mb-2">🏁 Flag 配置</label>
                         <div id="inline-flag-section">
                             <input type="text" id="inline-flag" class="tactical-input mb-2" placeholder="flag{...}">
@@ -576,6 +577,62 @@
             <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-[#333]">
                 <button onclick="hideInlineChallengeModal()" class="btn-outline">取消</button>
                 <button onclick="saveInlineChallenge()" class="btn-primary bg-yellow-600 hover:bg-yellow-500 border-yellow-500">保存临时题目</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 不定项选择题弹窗 -->
+    <div id="choice-question-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm hidden transition-opacity duration-200">
+        <div class="bg-[#1e1e1e] border border-cyan-500 w-full max-w-2xl shadow-2xl relative p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-cyan-400 font-eng">☑ <span id="choice-modal-title">创建不定项选择题</span></h3>
+                <span class="text-xs text-gray-500 bg-[#111] px-2 py-1 border border-[#333]">全对才得分</span>
+            </div>
+            <input type="hidden" id="choice-cc-id">
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="form-label">题目标题 <span class="text-red-500">*</span></label>
+                    <input type="text" id="choice-title" class="tactical-input" placeholder="输入题目名称">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">初始分数</label>
+                        <input type="number" id="choice-initial-score" class="tactical-input" value="500" min="0">
+                    </div>
+                    <div>
+                        <label class="form-label">最低分数</label>
+                        <input type="number" id="choice-min-score" class="tactical-input" value="17" min="0">
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label">题目描述</label>
+                    <textarea id="choice-description" class="tactical-input h-24" placeholder="输入题目描述..."></textarea>
+                </div>
+                
+                <!-- 选项配置 -->
+                <div class="border border-cyan-600 p-4 bg-[#161616]">
+                    <div class="flex justify-between items-center mb-3">
+                        <label class="form-label mb-0">选项列表</label>
+                        <button type="button" onclick="addChoiceOption()" class="text-xs text-cyan-400 hover:text-cyan-300">+ 添加选项</button>
+                    </div>
+                    <div id="choice-options-list" class="space-y-2 max-h-48 overflow-y-auto mb-3">
+                        <!-- 选项行将动态添加 -->
+                    </div>
+                    <p class="text-[10px] text-cyan-500">勾选复选框表示该选项为正确答案（可多选）</p>
+                </div>
+                
+                <!-- 最大答题次数 -->
+                <div>
+                    <label class="form-label">最大答题次数</label>
+                    <input type="number" id="choice-max-attempts" class="tactical-input" value="3" min="1" max="99">
+                    <p class="text-[10px] text-gray-500 mt-1">答错次数达到上限后无法再次作答</p>
+                </div>
+            </div>
+            
+            <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-[#333]">
+                <button onclick="hideChoiceQuestionModal()" class="btn-outline">取消</button>
+                <button onclick="saveChoiceQuestion()" class="btn-primary bg-cyan-600 hover:bg-cyan-500 border-cyan-500">保存不定项选择题</button>
             </div>
         </div>
     </div>
@@ -1648,6 +1705,12 @@
                 if (!res.ok) throw new Error('Failed');
                 const data = await res.json();
                 
+                // 如果是选择题，用选择题弹窗编辑
+                if (data.isChoice) {
+                    showEditChoiceQuestionModal(ccId, data);
+                    return;
+                }
+                
                 inlineChallengeId = ccId;
                 document.getElementById('inline-modal-title').textContent = '编辑临时题目';
                 document.getElementById('inline-cc-id').value = ccId;
@@ -1726,6 +1789,31 @@
             }
         }
 
+        // 添加选项（用于不定项选择题弹窗）
+        function addChoiceOption(text = '', isCorrect = false) {
+            const container = document.getElementById('choice-options-list');
+            const row = document.createElement('div');
+            row.className = 'flex items-center gap-2 bg-[#111] p-2 border border-[#333]';
+            row.innerHTML = `
+                <input type="checkbox" class="choice-correct w-4 h-4 accent-cyan-500" ${isCorrect ? 'checked' : ''}>
+                <input type="text" class="choice-text tactical-input flex-1" placeholder="选项内容..." value="${escapeHtml(text)}">
+                <button type="button" onclick="removeChoiceOption(this)" class="text-red-500 hover:text-red-400 text-sm px-2">×</button>
+            `;
+            container.appendChild(row);
+        }
+
+        // 删除选项
+        function removeChoiceOption(btn) {
+            btn.closest('div').remove();
+        }
+
+        // HTML转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         // 保存临时题目
         async function saveInlineChallenge() {
             const title = document.getElementById('inline-title').value.trim();
@@ -1760,20 +1848,19 @@
                 flagScript: document.getElementById('inline-flag-script').value.trim(),
                 initialScore: parseInt(document.getElementById('inline-initial-score').value) || 500,
                 minScore: parseInt(document.getElementById('inline-min-score').value) || 17,
-                difficulty: 5
+                difficulty: 5,
+                isChoice: false
             };
             
             try {
                 let res;
                 if (inlineChallengeId) {
-                    // 编辑
                     res = await fetch(`/api/admin/contest-challenges/${inlineChallengeId}/inline`, {
                         method: 'PUT',
                         headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
                         body: JSON.stringify(data)
                     });
                 } else {
-                    // 新建
                     res = await fetch(`/api/admin/contests/${contestId}/inline-challenge`, {
                         method: 'POST',
                         headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
@@ -1789,6 +1876,127 @@
                 hideInlineChallengeModal();
                 loadChallenges();
                 showToast(inlineChallengeId ? '临时题目更新成功' : '临时题目创建成功', 'success');
+            } catch (e) {
+                showToast('保存失败: ' + e.message, 'error');
+            }
+        }
+
+        // ========== 不定项选择题功能 ==========
+        let choiceQuestionId = null;
+
+        function showChoiceQuestionModal() {
+            choiceQuestionId = null;
+            document.getElementById('choice-modal-title').textContent = '创建不定项选择题';
+            document.getElementById('choice-cc-id').value = '';
+            document.getElementById('choice-title').value = '';
+            document.getElementById('choice-initial-score').value = '500';
+            document.getElementById('choice-min-score').value = '17';
+            document.getElementById('choice-description').value = '';
+            document.getElementById('choice-max-attempts').value = '3';
+            document.getElementById('choice-options-list').innerHTML = '';
+            document.getElementById('choice-question-modal').classList.remove('hidden');
+        }
+
+        function showEditChoiceQuestionModal(ccId, data) {
+            choiceQuestionId = ccId;
+            document.getElementById('choice-modal-title').textContent = '编辑不定项选择题';
+            document.getElementById('choice-cc-id').value = ccId;
+            document.getElementById('choice-title').value = data.title || '';
+            document.getElementById('choice-initial-score').value = data.initialScore || 500;
+            document.getElementById('choice-min-score').value = data.minScore || 17;
+            document.getElementById('choice-description').value = data.description || '';
+            document.getElementById('choice-max-attempts').value = data.maxAttempts || 3;
+            
+            // 加载选项
+            document.getElementById('choice-options-list').innerHTML = '';
+            if (data.choices) {
+                try {
+                    const choices = JSON.parse(data.choices);
+                    const correctAnswers = (data.choiceAnswer || '').split(',').map(s => s.trim());
+                    choices.forEach((text, idx) => {
+                        const isCorrect = correctAnswers.includes(String(idx));
+                        addChoiceOption(text, isCorrect);
+                    });
+                } catch (e) {
+                    console.error('Parse choices error:', e);
+                }
+            }
+            
+            document.getElementById('choice-question-modal').classList.remove('hidden');
+        }
+
+        function hideChoiceQuestionModal() {
+            document.getElementById('choice-question-modal').classList.add('hidden');
+        }
+
+        async function saveChoiceQuestion() {
+            const title = document.getElementById('choice-title').value.trim();
+            if (!title) {
+                showToast('请输入题目标题', 'error');
+                return;
+            }
+            
+            // 收集选项和正确答案
+            const rows = document.querySelectorAll('#choice-options-list > div');
+            const choices = [];
+            const correctIndices = [];
+            rows.forEach((row) => {
+                const text = row.querySelector('.choice-text').value.trim();
+                const isCorrect = row.querySelector('.choice-correct').checked;
+                if (text) {
+                    if (isCorrect) correctIndices.push(choices.length);
+                    choices.push(text);
+                }
+            });
+            
+            if (choices.length < 2) {
+                showToast('至少需要2个选项', 'error');
+                return;
+            }
+            if (correctIndices.length === 0) {
+                showToast('请至少选择1个正确答案', 'error');
+                return;
+            }
+            
+            const data = {
+                title: title,
+                categoryId: 8, // 不定项选择分类 ID
+                type: 'static_attachment',
+                flagType: 'static',
+                description: document.getElementById('choice-description').value,
+                initialScore: parseInt(document.getElementById('choice-initial-score').value) || 500,
+                minScore: parseInt(document.getElementById('choice-min-score').value) || 17,
+                difficulty: 5,
+                isChoice: true,
+                choices: JSON.stringify(choices),
+                choiceAnswer: correctIndices.join(','),
+                maxAttempts: parseInt(document.getElementById('choice-max-attempts').value) || 3
+            };
+            
+            try {
+                let res;
+                if (choiceQuestionId) {
+                    res = await fetch(`/api/admin/contest-challenges/${choiceQuestionId}/inline`, {
+                        method: 'PUT',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                } else {
+                    res = await fetch(`/api/admin/contests/${contestId}/inline-challenge`, {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                }
+                
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.message || err.error || 'Failed');
+                }
+                
+                hideChoiceQuestionModal();
+                loadChallenges();
+                showToast(choiceQuestionId ? '不定项选择题更新成功' : '不定项选择题创建成功', 'success');
             } catch (e) {
                 showToast('保存失败: ' + e.message, 'error');
             }

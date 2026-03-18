@@ -168,6 +168,10 @@ func main() {
 			userAPI.GET("/contests/:id/challenges/:challengeId/stats", func(c *gin.Context) {
 				submission.HandleGetChallengeStats(c, db)
 			})
+			// 获取选择题答题次数
+			userAPI.GET("/contests/:id/challenges/:challengeId/choice-attempts", func(c *gin.Context) {
+				submission.HandleGetChoiceAttempts(c, db)
+			})
 			// 批量获取所有题目血量统计（不记录首次查看）
 			userAPI.GET("/contests/:id/challenges/blood", func(c *gin.Context) {
 				submission.HandleGetAllChallengesBlood(c, db)

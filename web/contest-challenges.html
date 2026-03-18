@@ -345,6 +345,20 @@
                         <input type="text" id="flag-input" class="tactical-input" placeholder="TG{flag_here...}">
                         <button onclick="submitFlag()" class="btn-submit-new w-56 shadow-lg">提交 // SUBMIT</button>
                     </div>
+                    
+                    <!-- 选择题答题区域 -->
+                    <div id="choice-answer-section" class="hidden">
+                        <div class="mb-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-xs text-gray-500 font-mono">☑ 不定项选择题（可多选）</span>
+                                <span id="choice-attempts-info" class="text-xs text-yellow-500 font-mono">剩余次数: 3</span>
+                            </div>
+                            <div id="choice-options-list" class="space-y-2">
+                                <!-- 选项将动态添加 -->
+                            </div>
+                        </div>
+                        <button onclick="submitChoice()" class="btn-submit-new w-full shadow-lg">提交答案 // SUBMIT</button>
+                    </div>
                 </div>
             </div>
 
@@ -956,19 +970,52 @@
             const solved = isSolved(challengeId);
             const submitBtn = document.querySelector('.btn-submit-new');
             const flagInput = document.getElementById('flag-input');
-            if (solved) {
-                submitBtn.textContent = '已解出 ✓';
-                submitBtn.disabled = true;
-                submitBtn.style.background = '#22c55e';
-                flagInput.disabled = true;
-                flagInput.placeholder = '已解出此题';
+            const flagSection = document.querySelector('.flex.gap-4');
+            const choiceSection = document.getElementById('choice-answer-section');
+            
+            // 选择题处理
+            if (ch.isChoice && ch.choices) {
+                // 隐藏 Flag 输入，显示选择题
+                flagSection.classList.add('hidden');
+                choiceSection.classList.remove('hidden');
+                
+                // 渲染选项
+                renderChoiceOptions(ch.choices, solved);
+                
+                // 获取剩余次数
+                loadChoiceAttempts(challengeId, ch.maxAttempts || 3);
+                
+                const choiceSubmitBtn = choiceSection.querySelector('.btn-submit-new');
+                if (solved) {
+                    choiceSubmitBtn.textContent = '已解出 ✓';
+                    choiceSubmitBtn.disabled = true;
+                    choiceSubmitBtn.style.background = '#22c55e';
+                    // 禁用所有复选框
+                    choiceSection.querySelectorAll('input[type=checkbox]').forEach(cb => cb.disabled = true);
+                } else {
+                    choiceSubmitBtn.textContent = '提交答案 // SUBMIT';
+                    choiceSubmitBtn.disabled = false;
+                    choiceSubmitBtn.style.background = '';
+                }
             } else {
-                submitBtn.textContent = '提交 // SUBMIT';
-                submitBtn.disabled = false;
-                submitBtn.style.background = '';
-                flagInput.disabled = false;
-                flagInput.placeholder = 'TG{flag_here...}';
-                flagInput.value = '';
+                // Flag 题目
+                flagSection.classList.remove('hidden');
+                choiceSection.classList.add('hidden');
+                
+                if (solved) {
+                    submitBtn.textContent = '已解出 ✓';
+                    submitBtn.disabled = true;
+                    submitBtn.style.background = '#22c55e';
+                    flagInput.disabled = true;
+                    flagInput.placeholder = '已解出此题';
+                } else {
+                    submitBtn.textContent = '提交 // SUBMIT';
+                    submitBtn.disabled = false;
+                    submitBtn.style.background = '';
+                    flagInput.disabled = false;
+                    flagInput.placeholder = 'TG{flag_here...}';
+                    flagInput.value = '';
+                }
             }
 
             document.getElementById('modal-overlay').classList.remove('hidden');
@@ -1523,6 +1570,144 @@
             const submitBtn = document.querySelector('.btn-submit-new');
             submitBtn.textContent = `请等待 ${flagCooldownSeconds}s`;
             submitBtn.disabled = true;
+        }
+
+        // ========== 选择题功能 ==========
+        let currentChoiceAttempts = 0;
+        let currentMaxAttempts = 3;
+
+        // 渲染选项
+        function renderChoiceOptions(choicesJson, disabled = false) {
+            const container = document.getElementById('choice-options-list');
+            container.innerHTML = '';
+            try {
+                const choices = typeof choicesJson === 'string' ? JSON.parse(choicesJson) : choicesJson;
+                choices.forEach((text, idx) => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center gap-3 p-3 bg-[#1a1a1a] border border-[#333] hover:border-[#ff6b00]/50 transition cursor-pointer';
+                    div.innerHTML = `
+                        <input type="checkbox" id="choice-${idx}" data-index="${idx}" class="w-5 h-5 accent-[#ff6b00] cursor-pointer" ${disabled ? 'disabled' : ''}>
+                        <label for="choice-${idx}" class="flex-1 text-sm text-gray-300 cursor-pointer">${escapeHtml(text)}</label>
+                    `;
+                    div.onclick = (e) => {
+                        if (e.target.tagName !== 'INPUT' && !disabled) {
+                            const cb = div.querySelector('input');
+                            cb.checked = !cb.checked;
+                        }
+                    };
+                    container.appendChild(div);
+                });
+            } catch (e) {
+                console.error('Parse choices error:', e);
+                container.innerHTML = '<div class="text-red-500 text-sm">选项加载失败</div>';
+            }
+        }
+
+        // 加载剩余答题次数
+        async function loadChoiceAttempts(challengeId, maxAttempts) {
+            currentMaxAttempts = maxAttempts;
+            const infoEl = document.getElementById('choice-attempts-info');
+            try {
+                const res = await fetch(`/api/contests/${contestId}/challenges/${challengeId}/choice-attempts`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    currentChoiceAttempts = data.attempts || 0;
+                    const remaining = maxAttempts - currentChoiceAttempts;
+                    infoEl.textContent = `剩余次数: ${remaining}`;
+                    infoEl.className = remaining <= 1 ? 'text-xs text-red-500 font-mono' : 'text-xs text-yellow-500 font-mono';
+                    
+                    // 如果次数耗尽，禁用提交
+                    if (remaining <= 0) {
+                        const choiceSection = document.getElementById('choice-answer-section');
+                        const submitBtn = choiceSection.querySelector('.btn-submit-new');
+                        submitBtn.textContent = '答题次数已耗尽';
+                        submitBtn.disabled = true;
+                        submitBtn.style.background = '#666';
+                        choiceSection.querySelectorAll('input[type=checkbox]').forEach(cb => cb.disabled = true);
+                    }
+                }
+            } catch (e) {
+                infoEl.textContent = `剩余次数: ${maxAttempts}`;
+            }
+        }
+
+        // 提交选择题答案
+        async function submitChoice() {
+            const choiceSection = document.getElementById('choice-answer-section');
+            const submitBtn = choiceSection.querySelector('.btn-submit-new');
+            const checkboxes = choiceSection.querySelectorAll('input[type=checkbox]:checked');
+            
+            if (checkboxes.length === 0) {
+                showToast('请至少选择一个选项', 'warning');
+                return;
+            }
+            
+            // 收集选中的索引
+            const selectedIndices = [];
+            checkboxes.forEach(cb => selectedIndices.push(cb.dataset.index));
+            const answer = selectedIndices.join(',');
+            
+            submitBtn.textContent = '提交中...';
+            submitBtn.disabled = true;
+            
+            try {
+                const res = await fetch(`/api/contests/${contestId}/challenges/${currentChallengeId}/submit`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ flag: answer })
+                });
+                const data = await res.json();
+                
+                if (data.correct) {
+                    // 正确
+                    let msg = data.message || '回答正确！';
+                    if (data.score) msg += ` +${data.score}分`;
+                    showToast(msg, 'success');
+                    
+                    submitBtn.textContent = '已解出 ✓';
+                    submitBtn.style.background = '#22c55e';
+                    choiceSection.querySelectorAll('input[type=checkbox]').forEach(cb => cb.disabled = true);
+                    
+                    await loadTeamSolves();
+                    loadChallengeStats(currentChallengeId);
+                } else {
+                    // 错误
+                    showToast(data.message || '答案错误', 'error');
+                    
+                    // 更新剩余次数
+                    if (data.remainingAttempts !== undefined) {
+                        const infoEl = document.getElementById('choice-attempts-info');
+                        infoEl.textContent = `剩余次数: ${data.remainingAttempts}`;
+                        infoEl.className = data.remainingAttempts <= 1 ? 'text-xs text-red-500 font-mono' : 'text-xs text-yellow-500 font-mono';
+                        
+                        if (data.remainingAttempts <= 0) {
+                            submitBtn.textContent = '答题次数已耗尽';
+                            submitBtn.style.background = '#666';
+                            choiceSection.querySelectorAll('input[type=checkbox]').forEach(cb => cb.disabled = true);
+                            return;
+                        }
+                    }
+                    
+                    submitBtn.textContent = '提交答案 // SUBMIT';
+                    submitBtn.disabled = false;
+                }
+            } catch (e) {
+                showToast('提交失败: ' + e.message, 'error');
+                submitBtn.textContent = '提交答案 // SUBMIT';
+                submitBtn.disabled = false;
+            }
+        }
+
+        // HTML转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         // ESC 关闭弹窗

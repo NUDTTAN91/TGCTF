@@ -55,6 +55,11 @@ type ContestChallenge struct {
 	HintReleasedCount int            `json:"hintReleasedCount"` // 已发布提示数
 	Status            string         `json:"status"`
 	ReleaseTime       *string        `json:"releaseTime"`       // 定时放题时间
+	// 不定项选择题字段
+	IsChoice          bool           `json:"isChoice"`          // 是否为选择题
+	Choices           sql.NullString `json:"choices"`           // 选项内容 JSON
+	ChoiceAnswer      sql.NullString `json:"choiceAnswer"`      // 正确答案索引
+	MaxAttempts       int            `json:"maxAttempts"`       // 最大答题次数
 	CreatedAt         string         `json:"createdAt"`
 	UpdatedAt         string         `json:"updatedAt"`
 }
@@ -85,7 +90,11 @@ func HandleListContestChallenges(c *gin.Context, db *sql.DB) {
 			cc.status, cc.release_time, cc.created_at, cc.updated_at,
 			(SELECT COUNT(*) FROM contest_challenge_hints WHERE challenge_id = cc.id) as hint_count,
 			(SELECT COUNT(*) FROM contest_challenge_hints WHERE challenge_id = cc.id AND released = true) as hint_released_count,
-			(cc.question_id IS NULL) as is_inline
+			(cc.question_id IS NULL) as is_inline,
+			COALESCE(cc.inline_is_choice, false) as is_choice,
+			cc.inline_choices,
+			cc.inline_choice_answer,
+			COALESCE(cc.inline_max_attempts, 3) as max_attempts
 		FROM contest_challenges cc
 		LEFT JOIN question_bank q ON cc.question_id = q.id
 		LEFT JOIN categories cat ON q.category_id = cat.id
@@ -110,7 +119,8 @@ func HandleListContestChallenges(c *gin.Context, db *sql.DB) {
 			&cc.CPULimit, &cc.MemoryLimit, &cc.FlagEnv, &cc.FlagScript,
 			&cc.InitialScore, &cc.MinScore, &cc.DisplayOrder,
 			&cc.Status, &releaseTime, &createdAt, &updatedAt,
-			&cc.HintCount, &cc.HintReleasedCount, &cc.IsInline); err != nil {
+			&cc.HintCount, &cc.HintReleasedCount, &cc.IsInline,
+			&cc.IsChoice, &cc.Choices, &cc.ChoiceAnswer, &cc.MaxAttempts); err != nil {
 			continue
 		}
 		cc.CreatedAt = createdAt.Format(time.RFC3339)
@@ -764,6 +774,11 @@ type CreateInlineChallengeRequest struct {
 	InitialScore   int    `json:"initialScore"`
 	MinScore       int    `json:"minScore"`
 	Difficulty     int    `json:"difficulty"`
+	// 不定项选择题字段
+	IsChoice       bool   `json:"isChoice"`                 // 是否为选择题
+	Choices        string `json:"choices,omitempty"`        // 选项内容 JSON: ["选项1", "选项2", ...]
+	ChoiceAnswer   string `json:"choiceAnswer,omitempty"`   // 正确答案索引: "0,2"
+	MaxAttempts    int    `json:"maxAttempts"`              // 最大答题次数
 }
 
 // HandleCreateInlineChallenge 创建临时题目
@@ -808,6 +823,10 @@ func HandleCreateInlineChallenge(c *gin.Context, db *sql.DB) {
 	if req.Difficulty == 0 {
 		req.Difficulty = 5
 	}
+	// 选择题默认答题次数
+	if req.MaxAttempts == 0 {
+		req.MaxAttempts = 3
+	}
 
 	// 插入临时题目（question_id 为 NULL）
 	var id int64
@@ -817,19 +836,22 @@ func HandleCreateInlineChallenge(c *gin.Context, db *sql.DB) {
 			inline_title, inline_type, inline_category_id, inline_description,
 			inline_flag, inline_flag_type, inline_docker_image,
 			inline_attachment_url, inline_attachment_type, inline_ports,
-			inline_cpu_limit, inline_memory_limit, inline_flag_env, inline_flag_script
+			inline_cpu_limit, inline_memory_limit, inline_flag_env, inline_flag_script,
+			inline_is_choice, inline_choices, inline_choice_answer, inline_max_attempts
 		) VALUES (
 			$1, NULL, $2, $3, $4, 'hidden',
 			$5, $6, $7, $8,
 			$9, $10, $11,
 			$12, $13, $14,
-			$15, $16, $17, $18
+			$15, $16, $17, $18,
+			$19, $20, $21, $22
 		) RETURNING id`,
 		contestID, req.InitialScore, req.MinScore, req.Difficulty,
 		req.Title, req.Type, req.CategoryID, req.Description,
 		req.Flag, req.FlagType, req.DockerImage,
 		req.AttachmentURL, req.AttachmentType, req.Ports,
 		req.CPULimit, req.MemoryLimit, req.FlagEnv, req.FlagScript,
+		req.IsChoice, req.Choices, req.ChoiceAnswer, req.MaxAttempts,
 	).Scan(&id)
 
 	if err != nil {
@@ -935,6 +957,22 @@ func HandleUpdateInlineChallenge(c *gin.Context, db *sql.DB) {
 	args = append(args, req.FlagScript)
 	argIndex++
 
+	// 不定项选择题字段
+	updates = append(updates, fmt.Sprintf("inline_is_choice = $%d", argIndex))
+	args = append(args, req.IsChoice)
+	argIndex++
+	updates = append(updates, fmt.Sprintf("inline_choices = $%d", argIndex))
+	args = append(args, req.Choices)
+	argIndex++
+	updates = append(updates, fmt.Sprintf("inline_choice_answer = $%d", argIndex))
+	args = append(args, req.ChoiceAnswer)
+	argIndex++
+	if req.MaxAttempts > 0 {
+		updates = append(updates, fmt.Sprintf("inline_max_attempts = $%d", argIndex))
+		args = append(args, req.MaxAttempts)
+		argIndex++
+	}
+
 	// 分数配置
 	if req.InitialScore > 0 {
 		updates = append(updates, fmt.Sprintf("initial_score = $%d", argIndex))
@@ -996,6 +1034,11 @@ func HandleGetInlineChallenge(c *gin.Context, db *sql.DB) {
 		InitialScore   int            `json:"initialScore"`
 		MinScore       int            `json:"minScore"`
 		Difficulty     int            `json:"difficulty"`
+		// 不定项选择题字段
+		IsChoice       bool           `json:"isChoice"`
+		Choices        sql.NullString `json:"choices"`
+		ChoiceAnswer   sql.NullString `json:"choiceAnswer"`
+		MaxAttempts    int            `json:"maxAttempts"`
 	}
 
 	err := db.QueryRow(`
@@ -1004,7 +1047,8 @@ func HandleGetInlineChallenge(c *gin.Context, db *sql.DB) {
 			inline_flag, inline_flag_type, inline_docker_image,
 			inline_attachment_url, inline_attachment_type, inline_ports,
 			inline_cpu_limit, inline_memory_limit, inline_flag_env, inline_flag_script,
-			initial_score, min_score, difficulty
+			initial_score, min_score, difficulty,
+			COALESCE(inline_is_choice, false), inline_choices, inline_choice_answer, COALESCE(inline_max_attempts, 3)
 		FROM contest_challenges
 		WHERE id = $1 AND question_id IS NULL`, id).Scan(
 		&cc.ID, &cc.ContestID,
@@ -1013,6 +1057,7 @@ func HandleGetInlineChallenge(c *gin.Context, db *sql.DB) {
 		&cc.AttachmentURL, &cc.AttachmentType, &cc.Ports,
 		&cc.CPULimit, &cc.MemoryLimit, &cc.FlagEnv, &cc.FlagScript,
 		&cc.InitialScore, &cc.MinScore, &cc.Difficulty,
+		&cc.IsChoice, &cc.Choices, &cc.ChoiceAnswer, &cc.MaxAttempts,
 	)
 
 	if err != nil {
@@ -1045,6 +1090,10 @@ func HandleGetInlineChallenge(c *gin.Context, db *sql.DB) {
 		"initialScore":   cc.InitialScore,
 		"minScore":       cc.MinScore,
 		"difficulty":     cc.Difficulty,
+		"isChoice":       cc.IsChoice,
+		"choices":        cc.Choices.String,
+		"choiceAnswer":   cc.ChoiceAnswer.String,
+		"maxAttempts":    cc.MaxAttempts,
 	}
 
 	c.JSON(http.StatusOK, result)

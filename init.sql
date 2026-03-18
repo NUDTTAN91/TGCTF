@@ -172,6 +172,11 @@ CREATE TABLE IF NOT EXISTS contest_challenges (
     inline_memory_limit VARCHAR(32),             -- 内存限制
     inline_flag_env VARCHAR(64) DEFAULT 'FLAG',  -- Flag注入环境变量名
     inline_flag_script VARCHAR(256),             -- Flag注入脚本路径
+    -- 不定项选择题字段
+    inline_is_choice BOOLEAN DEFAULT FALSE,      -- 是否为选择题
+    inline_choices TEXT,                         -- 选项内容 JSON: ["选项1", "选项2", ...]
+    inline_choice_answer TEXT,                   -- 正确答案索引: "0,2" 表示第1、3个选项
+    inline_max_attempts INTEGER DEFAULT 3,       -- 最大答题次数
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(contest_id, question_id)              -- 题库题目唯一约束（question_id为NULL时不参与）
@@ -221,7 +226,8 @@ INSERT INTO categories (name, glow_color, is_default, sort_order) VALUES
     ('REVERSE', '#FCC419', TRUE, 4),
     ('CRYPTO', '#845EF7', TRUE, 5),
     ('OSINT', '#FF922B', TRUE, 6),
-    ('OTHER', '#888888', TRUE, 7)
+    ('OTHER', '#888888', TRUE, 7),
+    ('不定项选择', '#FFFFFF', TRUE, 8)
 ON CONFLICT (name) DO NOTHING;
 
 -- 队伍-题目-Flag 关联表（每队每题一个唯一flag）

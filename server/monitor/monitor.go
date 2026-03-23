@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -92,7 +93,7 @@ func GetMonitorEventsFromDB(db *sql.DB, contestID string) []MonitorEvent {
 }
 
 // HandleMonitorWebSocket WebSocket 实时大屏推送
-func HandleMonitorWebSocket(c *gin.Context, jwtSecret []byte) {
+func HandleMonitorWebSocket(c *gin.Context, jwtSecret []byte, db *sql.DB) {
 	contestID := c.Param("id")
 	
 	// 从 URL 参数获取 token 并验证
@@ -109,6 +110,32 @@ func HandleMonitorWebSocket(c *gin.Context, jwtSecret []byte) {
 	if err != nil || !token.Valid {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "INVALID_TOKEN"})
 		return
+	}
+
+	// 提取用户信息并检查权限
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "INVALID_CLAIMS"})
+		return
+	}
+
+	role, _ := claims["role"].(string)
+	// 必须是管理员（super 或 admin）
+	if role != "super" && role != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "FORBIDDEN", "message": "仅管理员可访问数据大屏"})
+		return
+	}
+
+	// 普通管理员需要检查权限
+	if role == "admin" {
+		var userID int64
+		if sub, ok := claims["sub"].(float64); ok {
+			userID = int64(sub)
+		}
+		if !checkMonitorPermission(db, userID, contestID) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "NO_PERMISSION", "message": "您没有查看此比赛数据大屏的权限"})
+			return
+		}
 	}
 	
 	conn, err := monitorUpgrader.Upgrade(c.Writer, c.Request, nil)
@@ -137,6 +164,48 @@ func HandleMonitorWebSocket(c *gin.Context, jwtSecret []byte) {
 			break
 		}
 	}
+}
+
+// checkMonitorPermission 检查普通管理员是否有查看指定比赛大屏的权限
+func checkMonitorPermission(db *sql.DB, userID int64, contestID string) bool {
+	// 新格式：检查 contest.{id}.monitor 权限
+	var exists int
+	err := db.QueryRow(`
+		SELECT 1 FROM admin_permissions 
+		WHERE user_id = $1 AND permission = $2`,
+		userID, "contest."+contestID+".monitor").Scan(&exists)
+	if err == nil && exists == 1 {
+		return true
+	}
+
+	// 兼容旧格式：检查 contest.monitor.view 权限
+	var resourceIDs sql.NullString
+	err = db.QueryRow(`
+		SELECT resource_ids FROM admin_permissions 
+		WHERE user_id = $1 AND permission = 'contest.monitor.view' AND (resource_type = 'contest' OR resource_type IS NULL)`,
+		userID).Scan(&resourceIDs)
+	if err == sql.ErrNoRows {
+		return false
+	}
+	if err != nil {
+		log.Printf("check monitor permission error: %v", err)
+		return false
+	}
+
+	// 如果 resource_ids 为空或 * 表示全部权限
+	if !resourceIDs.Valid || resourceIDs.String == "*" || resourceIDs.String == "" {
+		return true
+	}
+
+	// 检查比赛ID是否在列表中
+	ids := strings.Split(resourceIDs.String, ",")
+	for _, id := range ids {
+		if strings.TrimSpace(id) == contestID {
+			return true
+		}
+	}
+
+	return false
 }
 
 // BroadcastMonitorUpdate 广播大屏更新（新解题时调用）
@@ -326,15 +395,53 @@ func HandleGetRecentSolves(c *gin.Context, db *sql.DB) {
 }
 
 // HandleGetMonitorData 获取大屏综合数据（排行榜+趋势+解题流水）
-func HandleGetMonitorData(c *gin.Context, db *sql.DB) {
+func HandleGetMonitorData(c *gin.Context, db *sql.DB, jwtSecret []byte) {
 	contestID := c.Param("id")
+
+	// 验证 token 和权限
+	tokenStr := c.Query("token")
+	if tokenStr == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "MISSING_TOKEN"})
+		return
+	}
+
+	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+		return jwtSecret, nil
+	})
+	if err != nil || !token.Valid {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "INVALID_TOKEN"})
+		return
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "INVALID_CLAIMS"})
+		return
+	}
+
+	role, _ := claims["role"].(string)
+	if role != "super" && role != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "FORBIDDEN", "message": "仅管理员可访问数据大屏"})
+		return
+	}
+
+	if role == "admin" {
+		var userID int64
+		if sub, ok := claims["sub"].(float64); ok {
+			userID = int64(sub)
+		}
+		if !checkMonitorPermission(db, userID, contestID) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "NO_PERMISSION", "message": "您没有查看此比赛数据大屏的权限"})
+			return
+		}
+	}
 
 	// 1. 获取比赛信息
 	var contestName string
 	var startTime, endTime time.Time
 	var status, contestMode string
 	var firstBonus, secondBonus, thirdBonus int
-	err := db.QueryRow(`SELECT name, start_time, end_time, status, COALESCE(mode, 'jeopardy'), COALESCE(first_blood_bonus, 5), COALESCE(second_blood_bonus, 3), COALESCE(third_blood_bonus, 1) FROM contests WHERE id = $1`, contestID).
+	err = db.QueryRow(`SELECT name, start_time, end_time, status, COALESCE(mode, 'jeopardy'), COALESCE(first_blood_bonus, 5), COALESCE(second_blood_bonus, 3), COALESCE(third_blood_bonus, 1) FROM contests WHERE id = $1`, contestID).
 		Scan(&contestName, &startTime, &endTime, &status, &contestMode, &firstBonus, &secondBonus, &thirdBonus)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "CONTEST_NOT_FOUND"})

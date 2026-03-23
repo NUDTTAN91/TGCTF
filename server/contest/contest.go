@@ -221,6 +221,13 @@ func HandleListContests(c *gin.Context, db *sql.DB) {
 
 // HandleCreateContest 创建比赛
 func HandleCreateContest(c *gin.Context, db *sql.DB) {
+	// 只有超级管理员可以创建比赛
+	role := c.GetString("role")
+	if role != "super" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "FORBIDDEN", "message": "仅超级管理员可创建比赛"})
+		return
+	}
+
 	var req CreateContestRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "INVALID_REQUEST"})
@@ -325,6 +332,13 @@ func HandleGetContest(c *gin.Context, db *sql.DB) {
 
 // HandleUpdateContest 更新比赛
 func HandleUpdateContest(c *gin.Context, db *sql.DB) {
+	// 只有超级管理员可以修改比赛
+	role := c.GetString("role")
+	if role != "super" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "FORBIDDEN", "message": "仅超级管理员可修改比赛"})
+		return
+	}
+
 	id := c.Param("id")
 
 	var req UpdateContestRequest
@@ -492,6 +506,13 @@ func HandleUpdateContest(c *gin.Context, db *sql.DB) {
 
 // HandleDeleteContest 删除比赛
 func HandleDeleteContest(c *gin.Context, db *sql.DB) {
+	// 只有超级管理员可以删除比赛
+	role := c.GetString("role")
+	if role != "super" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "FORBIDDEN", "message": "仅超级管理员可删除比赛"})
+		return
+	}
+
 	id := c.Param("id")
 
 	// 先清理没有 CASCADE 的关联表

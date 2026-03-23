@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="author" content="tan91">
+    <link rel="icon" type="image/svg+xml" href="../TeamIco.svg">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/fonts.css">
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --bg-panel: #1e1e1e;
+            --border-color: #333;
+            --accent: #ff6b00;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --text-main: #e0e0e0;
+            --text-dim: #737373;
+        }
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Noto Sans SC', sans-serif; }
+        .font-eng { font-family: 'Chakra Petch', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .sidebar-item { border-left: 2px solid transparent; transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { background: rgba(255, 107, 0, 0.05); border-left-color: var(--accent); color: white; }
+        .sidebar-item.active .icon { color: var(--accent); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+
+        .admin-table { width: 100%; border-collapse: collapse; }
+        .admin-table th, .admin-table td { padding: 16px; text-align: left; border-bottom: 1px solid #333; }
+        .admin-table th { background: #1a1a1a; font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.1em; color: #888; }
+        .admin-table tr:hover { background: rgba(255, 107, 0, 0.03); }
+
+        .btn-action { padding: 6px 12px; font-size: 11px; font-family: 'JetBrains Mono', monospace; border: 1px solid; transition: all 0.2s; cursor: pointer; }
+        .btn-edit { border-color: #666; color: #888; }
+        .btn-edit:hover { border-color: var(--accent); color: var(--accent); }
+        .btn-delete { border-color: #666; color: #888; }
+        .btn-delete:hover { border-color: var(--danger); color: var(--danger); }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); z-index: 50; display: none; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: #1a1a1a; border: 1px solid #333; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
+
+        .form-input { background: #111; border: 1px solid #333; color: white; padding: 12px 16px; width: 100%; outline: none; font-family: 'JetBrains Mono', monospace; transition: 0.2s; }
+        .form-input:focus { border-color: var(--accent); }
+        .form-label { display: block; font-size: 11px; font-weight: bold; color: #888; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+        .category-icon { min-width: 40px; height: 40px; padding: 0 8px; background: #222; border: 1px solid #444; display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--accent); white-space: nowrap; }
+        .default-badge { background: rgba(34, 197, 94, 0.1); color: var(--success); border: 1px solid rgba(34, 197, 94, 0.3); padding: 2px 8px; font-size: 10px; font-family: 'JetBrains Mono', monospace; }
+    </style>
+    <script src="js/portal-auth.js"></script>
+</head>
+<body class="flex h-screen overflow-hidden selection:bg-[#ff6b00] selection:text-black">
+
+    <!-- 左侧侧边栏 -->
+    <aside class="w-48 bg-[#161616] border-r border-[#333] flex flex-col z-20 shadow-xl">
+        <div class="h-16 flex items-center px-6 border-b border-[#333]">
+            <div class="bg-[#ff6b00] text-black font-black text-xl px-2 py-0.5 font-eng tracking-tighter mr-3">TG</div>
+            <span class="font-bold text-gray-300 tracking-wider text-sm">管理中枢</span>
+        </div>
+        <nav class="flex-1 py-6 space-y-1 font-mono text-xs overflow-y-auto">
+            <a href="/portal/admin.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⌂</span> 概览</a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-4">赛事核心</p>
+            <a href="/portal/admin-contests.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚑</span> 比赛管理</a>
+            <a href="/portal/admin-question-bank.html" class="sidebar-item active flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">☷</span> 题库</a>
+            <a href="/portal/admin-users.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">웃</span> 用户管理</a>
+            <a href="/portal/admin-teams.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">◈</span> 队伍管理</a>
+            <a href="/portal/admin-organizations.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🏢</span> 组织管理</a>
+            <a href="/portal/admin-data-import.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">📥</span> 数据导入</a>
+            <a href="/portal/admin-admins.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400 super-only"><span class="icon mr-3">👤</span> 管理员管理</a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-6">运维监控</p>
+            <a href="/portal/admin-docker.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🐳</span> docker实例管理</a>
+            <a href="/portal/admin-anti-cheat.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🛡️</span> 防作弊系统</a>
+            <a href="/portal/admin-logs.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚠</span> 系统日志</a>
+            <a href="/portal/admin-settings.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚙</span> 系统设置</a>
+        </nav>
+        <div class="p-4 border-t border-[#333]">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-[#333] rounded-full flex items-center justify-center text-[#ff6b00] font-bold">A</div>
+                <div><p class="text-xs text-white font-bold">超级管理员</p><p class="text-[10px] text-green-500">● 连接稳定</p></div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 右侧内容区 -->
+    <div class="flex-1 flex flex-col min-w-0 bg-[#121212]">
+        <header class="h-16 bg-[#161616] border-b border-[#333] flex items-center justify-between px-8 z-10">
+            <div class="flex items-center gap-4 text-xs font-mono">
+                <span class="text-gray-500">位置:</span>
+                <a href="/portal/admin-question-bank.html" class="text-[#ff6b00] hover:text-white">题库</a>
+                <span class="text-gray-600">/</span>
+                <span class="text-white">题目类别</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="/home.html" class="font-mono text-xs font-bold border border-gray-500 text-gray-400 px-4 py-2 hover:border-white hover:text-white transition-all uppercase tracking-wider">← 返回前台</a>
+                <button id="logout-btn" class="font-mono text-xs font-bold border border-[#ff6b00] text-[#ff6b00] px-4 py-2 hover:bg-[#ff6b00] hover:text-black transition-all uppercase tracking-wider">Logout_离线</button>
+            </div>
+        </header>
+
+        <main class="flex-1 flex flex-col pt-6 px-8 relative overflow-hidden">
+            <div class="absolute inset-0 z-0 opacity-10 pointer-events-none" style="background-image: radial-gradient(#333 1px, transparent 1px); background-size: 20px 20px;"></div>
+            
+            <div class="relative z-10 w-full max-w-[1400px] mx-auto flex-1 flex flex-col">
+                
+                <!-- 操作栏 -->
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-4">
+                        <a href="/portal/admin-question-bank.html" class="text-gray-500 hover:text-white font-mono text-sm">← 返回题库</a>
+                        <h1 class="text-xl font-bold font-eng text-white">题目类别管理</h1>
+                    </div>
+                    <button onclick="showModal()" class="bg-[#ff6b00] text-black font-bold px-6 py-3 font-mono text-sm hover:bg-white transition-all" style="clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%, 0 8px);">
+                        + 新增类别
+                    </button>
+                </div>
+
+                <!-- 提示信息 -->
+                <div class="bg-[#1a1a1a] border border-[#333] p-4 mb-6">
+                    <p class="text-xs text-gray-500 font-mono">
+                        <span class="text-[#ff6b00]">●</span> 默认类别（WEB、MISC、PWN、REVERSE、CRYPTO、OSINT）不可删除和重命名
+                    </p>
+                    <p class="text-xs text-gray-500 font-mono mt-1">
+                        <span class="text-[#ff6b00]">●</span> 自定义类别可上传1:1比例的图标，未上传图标时将显示类别名称发光字样
+                    </p>
+                </div>
+
+                <!-- 表格 -->
+                <div class="bg-[#1a1a1a] border border-[#333] overflow-hidden">
+                    <div style="max-height: 665px; overflow-y: auto;">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>图标</th>
+                                <th>类别名称</th>
+                                <th>发光颜色</th>
+                                <th>类型</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="category-list">
+                            <tr><td colspan="7" class="text-center text-gray-500 py-8">加载中...</td></tr>
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <footer class="py-1 border-t border-[#333] flex items-center justify-center flex-shrink-0 mt-auto">
+                <div class="flex items-center justify-center gap-4 text-xs flex-wrap">
+                    <div class="flex items-center gap-1">
+                        <div class="bg-[#ff6b00] text-black font-black px-1.5 py-0.5 font-eng tracking-tighter">TG</div>
+                        <span class="text-gray-500">天格后台管理系统</span>
+                    </div>
+                    <span class="text-white font-mono">Copyright © 2021-present tan91. All Rights Reserved.</span>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <!-- 新增/编辑弹窗 -->
+    <div id="modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="p-6 border-b border-[#333] flex justify-between items-center">
+                <h2 class="text-lg font-bold font-eng" id="modal-title">新增题目类别</h2>
+                <button onclick="hideModal()" class="text-gray-500 hover:text-white text-2xl">&times;</button>
+            </div>
+            <form id="category-form" class="p-6 space-y-6">
+                <input type="hidden" id="form-id">
+                <input type="hidden" id="form-clear-icon">
+                
+                <div>
+                    <label class="form-label">类别名称 *</label>
+                    <input type="text" id="form-name" class="form-input" placeholder="如：BLOCKCHAIN" required>
+                </div>
+
+                <div>
+                    <label class="form-label">图标上传 (1:1比例，可选)</label>
+                    <div class="flex items-center gap-4">
+                        <div id="icon-preview" class="w-16 h-16 bg-[#222] border border-[#444] flex items-center justify-center text-[#ff6b00] font-bold text-sm" style="text-shadow: 0 0 10px #ff6b00;">预览</div>
+                        <div class="flex-1">
+                            <input type="file" id="form-icon-file" accept="image/*" class="hidden">
+                            <input type="hidden" id="form-icon">
+                            <button type="button" onclick="document.getElementById('form-icon-file').click()" class="border border-[#333] text-gray-400 px-4 py-2 hover:border-[#ff6b00] hover:text-[#ff6b00] transition-all font-mono text-sm">选择图片</button>
+                            <button type="button" onclick="clearIcon()" class="border border-[#333] text-gray-400 px-4 py-2 hover:border-red-500 hover:text-red-500 transition-all font-mono text-sm ml-2">清除</button>
+                            <p class="text-xs text-gray-600 mt-2">不上传则显示类别名称发光字样</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="form-label">发光颜色 (可选)</label>
+                    <div class="flex items-center gap-3">
+                        <input type="color" id="form-color-picker" class="w-12 h-10 bg-transparent border border-[#333] cursor-pointer" value="#ff6b00">
+                        <input type="text" id="form-glow-color" class="form-input flex-1" placeholder="#ff6b00 或 rgb(255, 107, 0)" value="#ff6b00">
+                    </div>
+                    <p class="text-xs text-gray-600 mt-2">支持十六进制(#RRGGBB)或RGB格式，用于无图标时的发光效果</p>
+                </div>
+
+                <div class="flex gap-4 pt-4">
+                    <button type="button" onclick="hideModal()" class="flex-1 border border-[#333] text-gray-400 py-3 hover:border-white hover:text-white transition-all font-mono">取消</button>
+                    <button type="submit" class="flex-1 bg-[#ff6b00] text-black py-3 font-bold hover:bg-white transition-all font-mono">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) { return null; }
+        }
+
+        const token = localStorage.getItem('tg_token');
+        if (!token) {
+            window.location.href = '/login.html';
+        } else {
+            const payload = parseJwt(token);
+            if (!payload || payload.role !== 'super') {
+                alert('权限不足');
+                return;
+            }
+        }
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('tg_token');
+            window.location.href = '/login.html';
+        });
+
+        let categories = [];
+
+        // 十六进制转 RGB 格式
+        function hexToRgb(hex) {
+            if (!hex || !hex.startsWith('#')) return '';
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            if (!result) return '';
+            const r = parseInt(result[1], 16);
+            const g = parseInt(result[2], 16);
+            const b = parseInt(result[3], 16);
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        async function loadCategories() {
+            try {
+                const res = await fetch('/api/admin/categories', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Failed');
+                categories = await res.json();
+                renderCategories();
+            } catch (e) {
+                console.error(e);
+                document.getElementById('category-list').innerHTML = '<tr><td colspan="7" class="text-center text-red-500 py-8">加载失败</td></tr>';
+            }
+        }
+
+        function renderCategories() {
+            const tbody = document.getElementById('category-list');
+            if (categories.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-500 py-8">暂无数据</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = categories.map(cat => {
+                const glowColor = cat.glowColor || '#ff6b00';
+                // 转换为RGB显示
+                const rgbDisplay = hexToRgb(glowColor);
+                return `
+                <tr>
+                    <td class="font-mono text-gray-400">${cat.id}</td>
+                    <td>
+                        ${cat.iconUrl 
+                            ? `<img src="${cat.iconUrl}" class="w-10 h-10 object-cover border border-[#444]">`
+                            : `<div class="category-icon font-bold" style="color: ${glowColor}; text-shadow: 0 0 10px ${glowColor};">${cat.name}</div>`
+                        }
+                    </td>
+                    <td>
+                        <span class="font-bold text-white">${cat.name}</span>
+                    </td>
+                    <td>
+                        ${!cat.iconUrl ? `
+                            <div class="flex items-center gap-2">
+                                <span class="w-4 h-4 rounded" style="background: ${glowColor}; box-shadow: 0 0 6px ${glowColor};"></span>
+                                <div class="text-xs font-mono">
+                                    <div style="color: ${glowColor};">${glowColor.toUpperCase()}</div>
+                                    <div class="text-gray-500">${rgbDisplay}</div>
+                                </div>
+                            </div>
+                        ` : '<span class="text-gray-600 text-xs">使用图标</span>'}
+                    </td>
+                    <td>
+                        ${cat.isDefault 
+                            ? '<span class="default-badge">默认</span>'
+                            : '<span class="text-gray-500 text-xs">自定义</span>'
+                        }
+                    </td>
+                    <td class="font-mono text-xs text-gray-500">${new Date(cat.createdAt).toLocaleDateString()}</td>
+                    <td>
+                        <div class="flex gap-2">
+                            <button onclick="editCategory(${cat.id})" class="btn-action btn-edit">编辑</button>
+                            ${!cat.isDefault 
+                                ? `<button onclick="deleteCategory(${cat.id}, '${cat.name}')" class="btn-action btn-delete">删除</button>`
+                                : ''
+                            }
+                        </div>
+                    </td>
+                </tr>
+            `;
+            }).join('');
+        }
+
+        function showModal(isEdit = false) {
+            document.getElementById('modal').classList.add('active');
+            document.getElementById('modal-title').textContent = isEdit ? '编辑题目类别' : '新增题目类别';
+            if (!isEdit) {
+                document.getElementById('category-form').reset();
+                document.getElementById('form-id').value = '';
+                document.getElementById('form-clear-icon').value = ''; // 重置清除标记
+                document.getElementById('form-glow-color').value = '#ff6b00';
+                document.getElementById('form-color-picker').value = '#ff6b00';
+                updateIconPreview(null, '预览', '#ff6b00');
+            }
+        }
+
+        function hideModal() {
+            document.getElementById('modal').classList.remove('active');
+        }
+
+        function editCategory(id) {
+            const cat = categories.find(c => c.id === id);
+            if (!cat) return;
+            
+            document.getElementById('form-id').value = cat.id;
+            document.getElementById('form-name').value = cat.name;
+            document.getElementById('form-icon').value = cat.iconUrl || '';
+            document.getElementById('form-clear-icon').value = ''; // 重置清除标记
+            
+            // 设置颜色
+            const glowColor = cat.glowColor || '#ff6b00';
+            document.getElementById('form-glow-color').value = glowColor;
+            // 尝试设置颜色选择器（只支持十六进制）
+            if (glowColor.startsWith('#')) {
+                document.getElementById('form-color-picker').value = glowColor;
+            }
+            
+            // 更新预览
+            updateIconPreview(cat.iconUrl, cat.name, glowColor);
+            
+            // 默认类别禁止修改名称
+            document.getElementById('form-name').disabled = cat.isDefault;
+            
+            showModal(true);
+        }
+
+        function updateIconPreview(iconUrl, name, glowColor) {
+            const preview = document.getElementById('icon-preview');
+            const color = glowColor || document.getElementById('form-glow-color').value || '#ff6b00';
+            if (iconUrl) {
+                preview.innerHTML = `<img src="${iconUrl}" class="w-full h-full object-cover">`;
+                preview.style.color = '';
+                preview.style.textShadow = '';
+            } else {
+                preview.innerHTML = name || '预览';
+                preview.style.color = color;
+                preview.style.textShadow = `0 0 10px ${color}`;
+            }
+        }
+
+        function clearIcon() {
+            document.getElementById('form-icon').value = '';
+            document.getElementById('form-icon-file').value = '';
+            document.getElementById('form-clear-icon').value = 'true'; // 标记需要清除图标
+            const name = document.getElementById('form-name').value || '预览';
+            const glowColor = document.getElementById('form-glow-color').value || '#ff6b00';
+            updateIconPreview(null, name, glowColor);
+        }
+
+        // 图片上传处理
+        document.getElementById('form-icon-file').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            // 转为Base64用于预览和存储（简化处理）
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const dataUrl = event.target.result;
+                document.getElementById('form-icon').value = dataUrl;
+                document.getElementById('form-clear-icon').value = ''; // 重置清除标记
+                updateIconPreview(dataUrl, null);
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // 名称输入时更新预览
+        document.getElementById('form-name').addEventListener('input', (e) => {
+            const iconUrl = document.getElementById('form-icon').value;
+            if (!iconUrl) {
+                const glowColor = document.getElementById('form-glow-color').value || '#ff6b00';
+                updateIconPreview(null, e.target.value || '预览', glowColor);
+            }
+        });
+
+        // 颜色选择器联动
+        document.getElementById('form-color-picker').addEventListener('input', (e) => {
+            document.getElementById('form-glow-color').value = e.target.value;
+            const iconUrl = document.getElementById('form-icon').value;
+            if (!iconUrl) {
+                const name = document.getElementById('form-name').value || '预览';
+                updateIconPreview(null, name, e.target.value);
+            }
+        });
+
+        // 颜色输入框联动
+        document.getElementById('form-glow-color').addEventListener('input', (e) => {
+            // 尝试同步到颜色选择器
+            const val = e.target.value.trim();
+            if (val.match(/^#[0-9a-fA-F]{6}$/)) {
+                document.getElementById('form-color-picker').value = val;
+            }
+            const iconUrl = document.getElementById('form-icon').value;
+            if (!iconUrl) {
+                const name = document.getElementById('form-name').value || '预览';
+                updateIconPreview(null, name, val);
+            }
+        });
+
+        async function deleteCategory(id, name) {
+            if (!confirm(`确定要删除类别"${name}"吗？`)) return;
+            
+            try {
+                const res = await fetch(`/api/admin/categories/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                
+                if (!res.ok) {
+                    const data = await res.json();
+                    if (data.error === 'CATEGORY_IN_USE') {
+                        alert(`该类别正在被${data.count}个题目使用，无法删除`);
+                    } else {
+                        alert('删除失败: ' + data.error);
+                    }
+                    return;
+                }
+                
+                loadCategories();
+            } catch (e) {
+                console.error(e);
+                alert('删除失败');
+            }
+        }
+
+        document.getElementById('category-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const id = document.getElementById('form-id').value;
+            const data = {
+                name: document.getElementById('form-name').value,
+                iconUrl: document.getElementById('form-icon').value,
+                clearIcon: document.getElementById('form-clear-icon').value === 'true',
+                glowColor: document.getElementById('form-glow-color').value || '#ff6b00'
+            };
+            
+            try {
+                const res = await fetch(id ? `/api/admin/categories/${id}` : '/api/admin/categories', {
+                    method: id ? 'PUT' : 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!res.ok) {
+                    const err = await res.json();
+                    alert('保存失败: ' + err.error);
+                    return;
+                }
+                
+                hideModal();
+                loadCategories();
+            } catch (e) {
+                console.error(e);
+                alert('保存失败');
+            }
+        });
+
+        loadCategories();
+    </script>
+
+</body>
+</html>

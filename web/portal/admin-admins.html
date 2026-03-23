@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="author" content="tan91">
+    <link rel="icon" type="image/svg+xml" href="../TeamIco.svg">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/fonts.css">
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --bg-panel: #1e1e1e;
+            --border-color: #333;
+            --accent: #ff6b00;
+            --danger: #ef4444;
+            --text-main: #e0e0e0;
+            --text-dim: #737373;
+        }
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Noto Sans SC', sans-serif; }
+        .font-eng { font-family: 'Chakra Petch', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .sidebar-item { border-left: 2px solid transparent; transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { background: rgba(255, 107, 0, 0.05); border-left-color: var(--accent); color: white; }
+        .sidebar-item.active .icon { color: var(--accent); }
+
+        .admin-card { background: var(--bg-panel); border: 1px solid var(--border-color); position: relative; transition: all 0.3s ease; }
+        .admin-card:hover { transform: translateY(-2px); border-color: #555; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+
+        /* 表格样式 */
+        .admin-table { width: 100%; border-collapse: collapse; }
+        .admin-table th { text-align: left; padding: 12px 16px; background: #1a1a1a; border-bottom: 1px solid #333; font-size: 11px; text-transform: uppercase; color: #666; letter-spacing: 1px; }
+        .admin-table td { padding: 12px 16px; border-bottom: 1px solid #222; font-size: 13px; }
+        .admin-table tr:hover td { background: rgba(255,107,0,0.03); }
+
+        /* 弹窗样式 */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 50; display: none; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: #1e1e1e; border: 1px solid #333; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto; }
+
+        /* 按钮样式 */
+        .btn-primary { background: #ff6b00; color: black; padding: 8px 16px; font-size: 12px; font-weight: bold; transition: all 0.2s; }
+        .btn-primary:hover { background: #ff8533; }
+        .btn-outline { border: 1px solid #444; color: #999; padding: 8px 16px; font-size: 12px; transition: all 0.2s; }
+        .btn-outline:hover { border-color: #666; color: white; }
+        .btn-danger { border: 1px solid #ef4444; color: #ef4444; padding: 8px 16px; font-size: 12px; transition: all 0.2s; }
+        .btn-danger:hover { background: #ef4444; color: white; }
+
+        /* 表单样式 */
+        .form-input { background: #111; border: 1px solid #333; padding: 10px 14px; color: white; width: 100%; font-size: 13px; }
+        .form-input:focus { outline: none; border-color: #ff6b00; }
+
+        /* 标签样式 */
+        .badge { padding: 2px 8px; font-size: 10px; border-radius: 2px; }
+        .badge-green { background: rgba(34,197,94,0.2); color: #22c55e; }
+        .badge-red { background: rgba(239,68,68,0.2); color: #ef4444; }
+        .badge-blue { background: rgba(59,130,246,0.2); color: #3b82f6; }
+
+        /* 复选框样式 */
+        .checkbox-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #111; border: 1px solid #333; cursor: pointer; transition: all 0.2s; }
+        .checkbox-item:hover { border-color: #555; }
+        .checkbox-item input[type="checkbox"] { accent-color: #ff6b00; }
+
+        /* 树形菜单样式 */
+        .perm-tree { background: #111; border: 1px solid #333; }
+        .perm-menu-item { border-bottom: 1px solid #222; }
+        .perm-menu-item:last-child { border-bottom: none; }
+        .perm-menu-header { display: flex; align-items: center; padding: 10px 12px; transition: all 0.2s; }
+        .perm-menu-header.clickable { cursor: pointer; }
+        .perm-menu-header.clickable:hover { background: rgba(255,107,0,0.05); }
+        .perm-menu-header.disabled { opacity: 0.4; cursor: not-allowed; }
+        .perm-menu-header.disabled:hover { background: transparent; }
+        .perm-menu-header .icon { width: 20px; text-align: center; margin-right: 8px; }
+        .perm-menu-header .arrow { margin-left: auto; transition: transform 0.2s; color: #555; }
+        .perm-menu-header.expanded .arrow { transform: rotate(90deg); }
+        .perm-menu-children { display: none; background: #0a0a0a; border-top: 1px solid #222; }
+        .perm-menu-children.expanded { display: block; }
+        
+        /* 比赛行：点击后右侧展开权限 */
+        .perm-contest-row { 
+            display: flex; 
+            align-items: center; 
+            padding: 8px 12px 8px 24px; 
+            border-bottom: 1px solid #1a1a1a; 
+            gap: 12px;
+        }
+        .perm-contest-row:last-child { border-bottom: none; }
+        .perm-contest-row:hover { background: rgba(255,107,0,0.03); }
+        .perm-contest-info { 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .perm-contest-info .arrow { 
+            color: #444; 
+            transition: transform 0.2s; 
+            margin-left: 4px;
+        }
+        .perm-contest-info.expanded .arrow { 
+            transform: rotate(90deg); 
+        }
+        .perm-contest-perms { 
+            display: none;
+            align-items: center; 
+            gap: 12px; 
+            margin-left: 8px;
+            padding-left: 12px;
+            border-left: 2px solid #333;
+            animation: slideIn 0.2s ease;
+        }
+        .perm-contest-perms.expanded { 
+            display: flex; 
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .perm-checkbox { display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: all 0.2s; }
+        .perm-checkbox:hover { background: rgba(255,107,0,0.1); }
+        .perm-checkbox input { accent-color: #ff6b00; }
+        .perm-checkbox.disabled { opacity: 0.3; cursor: not-allowed; }
+        .perm-checkbox.disabled:hover { background: transparent; }
+        .perm-arrow { color: #444; margin: 0 2px; }
+        .coming-soon { font-size: 10px; color: #666; margin-left: 8px; }
+    </style>
+    <script src="js/portal-auth.js"></script>
+</head>
+<body class="flex h-screen overflow-hidden selection:bg-[#ff6b00] selection:text-black">
+
+    <!-- 左侧侧边栏 -->
+    <aside class="w-48 bg-[#161616] border-r border-[#333] flex flex-col z-20 shadow-xl">
+        <div class="h-16 flex items-center px-6 border-b border-[#333]">
+            <div class="bg-[#ff6b00] text-black font-black text-xl px-2 py-0.5 font-eng tracking-tighter mr-3">TG</div>
+            <span class="font-bold text-gray-300 tracking-wider text-sm">管理中枢</span>
+        </div>
+        <nav class="flex-1 py-6 space-y-1 font-mono text-xs overflow-y-auto">
+            <a href="/portal/admin.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400">
+                <span class="icon mr-3">⌂</span> 概览
+            </a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-4">赛事核心</p>
+            <a href="/portal/admin-contests.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚑</span> 比赛管理</a>
+            <a href="/portal/admin-question-bank.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">☷</span> 题库</a>
+            <a href="/portal/admin-users.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">웃</span> 用户管理</a>
+            <a href="/portal/admin-teams.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">◈</span> 队伍管理</a>
+            <a href="/portal/admin-organizations.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🏢</span> 组织管理</a>
+            <a href="/portal/admin-data-import.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">📥</span> 数据导入</a>
+            <a href="/portal/admin-admins.html" class="sidebar-item active flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">👤</span> 管理员管理</a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-6">运维监控</p>
+            <a href="/portal/admin-docker.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🐳</span> docker实例管理</a>
+            <a href="/portal/admin-anti-cheat.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🛡️</span> 防作弊系统</a>
+            <a href="/portal/admin-logs.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚠</span> 系统日志</a>
+            <a href="/portal/admin-settings.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚙</span> 系统设置</a>
+        </nav>
+        <div class="p-4 border-t border-[#333]">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-[#333] rounded-full flex items-center justify-center text-[#ff6b00] font-bold">A</div>
+                <div><p class="text-xs text-white font-bold">超级管理员</p><p class="text-[10px] text-green-500">● 连接稳定</p></div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 右侧内容区 -->
+    <div class="flex-1 flex flex-col min-w-0 bg-[#121212]">
+        <header class="h-16 bg-[#161616] border-b border-[#333] flex items-center justify-between px-8 z-10">
+            <div class="flex items-center gap-4 text-xs font-mono">
+                <span class="text-gray-500">位置:</span><span class="text-[#ff6b00]">天格后台</span><span class="text-gray-600">/</span><span class="text-white">管理员管理</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="/home.html" class="font-mono text-xs font-bold border border-gray-500 text-gray-400 px-4 py-2 hover:border-white hover:text-white transition-all uppercase tracking-wider">← 返回前台</a>
+                <button id="logout-btn" class="font-mono text-xs font-bold border border-[#ff6b00] text-[#ff6b00] px-4 py-2 hover:bg-[#ff6b00] hover:text-black transition-all uppercase tracking-wider">Logout_离线</button>
+            </div>
+        </header>
+
+        <main id="main-content" class="flex-1 flex flex-col p-8 relative overflow-y-auto">
+            <div class="absolute inset-0 z-0 opacity-10 pointer-events-none" style="background-image: radial-gradient(#333 1px, transparent 1px); background-size: 20px 20px;"></div>
+            
+            <div class="relative z-10 w-full max-w-[1920px] mx-auto flex-1 flex flex-col">
+                <!-- 顶部操作栏 -->
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h1 class="text-xl font-bold text-white">普通管理员管理</h1>
+                        <p class="text-xs text-gray-500 mt-1">管理普通管理员账号，授予数据大屏查看等权限</p>
+                    </div>
+                    <button onclick="showCreateModal()" class="btn-primary font-mono">+ 创建管理员</button>
+                </div>
+
+                <!-- 管理员列表 -->
+                <div class="admin-card overflow-hidden">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>UID</th>
+                                <th>用户名</th>
+                                <th>显示名</th>
+                                <th>状态</th>
+                                <th>权限</th>
+                                <th>最后登录</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admins-list">
+                            <tr><td colspan="8" class="text-center text-gray-500 py-8">加载中...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 说明信息 -->
+                <div class="mt-6 p-4 bg-[#1a1a1a] border border-[#333] text-xs text-gray-500">
+                    <p class="font-bold text-gray-400 mb-2">UID 分配规则</p>
+                    <ul class="list-disc list-inside space-y-1">
+                        <li>超级管理员: UID = 1 (固定)</li>
+                        <li>普通管理员: UID = 11 ~ 100 (最多90个)</li>
+                        <li>普通用户: UID ≥ 101</li>
+                    </ul>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 创建管理员弹窗 -->
+    <div id="create-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="p-6 border-b border-[#333]">
+                <h2 class="text-lg font-bold text-white">创建普通管理员</h2>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs text-gray-500 mb-2">用户名 *</label>
+                    <input type="text" id="create-username" class="form-input" placeholder="登录用户名">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-500 mb-2">显示名 *</label>
+                    <input type="text" id="create-displayname" class="form-input" placeholder="显示名称">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-500 mb-2">邮箱</label>
+                    <input type="email" id="create-email" class="form-input" placeholder="可选">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-500 mb-2">初始密码 *</label>
+                    <input type="password" id="create-password" class="form-input" placeholder="初始密码">
+                </div>
+            </div>
+            <div class="p-6 border-t border-[#333] flex justify-end gap-3">
+                <button onclick="hideCreateModal()" class="btn-outline">取消</button>
+                <button onclick="createAdmin()" class="btn-primary">创建</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑权限弹窗 -->
+    <div id="permission-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="p-6 border-b border-[#333] flex items-center justify-between">
+                <div>
+                    <h2 class="text-lg font-bold text-white">权限管理 - <span id="perm-admin-name"></span></h2>
+                    <p class="text-xs text-gray-500 mt-1">权限逐级授予：菜单 → 资源 → 操作</p>
+                </div>
+                <button onclick="saveAllPermissions()" class="btn-primary text-xs">💾 保存所有权限</button>
+            </div>
+            <div class="p-4">
+                <div class="perm-tree">
+                    <!-- 概览 -->
+                    <div class="perm-menu-item">
+                        <div class="perm-menu-header disabled">
+                            <span class="icon">⌂</span>
+                            <span class="text-sm text-gray-400">概览</span>
+                            <span class="coming-soon">即将推出</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 分类标题 -->
+                    <div class="px-3 py-2 text-[10px] text-[#555] font-bold bg-[#1a1a1a]">赛事核心</div>
+                    
+                    <!-- 比赛管理 - 可展开，带菜单权限复选框 -->
+                    <div class="perm-menu-item" id="menu-contests">
+                        <div class="perm-menu-header clickable" onclick="togglePermMenu('contests')">
+                            <label class="perm-checkbox" onclick="event.stopPropagation()">
+                                <input type="checkbox" id="perm-contest-menu" onchange="onMenuPermChange('contest')">
+                            </label>
+                            <span class="icon">⚑</span>
+                            <span class="text-sm text-white">比赛管理</span>
+                            <span class="arrow">▶</span>
+                        </div>
+                        <div class="perm-menu-children" id="menu-contests-children">
+                            <!-- 比赛列表由JS动态渲染 -->
+                        </div>
+                    </div>
+                    
+                    <!-- 题库 -->
+                    <div class="perm-menu-item">
+                        <div class="perm-menu-header disabled">
+                            <span class="icon">☷</span>
+                            <span class="text-sm text-gray-400">题库</span>
+                            <span class="coming-soon">即将推出</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 用户管理 -->
+                    <div class="perm-menu-item">
+                        <div class="perm-menu-header disabled">
+                            <span class="icon">웃</span>
+                            <span class="text-sm text-gray-400">用户管理</span>
+                            <span class="coming-soon">即将推出</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 队伍管理 -->
+                    <div class="perm-menu-item">
+                        <div class="perm-menu-header disabled">
+                            <span class="icon">◈</span>
+                            <span class="text-sm text-gray-400">队伍管理</span>
+                            <span class="coming-soon">即将推出</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 组织管理 -->
+                    <div class="perm-menu-item">
+                        <div class="perm-menu-header disabled">
+                            <span class="icon">🏢</span>
+                            <span class="text-sm text-gray-400">组织管理</span>
+                            <span class="coming-soon">即将推出</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 数据导入 -->
+                    <div class="perm-menu-item">
+                        <div class="perm-menu-header disabled">
+                            <span class="icon">📥</span>
+                            <span class="text-sm text-gray-400">数据导入</span>
+                            <span class="coming-soon">即将推出</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 分类标题 -->
+                    <div class="px-3 py-2 text-[10px] text-[#555] font-bold bg-[#1a1a1a]">运维监控</div>
+                    
+                    <!-- docker实例管理 -->
+                    <div class="perm-menu-item">
+                        <div class="perm-menu-header disabled">
+                            <span class="icon">🐳</span>
+                            <span class="text-sm text-gray-400">docker实例管理</span>
+                            <span class="coming-soon">即将推出</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 防作弊系统 -->
+                    <div class="perm-menu-item">
+                        <div class="perm-menu-header disabled">
+                            <span class="icon">🛡️</span>
+                            <span class="text-sm text-gray-400">防作弊系统</span>
+                            <span class="coming-soon">即将推出</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 系统日志 -->
+                    <div class="perm-menu-item">
+                        <div class="perm-menu-header disabled">
+                            <span class="icon">⚠</span>
+                            <span class="text-sm text-gray-400">系统日志</span>
+                            <span class="coming-soon">即将推出</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 系统设置 -->
+                    <div class="perm-menu-item">
+                        <div class="perm-menu-header disabled">
+                            <span class="icon">⚙</span>
+                            <span class="text-sm text-gray-400">系统设置</span>
+                            <span class="coming-soon">即将推出</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 border-t border-[#333] flex justify-between items-center">
+                <div class="text-xs text-gray-500">💡 点击菜单展开，勾选具体权限后点击「保存所有权限」</div>
+                <button onclick="hidePermissionModal()" class="btn-outline">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('tg_token');
+        let currentAdminId = null;
+        let currentPermissions = [];
+        let allContests = [];
+
+        function parseJwt(t) {
+            try {
+                const base64Url = t.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                return JSON.parse(decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
+            } catch (e) { return null; }
+        }
+
+        // 权限检查
+        let hasPermission = true;
+        if (!token) {
+            window.location.href = '/login.html';
+        } else {
+            const payload = parseJwt(token);
+            if (!payload || (payload.role !== 'super' && payload.role !== 'admin')) {
+                window.location.href = '/login.html';
+            }
+            // 普通管理员没有管理员管理权限
+            if (payload.role !== 'super') {
+                hasPermission = false;
+                document.getElementById('main-content').innerHTML = `
+                    <div class="flex-1 flex items-center justify-center">
+                        <div class="text-center">
+                            <div class="text-8xl mb-6 opacity-30">🔒</div>
+                            <div class="text-2xl font-bold text-white mb-2">无操作权限</div>
+                            <div class="text-sm text-gray-500">您没有访问「管理员管理」的权限</div>
+                            <a href="/portal/admin.html" class="inline-block mt-6 px-6 py-2 bg-[#ff6b00] text-black font-bold text-sm hover:bg-[#ff8533] transition-colors">返回首页</a>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('tg_token');
+            window.location.href = '/login.html';
+        });
+
+        // 加载管理员列表
+        async function loadAdmins() {
+            try {
+                const res = await fetch('/api/admin/admins', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                const admins = data.admins || [];
+                
+                const tbody = document.getElementById('admins-list');
+                if (admins.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-gray-500 py-8">暂无普通管理员</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = admins.map(a => `
+                    <tr>
+                        <td class="font-mono text-[#ff6b00]">${a.id}</td>
+                        <td class="font-mono">${a.username}</td>
+                        <td>${a.displayName}</td>
+                        <td>${a.status === 'active' ? '<span class="badge badge-green">正常</span>' : '<span class="badge badge-red">已封禁</span>'}</td>
+                        <td><button onclick="showPermissionModal(${a.id}, '${a.displayName}')" class="text-[#ff6b00] hover:underline text-xs">查看/编辑</button></td>
+                        <td class="text-xs text-gray-500">${a.lastLoginAt || '-'}</td>
+                        <td class="text-xs text-gray-500">${a.createdAt}</td>
+                        <td>
+                            <div class="flex gap-2">
+                                <button onclick="resetPassword(${a.id})" class="text-xs text-gray-400 hover:text-white">重置密码</button>
+                                <button onclick="deleteAdmin(${a.id})" class="text-xs text-red-400 hover:text-red-300">删除</button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                console.error('加载管理员列表失败:', e);
+            }
+        }
+
+        // 加载比赛列表（用于权限分配）
+        async function loadContests() {
+            try {
+                const res = await fetch('/api/admin/contests-for-permission', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                allContests = data.contests || [];
+            } catch (e) {
+                console.error('加载比赛列表失败:', e);
+            }
+        }
+
+        // 显示创建弹窗
+        function showCreateModal() {
+            document.getElementById('create-modal').classList.add('active');
+            document.getElementById('create-username').value = '';
+            document.getElementById('create-displayname').value = '';
+            document.getElementById('create-email').value = '';
+            document.getElementById('create-password').value = '';
+        }
+
+        function hideCreateModal() {
+            document.getElementById('create-modal').classList.remove('active');
+        }
+
+        // 创建管理员
+        async function createAdmin() {
+            const username = document.getElementById('create-username').value.trim();
+            const displayName = document.getElementById('create-displayname').value.trim();
+            const email = document.getElementById('create-email').value.trim();
+            const password = document.getElementById('create-password').value;
+
+            if (!username || !displayName || !password) {
+                alert('请填写必填项');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/admin/admins', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, displayName, email, password })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(`管理员创建成功，UID: ${data.id}`);
+                    hideCreateModal();
+                    loadAdmins();
+                } else {
+                    alert('创建失败: ' + (data.error || data.message));
+                }
+            } catch (e) {
+                alert('创建失败: ' + e.message);
+            }
+        }
+
+        // 显示权限弹窗
+        async function showPermissionModal(adminId, adminName) {
+            currentAdminId = adminId;
+            document.getElementById('perm-admin-name').textContent = adminName;
+            document.getElementById('permission-modal').classList.add('active');
+
+            // 获取管理员当前权限
+            try {
+                const res = await fetch(`/api/admin/admins/${adminId}`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                currentPermissions = data.permissions || [];
+                
+                // 解析权限
+                const menuPerm = currentPermissions.find(p => p.permission === 'contest.menu.view');
+                const viewPerms = currentPermissions.filter(p => p.permission.match(/^contest\.\d+\.view$/));
+                const monitorPerms = currentPermissions.filter(p => p.permission.match(/^contest\.\d+\.monitor$/));
+                
+                // 设置菜单权限复选框
+                document.getElementById('perm-contest-menu').checked = !!menuPerm;
+
+                // 渲染比赛列表（点击展开权限）
+                const contestsContainer = document.getElementById('menu-contests-children');
+                if (allContests.length === 0) {
+                    contestsContainer.innerHTML = '<div class="px-6 py-4 text-xs text-gray-500">暂无比赛</div>';
+                } else {
+                    contestsContainer.innerHTML = allContests.map(c => {
+                        const hasView = viewPerms.some(p => p.permission === `contest.${c.id}.view`);
+                        const hasMonitor = monitorPerms.some(p => p.permission === `contest.${c.id}.monitor`);
+                        const menuEnabled = !!menuPerm;
+                        const viewEnabled = menuEnabled && hasView;
+                        const hasAnyPerm = hasView || hasMonitor;
+                        
+                        return `
+                            <div class="perm-contest-row" data-contest-id="${c.id}">
+                                <div class="perm-contest-info" onclick="toggleContestPerms(${c.id})">
+                                    <span class="text-xs text-gray-500">#${c.id}</span>
+                                    <span class="text-sm text-gray-300">${c.name}</span>
+                                    <span class="text-[10px] text-gray-600">${c.mode}</span>
+                                    ${hasAnyPerm ? '<span class="text-[10px] text-green-500 ml-1">●</span>' : ''}
+                                    <span class="arrow">▶</span>
+                                </div>
+                                <div class="perm-contest-perms" id="contest-perms-${c.id}">
+                                    <label class="perm-checkbox ${!menuEnabled ? 'disabled' : ''}" title="查看比赛">
+                                        <input type="checkbox" 
+                                            data-contest="${c.id}" 
+                                            data-perm="view" 
+                                            ${hasView ? 'checked' : ''} 
+                                            ${!menuEnabled ? 'disabled' : ''}
+                                            onchange="onViewPermChange(${c.id})">
+                                        <span class="text-xs text-gray-400">👁 可见</span>
+                                    </label>
+                                    <label class="perm-checkbox ${!viewEnabled ? 'disabled' : ''}" title="数据大屏">
+                                        <input type="checkbox" 
+                                            data-contest="${c.id}" 
+                                            data-perm="monitor" 
+                                            ${hasMonitor ? 'checked' : ''} 
+                                            ${!viewEnabled ? 'disabled' : ''}
+                                            onchange="onMonitorPermChange(${c.id})">
+                                        <span class="text-xs text-gray-400">📊 数据大屏</span>
+                                    </label>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            } catch (e) {
+                console.error('获取权限失败:', e);
+            }
+        }
+
+        function hidePermissionModal() {
+            document.getElementById('permission-modal').classList.remove('active');
+            document.querySelectorAll('.perm-menu-header.expanded').forEach(el => el.classList.remove('expanded'));
+            document.querySelectorAll('.perm-menu-children.expanded').forEach(el => el.classList.remove('expanded'));
+            document.querySelectorAll('.perm-contest-info.expanded').forEach(el => el.classList.remove('expanded'));
+            document.querySelectorAll('.perm-contest-perms.expanded').forEach(el => el.classList.remove('expanded'));
+            currentAdminId = null;
+        }
+
+        // 展开/折叠菜单
+        function togglePermMenu(menuId) {
+            const header = document.querySelector(`#menu-${menuId} .perm-menu-header`);
+            const children = document.getElementById(`menu-${menuId}-children`);
+            header.classList.toggle('expanded');
+            children.classList.toggle('expanded');
+        }
+
+        // 展开/折叠比赛权限（往右展开）
+        function toggleContestPerms(contestId) {
+            const row = document.querySelector(`.perm-contest-row[data-contest-id="${contestId}"]`);
+            const info = row.querySelector('.perm-contest-info');
+            const perms = document.getElementById(`contest-perms-${contestId}`);
+            info.classList.toggle('expanded');
+            perms.classList.toggle('expanded');
+        }
+
+        // 菜单权限变化 - 取消时级联取消所有子权限
+        function onMenuPermChange(menuType) {
+            const menuCheckbox = document.getElementById(`perm-${menuType}-menu`);
+            const isChecked = menuCheckbox.checked;
+            
+            if (!isChecked) {
+                // 取消菜单权限时，取消所有子权限
+                document.querySelectorAll(`input[data-perm="view"]`).forEach(el => {
+                    el.checked = false;
+                    el.disabled = true;
+                    el.closest('.perm-checkbox').classList.add('disabled');
+                });
+                document.querySelectorAll(`input[data-perm="monitor"]`).forEach(el => {
+                    el.checked = false;
+                    el.disabled = true;
+                    el.closest('.perm-checkbox').classList.add('disabled');
+                });
+            } else {
+                // 启用菜单权限时，启用第一级权限（可见）
+                document.querySelectorAll(`input[data-perm="view"]`).forEach(el => {
+                    el.disabled = false;
+                    el.closest('.perm-checkbox').classList.remove('disabled');
+                });
+            }
+        }
+
+        // 比赛可见权限变化
+        function onViewPermChange(contestId) {
+            const viewCheckbox = document.querySelector(`input[data-contest="${contestId}"][data-perm="view"]`);
+            const monitorCheckbox = document.querySelector(`input[data-contest="${contestId}"][data-perm="monitor"]`);
+            const isChecked = viewCheckbox.checked;
+            
+            if (!isChecked) {
+                // 取消可见权限时，取消数据大屏权限
+                monitorCheckbox.checked = false;
+                monitorCheckbox.disabled = true;
+                monitorCheckbox.closest('.perm-checkbox').classList.add('disabled');
+            } else {
+                // 启用可见权限时，启用数据大屏权限选项
+                monitorCheckbox.disabled = false;
+                monitorCheckbox.closest('.perm-checkbox').classList.remove('disabled');
+                // 自动勾选菜单权限
+                document.getElementById('perm-contest-menu').checked = true;
+            }
+        }
+
+        // 数据大屏权限变化 - 勾选时自动勾选父级
+        function onMonitorPermChange(contestId) {
+            const monitorCheckbox = document.querySelector(`input[data-contest="${contestId}"][data-perm="monitor"]`);
+            if (monitorCheckbox.checked) {
+                // 自动勾选父级权限
+                document.getElementById('perm-contest-menu').checked = true;
+                const viewCheckbox = document.querySelector(`input[data-contest="${contestId}"][data-perm="view"]`);
+                viewCheckbox.checked = true;
+            }
+        }
+
+        // 保存所有权限
+        async function saveAllPermissions() {
+            const menuChecked = document.getElementById('perm-contest-menu').checked;
+            const viewChecked = [...document.querySelectorAll('input[data-perm="view"]:checked')].map(el => el.dataset.contest);
+            const monitorChecked = [...document.querySelectorAll('input[data-perm="monitor"]:checked')].map(el => el.dataset.contest);
+
+            try {
+                // 构建权限列表
+                const permsToGrant = [];
+                const permsToRevoke = [];
+
+                // 菜单权限
+                const existingMenuPerm = currentPermissions.find(p => p.permission === 'contest.menu.view');
+                if (menuChecked && !existingMenuPerm) {
+                    permsToGrant.push({ permission: 'contest.menu.view', resourceType: null, resourceIds: null });
+                } else if (!menuChecked && existingMenuPerm) {
+                    permsToRevoke.push(existingMenuPerm.id);
+                }
+
+                // 比赛可见权限
+                allContests.forEach(c => {
+                    const existingPerm = currentPermissions.find(p => p.permission === `contest.${c.id}.view`);
+                    const shouldHave = viewChecked.includes(String(c.id));
+                    if (shouldHave && !existingPerm) {
+                        permsToGrant.push({ permission: `contest.${c.id}.view`, resourceType: 'contest', resourceIds: String(c.id) });
+                    } else if (!shouldHave && existingPerm) {
+                        permsToRevoke.push(existingPerm.id);
+                    }
+                });
+
+                // 数据大屏权限
+                allContests.forEach(c => {
+                    const existingPerm = currentPermissions.find(p => p.permission === `contest.${c.id}.monitor`);
+                    const shouldHave = monitorChecked.includes(String(c.id));
+                    if (shouldHave && !existingPerm) {
+                        permsToGrant.push({ permission: `contest.${c.id}.monitor`, resourceType: 'contest', resourceIds: String(c.id) });
+                    } else if (!shouldHave && existingPerm) {
+                        permsToRevoke.push(existingPerm.id);
+                    }
+                });
+
+                // 执行撤销
+                for (const permId of permsToRevoke) {
+                    await fetch(`/api/admin/admins/${currentAdminId}/permissions/${permId}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                }
+
+                // 执行授予
+                for (const perm of permsToGrant) {
+                    await fetch(`/api/admin/admins/${currentAdminId}/permissions`, {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify(perm)
+                    });
+                }
+
+                alert('权限已保存');
+                showPermissionModal(currentAdminId, document.getElementById('perm-admin-name').textContent);
+            } catch (e) {
+                alert('保存失败: ' + e.message);
+            }
+        }
+
+        // 重置密码
+        async function resetPassword(adminId) {
+            if (!confirm('确定要重置该管理员的密码为 123456 吗？')) return;
+
+            try {
+                const res = await fetch(`/api/admin/admins/${adminId}/reset-password`, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(`密码已重置为: ${data.newPassword}`);
+                } else {
+                    alert('重置失败: ' + (data.error || data.message));
+                }
+            } catch (e) {
+                alert('重置失败: ' + e.message);
+            }
+        }
+
+        // 删除管理员
+        async function deleteAdmin(adminId) {
+            if (!confirm('确定要删除该管理员吗？此操作不可恢复！')) return;
+
+            try {
+                const res = await fetch(`/api/admin/admins/${adminId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    alert('管理员已删除');
+                    loadAdmins();
+                } else {
+                    const data = await res.json();
+                    alert('删除失败: ' + (data.error || data.message));
+                }
+            } catch (e) {
+                alert('删除失败: ' + e.message);
+            }
+        }
+
+        // 初始化
+        // 有权限才加载数据
+        if (hasPermission) {
+            loadAdmins();
+            loadContests();
+        }
+    </script>
+
+</body>
+</html>

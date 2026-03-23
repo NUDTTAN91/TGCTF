@@ -1,0 +1,3279 @@
+<!DOCTYPE html>
+<html lang="zh-CN" style="overflow: hidden; height: 100%; margin: 0;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="author" content="tan91">
+    <link rel="icon" type="image/svg+xml" href="../TeamIco.svg">
+    <title>编辑赛事 - TG 管理后台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=JetBrains+Mono:wght@400;700&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --bg-panel: #1e1e1e;
+            --border-color: #333;
+            --accent: #ff6b00;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --pending: #eab308;
+            --text-main: #e0e0e0;
+            --text-dim: #737373;
+        }
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Noto Sans SC', sans-serif; }
+        html, body { overflow: hidden !important; height: 100% !important; margin: 0 !important; }
+        .font-eng { font-family: 'Chakra Petch', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .admin-card { background: var(--bg-panel); border: 1px solid var(--border-color); position: relative; display: flex; flex-direction: column; }
+        
+        .sidebar-item { border-left: 2px solid transparent; transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { background: rgba(255, 107, 0, 0.05); border-left-color: var(--accent); color: white; }
+        .sidebar-item.active .icon { color: var(--accent); }
+        
+        .tactical-input {
+            background: #111; border: 1px solid #333; color: white; padding: 0 0.75rem; height: 42px; width: 100%; outline: none; transition: 0.2s; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem;
+        }
+        .tactical-input:focus { border-color: var(--accent); }
+        textarea.tactical-input { height: auto; padding-top: 0.75rem; line-height: 1.5; }
+
+        .form-label { display: block; font-size: 0.75rem; color: #777; font-family: 'JetBrains Mono', monospace; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+        .btn-primary { background: var(--accent); color: black; font-weight: bold; padding: 0 1.5rem; height: 38px; display: flex; align-items: center; justify-content: center; transition: 0.2s; font-family: 'Chakra Petch', sans-serif; font-size: 0.875rem; }
+        .btn-primary:hover { background: white; }
+        
+        .btn-outline { border: 1px solid var(--border-color); color: #aaa; padding: 0 1rem; height: 38px; display: flex; align-items: center; justify-content: center; transition: 0.2s; font-size: 0.75rem; background: #1a1a1a; }
+        .btn-outline:hover { border-color: white; color: white; }
+
+        .tab-btn {
+            padding: 0 1.5rem; height: 48px; display: flex; align-items: center; color: #666; font-family: 'Chakra Petch', sans-serif; font-weight: bold; cursor: pointer; border-bottom: 2px solid transparent; transition: 0.3s;
+        }
+        .tab-btn:hover { color: white; background: rgba(255,255,255,0.02); }
+        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(255, 107, 0, 0.05); }
+
+        .upload-zone {
+            border: 2px dashed #333; background: #151515; height: 100%; min-height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s;
+        }
+        .upload-zone:hover { border-color: var(--accent); background: rgba(255,107,0,0.05); }
+
+        .status-running { color: var(--success); border: 1px solid var(--success); background: rgba(34, 197, 94, 0.1); }
+        .status-pending { color: var(--pending); border: 1px solid var(--pending); background: rgba(234, 179, 8, 0.1); }
+        .status-paused { color: #f97316; border: 1px solid #f97316; background: rgba(249, 115, 22, 0.1); }
+        .status-ended { color: #666; border: 1px solid #444; background: rgba(255, 255, 255, 0.05); }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+
+        .animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Toast 提示框 */
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { padding: 12px 20px; border-radius: 4px; font-size: 13px; font-family: 'JetBrains Mono', monospace; animation: toastIn 0.3s ease; min-width: 200px; max-width: 400px; }
+        .toast-success { background: rgba(34, 197, 94, 0.15); border: 1px solid #22c55e; color: #22c55e; }
+        .toast-error { background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #ef4444; }
+        .toast-warning { background: rgba(234, 179, 8, 0.15); border: 1px solid #eab308; color: #eab308; }
+        .toast-info { background: rgba(59, 130, 246, 0.15); border: 1px solid #3b82f6; color: #3b82f6; }
+        @keyframes toastIn { from { opacity: 0; transform: translateX(100px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes toastOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(100px); } }
+    </style>
+    <script src="js/portal-auth.js"></script>
+</head>
+<body class="flex h-screen overflow-hidden selection:bg-[#ff6b00] selection:text-black">
+    <!-- Toast 容器 -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- 侧边栏 -->
+    <aside class="w-64 bg-[#161616] border-r border-[#333] flex flex-col z-20 shadow-xl shrink-0">
+        <div class="h-16 flex items-center px-6 border-b border-[#333]">
+            <div class="bg-[#ff6b00] text-black font-black text-xl px-2 py-0.5 font-eng tracking-tighter mr-3">TG</div>
+            <span class="font-bold text-gray-300 tracking-wider text-sm">管理中枢</span>
+        </div>
+        <nav class="flex-1 py-6 space-y-1 font-mono text-xs overflow-y-auto">
+            <a href="/portal/admin.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⌂</span> 概览</a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-4">赛事核心</p>
+            <a href="/portal/admin-contests.html" class="sidebar-item active flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚑</span> 比赛管理</a>
+            <a href="/portal/admin-question-bank.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">☷</span> 题库</a>
+            <a href="/portal/admin-users.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">웃</span> 用户管理</a>
+            <a href="/portal/admin-teams.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">◈</span> 队伍管理</a>
+            <a href="/portal/admin-organizations.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🏢</span> 组织管理</a>
+            <a href="/portal/admin-data-import.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">📥</span> 数据导入</a>
+            <a href="/portal/admin-admins.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400 super-only"><span class="icon mr-3">👤</span> 管理员管理</a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-6">运维监控</p>
+            <a href="/portal/admin-docker.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🐳</span> docker实例管理</a>
+            <a href="/portal/admin-anti-cheat.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🛡️</span> 防作弊系统</a>
+            <a href="/portal/admin-logs.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚠</span> 系统日志</a>
+            <a href="/portal/admin-settings.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚙</span> 系统设置</a>
+        </nav>
+        <div class="p-4 border-t border-[#333]">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-[#333] rounded-full flex items-center justify-center text-[#ff6b00] font-bold">A</div>
+                <div><p class="text-xs text-white font-bold">超级管理员</p><p class="text-[10px] text-green-500">● 连接稳定</p></div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 主体 -->
+    <div class="flex-1 flex flex-col min-w-0 bg-[#121212] overflow-hidden">
+        
+        <!-- 头部 -->
+        <header class="h-16 bg-[#161616] border-b border-[#333] flex items-center justify-between px-8 z-10 shrink-0">
+            <div class="flex items-center gap-4 text-xs font-mono">
+                <span class="text-gray-500">位置:</span><span class="text-[#ff6b00]">赛事管理</span><span class="text-gray-600">/</span><span class="text-white">编辑赛事</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <span id="status-display" class="text-xs font-mono text-green-500 bg-green-900 bg-opacity-20 px-2 py-1 border border-green-800">● 状态: 进行中</span>
+                <button id="toggle-status-btn" class="text-red-500 border border-red-900 bg-red-900 bg-opacity-10 px-3 py-1 text-xs hover:bg-opacity-30 transition">紧急暂停</button>
+            </div>
+        </header>
+
+        <!-- 内容滚动区 -->
+        <main class="flex-1 overflow-hidden pt-8 px-8 relative flex flex-col">
+            
+            <div class="mb-6 border-b border-[#333] pb-4">
+                <div class="flex items-center justify-between mb-2">
+                    <h1 id="contest-title" class="text-3xl font-bold text-white font-eng tracking-wide">加载中...</h1>
+                    <!-- Tabs -->
+                    <div class="flex bg-[#161616]">
+                        <div class="tab-btn active" data-tab="config">基础设置</div>
+                        <div class="tab-btn" data-tab="broadcast">比赛公告</div>
+                        <div class="tab-btn" data-tab="challenges">题目编排</div>
+                        <div class="tab-btn" data-tab="audit">队伍审核</div>
+                    </div>
+                </div>
+                <div class="flex gap-6 text-xs font-mono text-gray-400">
+                    <span>ID: <span id="contest-id">--</span></span>
+                    <span>MODE: <span id="contest-mode">--</span></span>
+                </div>
+            </div>
+
+            <!-- TAB 1: 基础设置 -->
+            <div id="tab-config" class="tab-content max-w-7xl animate-fade-in w-full overflow-y-auto flex-1">
+                <div class="grid grid-cols-12 gap-6 items-start">
+                    
+                    <!-- 左侧：内容配置 -->
+                    <div class="col-span-12 lg:col-span-8 flex flex-col gap-6">
+                        
+                        <div class="admin-card p-6">
+                            <h3 class="text-sm font-bold text-white border-l-4 border-[#ff6b00] pl-3 mb-6">基本信息配置</h3>
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="form-label">比赛标题</label>
+                                    <input type="text" id="edit-name" class="tactical-input" placeholder="比赛名称">
+                                </div>
+                                <div class="grid grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="form-label">开始时间</label>
+                                        <input type="datetime-local" id="edit-start-time" class="tactical-input text-gray-400">
+                                    </div>
+                                    <div>
+                                        <label class="form-label">结束时间</label>
+                                        <input type="datetime-local" id="edit-end-time" class="tactical-input text-gray-400">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="form-label">比赛简介 (Markdown)</label>
+                                    <textarea id="edit-description" class="tactical-input h-32 resize-none p-3 text-sm leading-relaxed text-gray-300" placeholder="输入比赛简介..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="admin-card p-6">
+                            <h3 class="text-sm font-bold text-white border-l-4 border-[#ff6b00] pl-3 mb-6">海报设置</h3>
+                            <div class="grid grid-cols-12 gap-6">
+                                <div class="col-span-8">
+                                    <div class="upload-zone text-gray-500 h-32" id="upload-zone">
+                                        <input type="file" id="cover-file" accept="image/*" class="hidden">
+                                        <input type="text" id="edit-cover" class="hidden">
+                                        <span class="text-2xl mb-2">📷</span>
+                                        <span class="text-xs">点击上传海报 (1920x600)</span>
+                                    </div>
+                                </div>
+                                <div class="col-span-4 flex flex-col justify-center text-xs text-gray-500">
+                                    <p class="mb-2">当前海报:</p>
+                                    <div id="cover-preview" class="bg-[#111] h-20 w-full border border-[#333] flex items-center justify-center bg-cover bg-center">预览图</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 右侧：规则与保存 -->
+                    <div class="col-span-12 lg:col-span-4 flex flex-col gap-6">
+                        <div class="admin-card p-6 h-full">
+                            <h3 class="text-sm font-bold text-white border-l-4 border-[#ff6b00] pl-3 mb-6">规则与权限</h3>
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="form-label">队伍人数限制</label>
+                                    <div class="flex">
+                                        <input type="number" id="edit-team-limit" value="4" class="tactical-input border-r-0 text-center rounded-l-sm">
+                                        <div class="bg-[#222] border border-[#333] text-gray-400 text-xs px-4 flex items-center h-[42px] border-l-0">人</div>
+                                    </div>
+                                    <p class="text-[10px] text-gray-600 mt-1 ml-1">* 0 表示不限制</p>
+                                </div>
+
+                                <div>
+                                    <label class="form-label">队伍容器限制</label>
+                                    <div class="flex">
+                                        <input type="number" id="edit-container-limit" value="2" class="tactical-input border-r-0 text-center rounded-l-sm">
+                                        <div class="bg-[#222] border border-[#333] text-gray-400 text-xs px-4 flex items-center h-[42px] border-l-0">个</div>
+                                    </div>
+                                    <p class="text-[10px] text-gray-600 mt-1 ml-1">* 0 表示不限制</p>
+                                </div>
+
+                                <div>
+                                    <label class="form-label">邀请码 (访问控制)</label>
+                                    <div class="flex">
+                                        <input id="edit-invite-code" type="text" placeholder="留空则公开报名" class="tactical-input border-r-0">
+                                        <button onclick="generateCode()" class="bg-[#222] border border-[#333] text-gray-400 text-xs px-3 hover:text-white hover:bg-[#333] transition h-[42px] border-l-0">
+                                            🎲
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="form-label">参与组织 <span class="text-gray-600">(可多选，不选则所有组织可见)</span></label>
+                                    <div class="relative" id="org-select-container">
+                                        <div id="org-select-trigger" onclick="toggleOrgDropdown()" class="bg-[#111] border border-[#333] px-3 py-2 cursor-pointer flex items-center justify-between hover:border-[#555] transition-colors h-[42px]">
+                                            <span id="org-select-display" class="text-xs text-gray-400">请选择组织...</span>
+                                            <span class="text-gray-500">▼</span>
+                                        </div>
+                                        <div id="org-dropdown" class="hidden absolute top-full left-0 right-0 bg-[#1a1a1a] border border-[#444] mt-1 z-50 max-h-48 overflow-hidden shadow-lg">
+                                            <div class="p-2 border-b border-[#333]">
+                                                <input type="text" id="org-search" placeholder="搜索组织..." oninput="filterOrgOptions()" class="w-full bg-[#111] border border-[#333] text-xs text-white px-2 py-1.5 outline-none focus:border-[#ff6b00]">
+                                            </div>
+                                            <div id="org-options" class="overflow-y-auto max-h-32">
+                                                <div class="text-gray-500 text-xs p-2">加载中...</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="org-selected-tags" class="flex flex-wrap gap-1 mt-2"></div>
+                                </div>
+
+                                <div class="pt-8 mt-auto">
+                                    <button onclick="saveConfig()" class="btn-primary w-full shadow-lg shadow-orange-900/20">保存配置 // SAVE</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- TAB 2: 比赛公告 -->
+            <div id="tab-broadcast" class="tab-content hidden animate-fade-in w-full max-w-7xl overflow-y-auto flex-1">
+                <div class="flex gap-6">
+                    <!-- 左侧：公告列表 -->
+                    <div class="flex-1 min-w-0">
+                        <div class="admin-card overflow-hidden h-full flex flex-col">
+                            <div class="bg-[#111] px-4 py-3 border-b border-[#333] flex justify-between items-center">
+                                <h3 class="text-sm font-bold text-white">公告列表</h3>
+                                <span id="ann-count" class="text-xs text-gray-500 font-mono">共 0 条公告</span>
+                            </div>
+                            <div id="announcements-list" class="divide-y divide-[#222] flex-1 overflow-y-auto">
+                                <div class="p-8 text-center text-gray-500 font-mono text-sm">加载中...</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 右侧：发布新公告 + 快捷公告 -->
+                    <div class="w-[400px] shrink-0 space-y-6">
+                        <!-- 发布新公告 -->
+                        <div class="admin-card p-6">
+                            <h3 class="text-sm font-bold text-white border-l-4 border-[#ff6b00] pl-3 mb-4">发布新公告</h3>
+                            <div class="mb-4">
+                                <label class="form-label">公告标题</label>
+                                <input type="text" id="ann-title" placeholder="输入公告标题..." class="tactical-input mb-3">
+                                <label class="form-label">公告内容</label>
+                                <textarea id="ann-content" class="tactical-input h-32 resize-none" placeholder="输入公告内容..."></textarea>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <label class="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+                                    <input type="checkbox" id="ann-pinned" class="w-4 h-4 accent-[#ff6b00]">
+                                    <span>📌 置顶公告</span>
+                                </label>
+                                <button onclick="publishAnnouncement()" class="btn-primary text-xs">📢 立即发布</button>
+                            </div>
+                        </div>
+                        
+                        <!-- 快捷公告 -->
+                        <div class="admin-card p-4">
+                            <h3 class="text-sm font-bold text-white border-l-4 border-[#ff6b00] pl-3 mb-3">快捷公告</h3>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="quickAnnounce('challenge_open')" class="text-xs px-3 py-2 bg-green-900 text-green-400 border border-green-700 hover:bg-green-800 transition-colors">✅ 题目上架</button>
+                                <button onclick="quickAnnounce('challenge_close')" class="text-xs px-3 py-2 bg-gray-800 text-gray-400 border border-gray-600 hover:bg-gray-700 transition-colors">❌ 题目下架</button>
+                                <button onclick="quickAnnounce('first_blood')" class="text-xs px-3 py-2 bg-yellow-900 text-yellow-400 border border-yellow-700 hover:bg-yellow-800 transition-colors">🥇 一血公告</button>
+                                <button onclick="quickAnnounce('second_blood')" class="text-xs px-3 py-2 bg-gray-700 text-gray-300 border border-gray-500 hover:bg-gray-600 transition-colors">🥈 二血公告</button>
+                                <button onclick="quickAnnounce('third_blood')" class="text-xs px-3 py-2 bg-orange-900 text-orange-400 border border-orange-700 hover:bg-orange-800 transition-colors">🥉 三血公告</button>
+                                <button onclick="quickAnnounce('hint')" class="text-xs px-3 py-2 bg-blue-900 text-blue-400 border border-blue-700 hover:bg-blue-800 transition-colors">💡 发布提示</button>
+                                <button onclick="quickAnnounce('cheating')" class="text-xs px-3 py-2 bg-red-900 text-red-400 border border-red-700 hover:bg-red-800 transition-colors">⚠️ 作弊处罚</button>
+                                <button onclick="quickAnnounce('ban')" class="text-xs px-3 py-2 bg-orange-900 text-orange-400 border border-orange-700 hover:bg-orange-800 transition-colors">🚫 封禁公告</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: 题目编排 -->
+            <div id="tab-challenges" class="tab-content hidden animate-fade-in w-full flex-1 flex flex-col min-h-0">
+                <div class="flex justify-between mb-4 items-center flex-shrink-0">
+                    <div class="flex gap-3">
+                        <button onclick="showAddFromBankModal()" class="btn-primary text-xs shadow-lg">+ 从题库添加题目</button>
+                        <button onclick="showInlineChallengeModal()" class="btn-outline text-xs bg-[#1a1a1a] text-yellow-400 border-yellow-500/50 hover:border-yellow-400">+ 临时题目</button>
+                        <button onclick="showChoiceQuestionModal()" class="btn-outline text-xs bg-[#1a1a1a] text-cyan-400 border-cyan-500/50 hover:border-cyan-400">☑ 不定项选择</button>
+                        <button onclick="toggleBonusModal(true)" class="btn-outline text-xs bg-[#1a1a1a] text-[#ff6b00] border-[#333] hover:border-[#ff6b00]">★ 配置三血奖励</button>
+                        <button onclick="batchPublishChallenges()" class="btn-outline text-xs bg-[#1a1a1a] text-green-500 border-[#333] hover:border-green-500">▶ 批量放题</button>
+                        <button onclick="batchHideChallenges()" class="btn-outline text-xs bg-[#1a1a1a] text-gray-400 border-[#333] hover:border-gray-400">■ 批量隐藏</button>
+                        <button onclick="batchRemoveChallenges()" class="btn-outline text-xs bg-[#1a1a1a] text-red-500 border-[#333] hover:border-red-500">✖ 批量移除</button>
+                        <button onclick="showBatchScoreModal()" class="btn-outline text-xs bg-[#1a1a1a] text-blue-400 border-[#333] hover:border-blue-400">⚙ 批量调分</button>
+                        <button onclick="showBatchScheduleModal()" class="btn-outline text-xs bg-[#1a1a1a] text-purple-400 border-[#333] hover:border-purple-400">⏰ 定时放题</button>
+                        <button onclick="showBatchOrderModal()" class="btn-outline text-xs bg-[#1a1a1a] text-cyan-400 border-[#333] hover:border-cyan-400">⇅ 调整顺序</button>
+                        <button onclick="showFlagFormatModal()" class="btn-outline text-xs bg-[#1a1a1a] text-yellow-400 border-[#333] hover:border-yellow-400">🎁 Flag格式</button>
+                    </div>
+                    <div class="text-xs text-gray-500 font-mono bg-[#111] px-3 py-1 border border-[#333]">题目数: <span id="total-challenges" class="text-white">0</span></div>
+                </div>
+                
+                <div class="admin-card overflow-hidden flex-1 flex flex-col min-h-0">
+                    <div class="flex-1 overflow-y-auto">
+                    <table class="w-full text-left text-xs font-mono">
+                        <thead class="table-head bg-[#111] sticky top-0">
+                            <tr>
+                                <th class="p-4 w-10"><input type="checkbox" id="select-all-challenges" onchange="toggleSelectAllChallenges()"></th>
+                                <th class="p-4 w-12">#</th>
+                                <th class="p-4">题目名称</th>
+                                <th class="p-4">类别</th>
+                                <th class="p-4">初始分数</th>
+                                <th class="p-4">最低分数</th>
+                                <th class="p-4">状态</th>
+                                <th class="p-4 text-center">提示</th>
+                                <th class="p-4 text-right">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="challenges-tbody" class="divide-y divide-[#222]">
+                            <tr><td colspan="9" class="p-8 text-center text-gray-500">加载中...</td></tr>
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: 队伍审核 -->
+            <div id="tab-audit" class="tab-content hidden animate-fade-in w-full flex-1 flex flex-col min-h-0">
+                <!-- 审核操作栏 -->
+                <div class="flex items-center justify-between mb-4 flex-shrink-0">
+                    <div class="flex items-center gap-4">
+                        <select id="audit-status-filter" class="tactical-input w-32" onchange="loadContestTeams()">
+                            <option value="">全部状态</option>
+                            <option value="pending">待审核</option>
+                            <option value="approved">已通过</option>
+                            <option value="rejected">已拒绝</option>
+                            <option value="banned">已封禁</option>
+                            <option value="cheating_banned">作弊封禁</option>
+                        </select>
+                        <span id="audit-count" class="text-xs text-gray-500">共 0 支队伍</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="batchApprove()" class="btn-primary text-xs px-3 py-1">批量通过</button>
+                        <button onclick="batchReject()" class="btn-outline text-xs px-3 py-1">批量拒绝</button>
+                        <button onclick="batchBan()" class="bg-orange-600 hover:bg-orange-700 text-white text-xs px-3 py-1 transition-colors">批量封禁</button>
+                        <button onclick="batchCheatBan()" class="bg-red-700 hover:bg-red-800 text-white text-xs px-3 py-1 transition-colors">批量作弊</button>
+                    </div>
+                </div>
+                <!-- 队伍列表 -->
+                <div class="border border-[#333] overflow-hidden flex-1 flex flex-col min-h-0">
+                    <div class="flex-1 overflow-y-auto">
+                    <table class="w-full text-left text-xs font-mono">
+                        <thead class="bg-[#111] sticky top-0">
+                            <tr>
+                                <th class="p-3 w-10"><input type="checkbox" id="select-all-teams" onchange="toggleSelectAllTeams()"></th>
+                                <th class="p-3">ID</th>
+                                <th class="p-3">队伍名称</th>
+                                <th class="p-3">所属组织</th>
+                                <th class="p-3">状态</th>
+                                <th class="p-3">申请时间</th>
+                                <th class="p-3">审核时间</th>
+                                <th class="p-3 text-right">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="audit-teams-tbody" class="divide-y divide-[#222]">
+                            <tr><td colspan="8" class="p-8 text-center text-gray-500">加载中...</td></tr>
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 底部版权 -->
+            <footer class="py-1 border-t border-[#333] flex items-center justify-center flex-shrink-0">
+                <div class="flex items-center justify-center gap-4 text-xs flex-wrap">
+                    <div class="flex items-center gap-1">
+                        <div class="bg-[#ff6b00] text-black font-black px-1.5 py-0.5 font-eng tracking-tighter">TG</div>
+                        <span class="text-gray-500">天格后台管理系统</span>
+                    </div>
+                    <span class="text-white font-mono">Copyright © 2021-present tan91. All Rights Reserved.</span>
+                    <a href="https://github.com/NUDTTAN91" target="_blank" class="text-[#ff6b00] hover:text-white transition-colors"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg></a>
+                </div>
+            </footer>
+
+        </main>
+    </div>
+
+    <!-- 从题库添加题目弹窗 -->
+    <div id="add-from-bank-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm hidden transition-opacity duration-200">
+        <div class="bg-[#1e1e1e] border border-[#ff6b00] w-full max-w-6xl shadow-2xl relative p-6 max-h-[90vh] overflow-y-auto">
+            <h3 class="text-lg font-bold text-white font-eng mb-4">从题库添加题目</h3>
+            
+            <!-- 筛选 -->
+            <div class="flex gap-4 mb-4 flex-wrap">
+                <input type="text" id="bank-search" class="tactical-input w-64" placeholder="🔍 搜索题目名称..." oninput="filterQuestionBank()">
+                <select id="bank-filter-category" class="tactical-input w-32" onchange="filterQuestionBank()">
+                    <option value="">所有类别</option>
+                </select>
+                <select id="bank-filter-difficulty" class="tactical-input w-32" onchange="filterQuestionBank()">
+                    <option value="">所有难度</option>
+                    <option value="easy">简单</option>
+                    <option value="medium">中等</option>
+                    <option value="hard">困难</option>
+                </select>
+            </div>
+            
+            <!-- 题库列表 -->
+            <div class="border border-[#333] max-h-96 overflow-y-auto mb-4">
+                <table class="w-full text-left text-xs font-mono">
+                    <thead class="bg-[#111] sticky top-0">
+                        <tr>
+                            <th class="p-3 w-10"><input type="checkbox" id="select-all-bank" class="accent-[#ff6b00]" onchange="toggleSelectAll(this.checked)"></th>
+                            <th class="p-3">题目名称</th>
+                            <th class="p-3">类别</th>
+                            <th class="p-3">难度</th>
+                            <th class="p-3">类型</th>
+                        </tr>
+                    </thead>
+                    <tbody id="question-bank-list" class="divide-y divide-[#222]">
+                        <tr><td colspan="5" class="p-4 text-center text-gray-500">加载中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 分数设置 -->
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="form-label">初始分数</label>
+                    <input type="number" id="bank-initial-score" class="tactical-input" value="500" min="0">
+                    <p class="text-[10px] text-gray-600 mt-1">题目初始分值</p>
+                </div>
+                <div>
+                    <label class="form-label">最低分数</label>
+                    <input type="number" id="bank-min-score" class="tactical-input" value="17" min="0">
+                    <p class="text-[10px] text-gray-600 mt-1">动态计分的最低分值</p>
+                </div>
+            </div>
+            
+            <div class="flex justify-between items-center mt-6">
+                <span id="selected-count" class="text-xs text-gray-500">已选择: 0 道题目</span>
+                <div class="flex gap-3">
+                    <button onclick="hideAddFromBankModal()" class="btn-outline">取消</button>
+                    <button onclick="addSelectedQuestions()" class="btn-primary">添加到比赛</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 临时题目编辑弹窗 -->
+    <div id="inline-challenge-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm hidden transition-opacity duration-200">
+        <div class="bg-[#1e1e1e] border border-yellow-500 w-full max-w-4xl shadow-2xl relative p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-yellow-400 font-eng">★ <span id="inline-modal-title">创建临时题目</span></h3>
+                <span class="text-xs text-gray-500 bg-[#111] px-2 py-1 border border-[#333]">临时题目不进入题库</span>
+            </div>
+            <input type="hidden" id="inline-cc-id">
+            
+            <div class="grid grid-cols-2 gap-6">
+                <!-- 左侧：基本信息 -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="form-label">题目标题 <span class="text-red-500">*</span></label>
+                        <input type="text" id="inline-title" class="tactical-input" placeholder="输入题目名称">
+                    </div>
+                    <div>
+                        <label class="form-label">题目分类 <span class="text-red-500">*</span></label>
+                        <select id="inline-category" class="tactical-input">
+                            <option value="">选择分类...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">题目类型</label>
+                        <select id="inline-type" class="tactical-input" onchange="updateInlineTypeUI()">
+                            <option value="static_attachment">静态 + 附件</option>
+                            <option value="static_container">静态 + 容器</option>
+                            <option value="dynamic_attachment">动态 + 附件</option>
+                            <option value="dynamic_container">动态 + 容器</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="form-label">初始分数</label>
+                            <input type="number" id="inline-initial-score" class="tactical-input" value="500" min="0">
+                        </div>
+                        <div>
+                            <label class="form-label">最低分数</label>
+                            <input type="number" id="inline-min-score" class="tactical-input" value="17" min="0">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">题目描述</label>
+                        <textarea id="inline-description" class="tactical-input h-32" placeholder="输入题目描述..."></textarea>
+                    </div>
+                </div>
+                
+                <!-- 右侧：Flag和容器配置 -->
+                <div class="space-y-4">
+                    <!-- Flag 配置 -->
+                    <div id="inline-flag-config" class="border border-[#333] p-4 bg-[#161616]">
+                        <label class="form-label mb-2">🏁 Flag 配置</label>
+                        <div id="inline-flag-section">
+                            <input type="text" id="inline-flag" class="tactical-input mb-2" placeholder="flag{...}">
+                            <p class="text-[10px] text-gray-500">静态题目填写固定 flag，动态题目由系统生成</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 附件配置 -->
+                    <div class="border border-[#333] p-4 bg-[#161616]">
+                        <label class="form-label mb-2">📎 附件配置</label>
+                        <input type="text" id="inline-attachment" class="tactical-input mb-2" placeholder="附件URL或本地路径">
+                        <select id="inline-attachment-type" class="tactical-input">
+                            <option value="url">外部链接</option>
+                            <option value="local">本地文件</option>
+                        </select>
+                    </div>
+                    
+                    <!-- 容器配置 -->
+                    <div id="inline-container-section" class="border border-[#333] p-4 bg-[#161616]">
+                        <label class="form-label mb-2">🐳 容器配置</label>
+                        <div class="space-y-2">
+                            <input type="text" id="inline-docker-image" class="tactical-input" placeholder="Docker镜像名">
+                            <input type="text" id="inline-ports" class="tactical-input" placeholder="端口列表，如: 80,8080,22">
+                            <div class="grid grid-cols-2 gap-2">
+                                <input type="text" id="inline-cpu-limit" class="tactical-input" placeholder="CPU限制 (1.0)">
+                                <input type="text" id="inline-memory-limit" class="tactical-input" placeholder="内存限制 (512m)">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Flag 注入配置 -->
+                    <div id="inline-flag-inject-section" class="border border-[#333] p-4 bg-[#161616]">
+                        <label class="form-label mb-2">🔑 Flag 注入</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <input type="text" id="inline-flag-env" class="tactical-input" placeholder="环境变量名" value="FLAG">
+                                <p class="text-[10px] text-gray-500 mt-1">如: FLAG, GZCTF_FLAG</p>
+                            </div>
+                            <div>
+                                <input type="text" id="inline-flag-script" class="tactical-input" placeholder="注入脚本路径">
+                                <p class="text-[10px] text-gray-500 mt-1">如: /flag.sh</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-[#333]">
+                <button onclick="hideInlineChallengeModal()" class="btn-outline">取消</button>
+                <button onclick="saveInlineChallenge()" class="btn-primary bg-yellow-600 hover:bg-yellow-500 border-yellow-500">保存临时题目</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 不定项选择题弹窗 -->
+    <div id="choice-question-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm hidden transition-opacity duration-200">
+        <div class="bg-[#1e1e1e] border border-cyan-500 w-full max-w-2xl shadow-2xl relative p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-cyan-400 font-eng">☑ <span id="choice-modal-title">创建不定项选择题</span></h3>
+                <span class="text-xs text-gray-500 bg-[#111] px-2 py-1 border border-[#333]">全对才得分</span>
+            </div>
+            <input type="hidden" id="choice-cc-id">
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="form-label">题目标题 <span class="text-red-500">*</span></label>
+                    <input type="text" id="choice-title" class="tactical-input" placeholder="输入题目名称">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">初始分数</label>
+                        <input type="number" id="choice-initial-score" class="tactical-input" value="500" min="0">
+                    </div>
+                    <div>
+                        <label class="form-label">最低分数</label>
+                        <input type="number" id="choice-min-score" class="tactical-input" value="17" min="0">
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label">题目描述</label>
+                    <textarea id="choice-description" class="tactical-input h-24" placeholder="输入题目描述..."></textarea>
+                </div>
+                
+                <!-- 选项配置 -->
+                <div class="border border-cyan-600 p-4 bg-[#161616]">
+                    <div class="flex justify-between items-center mb-3">
+                        <label class="form-label mb-0">选项列表</label>
+                        <button type="button" onclick="addChoiceOption()" class="text-xs text-cyan-400 hover:text-cyan-300">+ 添加选项</button>
+                    </div>
+                    <div id="choice-options-list" class="space-y-2 max-h-48 overflow-y-auto mb-3">
+                        <!-- 选项行将动态添加 -->
+                    </div>
+                    <p class="text-[10px] text-cyan-500">勾选复选框表示该选项为正确答案（可多选）</p>
+                </div>
+                
+                <!-- 最大答题次数 -->
+                <div>
+                    <label class="form-label">最大答题次数</label>
+                    <input type="number" id="choice-max-attempts" class="tactical-input" value="3" min="1" max="99">
+                    <p class="text-[10px] text-gray-500 mt-1">答错次数达到上限后无法再次作答</p>
+                </div>
+            </div>
+            
+            <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-[#333]">
+                <button onclick="hideChoiceQuestionModal()" class="btn-outline">取消</button>
+                <button onclick="saveChoiceQuestion()" class="btn-primary bg-cyan-600 hover:bg-cyan-500 border-cyan-500">保存不定项选择题</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 编辑比赛题目弹窗 -->
+    <div id="edit-challenge-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm hidden transition-opacity duration-200">
+        <div class="bg-[#1e1e1e] border border-[#ff6b00] w-full max-w-2xl shadow-2xl relative p-6 max-h-[90vh] overflow-y-auto">
+            <h3 class="text-lg font-bold text-white font-eng mb-4">编辑题目配置</h3>
+            <input type="hidden" id="edit-cc-id">
+            <div class="space-y-4">
+                <div>
+                    <label class="form-label">题目名称</label>
+                    <input type="text" id="edit-cc-title" class="tactical-input" disabled>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">初始分数</label>
+                        <input type="number" id="edit-cc-initial" class="tactical-input" value="500" min="0">
+                    </div>
+                    <div>
+                        <label class="form-label">最低分数</label>
+                        <input type="number" id="edit-cc-min" class="tactical-input" value="17" min="0">
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label">状态</label>
+                    <select id="edit-cc-status" class="tactical-input">
+                        <option value="hidden">隐藏</option>
+                        <option value="public">公开</option>
+                    </select>
+                </div>
+                <!-- 定时放题 -->
+                <div class="border border-[#333] p-4 bg-[#161616]">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="form-label mb-0">⏰ 定时放题</label>
+                        <span id="release-time-status" class="text-xs text-gray-500">未设置</span>
+                    </div>
+                    <input type="datetime-local" id="edit-cc-release-time" class="tactical-input w-full cursor-pointer" onclick="this.showPicker()">
+                    <div class="flex justify-between items-center mt-2">
+                        <p class="text-[10px] text-gray-600">设置后，题目将在指定时间自动上架</p>
+                        <button type="button" onclick="clearReleaseTime()" class="text-[10px] text-red-500 hover:text-red-400">清除定时</button>
+                    </div>
+                </div>
+                <!-- 多提示管理 -->
+                <div class="border border-[#333] p-4 bg-[#161616]">
+                    <div class="flex justify-between items-center mb-3">
+                        <label class="form-label mb-0">💡 题目提示管理</label>
+                        <span id="hints-count" class="text-xs text-gray-500">0 条提示</span>
+                    </div>
+                    <!-- 提示列表 -->
+                    <div id="hints-list-container" class="space-y-2 mb-3 max-h-48 overflow-y-auto">
+                        <div class="text-xs text-gray-500 text-center py-2">加载中...</div>
+                    </div>
+                    <!-- 添加新提示 -->
+                    <div class="flex gap-2">
+                        <input type="text" id="new-hint-content" class="tactical-input flex-1" placeholder="输入新提示内容...">
+                        <button onclick="addNewHint()" class="btn-primary text-xs px-4">+ 添加</button>
+                    </div>
+                    <p class="text-[10px] text-gray-600 mt-2">提示添加后需单独发布，发布后会自动生成公告并在用户端显示</p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="hideEditChallengeModal()" class="btn-outline">取消</button>
+                <button onclick="saveContestChallenge()" class="btn-primary">保存分数配置</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 三血奖励配置弹窗 -->
+    <div id="bonus-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm hidden transition-opacity duration-200">
+        <div class="bg-[#1e1e1e] border border-[#ff6b00] w-full max-w-md shadow-2xl relative p-6">
+            <h3 class="text-lg font-bold text-white font-eng mb-4">★ 配置三血奖励</h3>
+            
+            <div class="text-xs text-gray-500 mb-6 font-mono bg-[#111] p-3 border border-[#333]">
+                三血奖励是指前三个解出题目的队伍获得的额外分数加成。<br>
+                例如：一血 5% 表示额外加 5% 的题目分数。
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="form-label">🥇 一血奖励 (%)</label>
+                    <div class="flex">
+                        <input type="number" id="bonus-first" class="tactical-input border-r-0 text-center" value="5" min="0" max="100">
+                        <div class="bg-[#222] border border-[#333] text-gray-400 text-xs px-4 flex items-center h-[42px] border-l-0">%</div>
+                    </div>
+                    <p class="text-[10px] text-yellow-500 mt-1 ml-1">第一个解出题目的队伍</p>
+                </div>
+                <div>
+                    <label class="form-label">🥈 二血奖励 (%)</label>
+                    <div class="flex">
+                        <input type="number" id="bonus-second" class="tactical-input border-r-0 text-center" value="3" min="0" max="100">
+                        <div class="bg-[#222] border border-[#333] text-gray-400 text-xs px-4 flex items-center h-[42px] border-l-0">%</div>
+                    </div>
+                    <p class="text-[10px] text-gray-400 mt-1 ml-1">第二个解出题目的队伍</p>
+                </div>
+                <div>
+                    <label class="form-label">🥉 三血奖励 (%)</label>
+                    <div class="flex">
+                        <input type="number" id="bonus-third" class="tactical-input border-r-0 text-center" value="1" min="0" max="100">
+                        <div class="bg-[#222] border border-[#333] text-gray-400 text-xs px-4 flex items-center h-[42px] border-l-0">%</div>
+                    </div>
+                    <p class="text-[10px] text-orange-700 mt-1 ml-1">第三个解出题目的队伍</p>
+                </div>
+            </div>
+            
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="toggleBonusModal(false)" class="btn-outline">取消</button>
+                <button onclick="saveBonusConfig()" class="btn-primary">保存配置</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批量调分弹窗 -->
+    <div id="batch-score-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm hidden transition-opacity duration-200">
+        <div class="bg-[#1e1e1e] border border-[#ff6b00] w-full max-w-md shadow-2xl relative p-6">
+            <h3 class="text-lg font-bold text-white font-eng mb-4">⚙ 批量调整分数</h3>
+            
+            <div class="text-xs text-gray-500 mb-6 font-mono bg-[#111] p-3 border border-[#333]">
+                批量设置已选中题目的初始分数和最低分数。<br>
+                留空表示不修改该项。
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="form-label">已选题目</label>
+                    <div id="batch-score-selected" class="text-xs text-[#ff6b00] bg-[#111] p-2 border border-[#333]">0 道题目</div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">初始分数</label>
+                        <input type="number" id="batch-initial-score" class="tactical-input" placeholder="留空不修改" min="0">
+                        <p class="text-[10px] text-gray-600 mt-1">题目初始分值</p>
+                    </div>
+                    <div>
+                        <label class="form-label">最低分数</label>
+                        <input type="number" id="batch-min-score" class="tactical-input" placeholder="留空不修改" min="0">
+                        <p class="text-[10px] text-gray-600 mt-1">动态计分最低分</p>
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label">难度系数 (1-10)</label>
+                    <input type="number" id="batch-difficulty" class="tactical-input" placeholder="留空不修改" min="1" max="10">
+                    <p class="text-[10px] text-gray-600 mt-1">影响分数衰减速度，值越大衰减越慢</p>
+                </div>
+            </div>
+            
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="hideBatchScoreModal()" class="btn-outline">取消</button>
+                <button onclick="batchUpdateScores()" class="btn-primary">应用修改</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批量定时放题弹窗 -->
+    <div id="batch-schedule-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm hidden transition-opacity duration-200">
+        <div class="bg-[#1e1e1e] border border-[#ff6b00] w-full max-w-md shadow-2xl relative p-6">
+            <h3 class="text-lg font-bold text-white font-eng mb-4">⏰ 批量定时放题</h3>
+            
+            <div class="text-xs text-gray-500 mb-6 font-mono bg-[#111] p-3 border border-[#333]">
+                为已选中的题目设置统一的定时放题时间。<br>
+                题目将在指定时间自动上架。
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="form-label">已选题目</label>
+                    <div id="batch-schedule-selected" class="text-xs text-[#ff6b00] bg-[#111] p-2 border border-[#333]">0 道题目</div>
+                </div>
+                <div>
+                    <label class="form-label">放题时间</label>
+                    <input type="datetime-local" id="batch-release-time" class="tactical-input w-full cursor-pointer" onclick="this.showPicker()">
+                    <p class="text-[10px] text-gray-600 mt-1">选择题目自动上架的时间</p>
+                </div>
+            </div>
+            
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="hideBatchScheduleModal()" class="btn-outline">取消</button>
+                <button onclick="clearBatchSchedule()" class="btn-outline text-red-500 border-red-500 hover:border-red-400">清除定时</button>
+                <button onclick="batchSetSchedule()" class="btn-primary">设置定时</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flag格式设置弹窗 -->
+    <div id="flag-format-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm hidden transition-opacity duration-200">
+        <div class="bg-[#1e1e1e] border border-[#ff6b00] w-full max-w-3xl shadow-2xl relative p-6">
+            <h3 class="text-lg font-bold text-white font-eng mb-4">🎁 设置Flag格式</h3>
+            
+            <div class="text-xs text-gray-500 mb-4 font-mono bg-[#111] p-3 border border-[#333]">
+                Flag格式使用 <code class="text-[#ff6b00]">[GUID]</code> 作为占位符，生成时会替换为UUID。<br>
+                例如：<code class="text-yellow-400">TGCTF{[GUID]}</code> → <code class="text-green-400">TGCTF{a1b2c3d4-5678-4abc-8def-123456789abc}</code>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="form-label">Flag格式</label>
+                    <input type="text" id="flag-format-input" class="tactical-input w-full" placeholder="flag{[GUID]}" value="flag{[GUID]}" oninput="updateFlagPreview()">
+                    <p class="text-[10px] text-gray-600 mt-1">使用 [GUID] 作为UUID占位符</p>
+                </div>
+                <div>
+                    <label class="form-label">预览</label>
+                    <div id="flag-format-preview" class="text-sm text-green-400 bg-[#111] p-2 border border-[#333] font-mono break-all">flag{a1b2c3d4-5678-4abc-8def-123456789abc}</div>
+                </div>
+                <div class="bg-red-900/20 border border-red-500/50 p-3">
+                    <p class="text-xs text-red-400"><strong>⚠ 警告：</strong>修改Flag格式后，所有已生成的Flag将被删除，重启容器时会自动重新生成。</p>
+                </div>
+            </div>
+            
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="hideFlagFormatModal()" class="btn-outline">取消</button>
+                <button onclick="saveFlagFormat()" class="btn-primary">保存格式</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 拖拽调整顺序弹窗 -->
+    <div id="batch-order-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm hidden transition-opacity duration-200">
+        <div class="bg-[#1e1e1e] border border-[#ff6b00] w-full max-w-4xl shadow-2xl relative p-6 max-h-[90vh] overflow-y-auto">
+            <h3 class="text-lg font-bold text-white font-eng mb-4">⇅ 调整题目显示顺序</h3>
+            
+            <div class="text-xs text-gray-500 mb-4 font-mono bg-[#111] p-3 border border-[#333]">
+                拖拽题目调整顺序，上下拖动即可排序。保存后用户看到的题目将按此顺序排列。
+            </div>
+            
+            <div id="order-list-container" class="border border-[#333] max-h-[60vh] overflow-y-auto mb-4">
+                <div class="p-4 text-center text-gray-500">加载中...</div>
+            </div>
+            
+            <div class="flex gap-2 mb-4">
+                <button onclick="resetOrderToDefault()" class="btn-outline text-xs text-gray-400 border-gray-600">还原默认顺序</button>
+            </div>
+            
+            <div class="flex justify-end gap-3">
+                <button onclick="hideBatchOrderModal()" class="btn-outline">取消</button>
+                <button onclick="saveBatchOrder()" class="btn-primary">保存顺序</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 查看队伍Flag弹窗 -->
+    <div id="view-flags-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm hidden transition-opacity duration-200">
+        <div class="bg-[#1e1e1e] border border-[#ff6b00] w-full max-w-2xl shadow-2xl relative p-6 max-h-[90vh] overflow-y-auto">
+            <h3 class="text-lg font-bold text-white font-eng mb-4">队伍Flag列表 - <span id="flags-challenge-title" class="text-[#ff6b00]"></span></h3>
+            
+            <div class="text-xs text-gray-500 mb-4 font-mono">动态容器题目会为每个队伍生成唯一Flag，在队伍首次创建容器时生成</div>
+            
+            <!-- Flag列表 -->
+            <div class="border border-[#333] max-h-96 overflow-y-auto">
+                <table class="w-full text-left text-xs font-mono">
+                    <thead class="bg-[#111] sticky top-0">
+                        <tr>
+                            <th class="p-3">队伍名称</th>
+                            <th class="p-3">Flag</th>
+                            <th class="p-3">生成时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="flags-list-tbody" class="divide-y divide-[#222]">
+                        <tr><td colspan="3" class="p-4 text-center text-gray-500">加载中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="flex justify-between items-center mt-6">
+                <span id="flags-count" class="text-xs text-gray-500">共 0 条记录</span>
+                <button onclick="hideFlagsModal()" class="btn-outline">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toast 提示函数
+        function showToast(message, type = 'info', duration = 3000) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'toastOut 0.3s ease forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        }
+
+        const token = localStorage.getItem('tg_token');
+        let contestId = null;
+        let contestData = null;
+        let allOrganizations = [];
+        let selectedOrgIds = [];
+        // 预先声明所有模块变量（避免暂时性死区问题）
+        let challenges = [];
+        let questionBank = [];
+        let selectedQuestions = new Set();
+        let categories = [];
+        let selectedChallenges = new Set();
+        let contestTeams = [];
+        let selectedTeamIds = new Set();
+        let auditWs = null;
+        let announcements = [];
+
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) { return null; }
+        }
+
+        // 权限检查
+        if (!token) {
+            window.location.href = '/login.html';
+        } else {
+            const payload = parseJwt(token);
+            if (!payload || payload.role !== 'super') {
+                document.querySelector('main').innerHTML = `<div class="flex-1 flex items-center justify-center" style="min-height:60vh;"><div class="text-center"><div style="font-size:96px;margin-bottom:24px;opacity:0.3;">🔒</div><div style="font-size:24px;font-weight:bold;color:white;margin-bottom:8px;">无操作权限</div><div style="font-size:14px;color:#888;">此功能仅超级管理员可用</div><a href="/portal/admin.html" style="display:inline-block;margin-top:24px;padding:10px 24px;background:#ff6b00;color:black;font-weight:bold;font-size:14px;text-decoration:none;">返回首页</a></div></div>`;
+            }
+        }
+
+        // 获取 URL 参数中的比赛 ID
+        const urlParams = new URLSearchParams(window.location.search);
+        contestId = urlParams.get('id');
+        if (!contestId) {
+            showToast('未指定比赛ID', 'error');
+            window.location.href = '/admin/admin-contests.html';
+        }
+
+        // Tab 切换
+        function switchToTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            const tabBtn = document.querySelector(`.tab-btn[data-tab="${tabName}"]`);
+            const tabContent = document.getElementById('tab-' + tabName);
+            if (tabBtn && tabContent) {
+                tabBtn.classList.add('active');
+                tabContent.classList.remove('hidden');
+            }
+        }
+        
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabName = btn.dataset.tab;
+                switchToTab(tabName);
+                // 保存当前Tab到URL参数
+                const url = new URL(window.location);
+                url.searchParams.set('tab', tabName);
+                window.history.replaceState({}, '', url);
+            });
+        });
+        
+        // 从URL参数恢复Tab状态
+        const savedTab = urlParams.get('tab');
+        if (savedTab && ['config', 'broadcast', 'challenges', 'audit'].includes(savedTab)) {
+            switchToTab(savedTab);
+        }
+
+        // 更新海报预览
+        function updateCoverPreview(url) {
+            const preview = document.getElementById('cover-preview');
+            if (url) {
+                preview.style.backgroundImage = `url('${url}')`;
+                preview.textContent = '';
+            } else {
+                preview.style.backgroundImage = '';
+                preview.textContent = '预览图';
+            }
+        }
+
+        // 加载比赛数据
+        async function loadContest() {
+            try {
+                const res = await fetch(`/api/admin/contests/${contestId}`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Failed to load');
+                contestData = await res.json();
+                
+                // 填充数据
+                document.getElementById('contest-title').textContent = contestData.name;
+                document.getElementById('contest-id').textContent = contestData.id;
+                document.getElementById('contest-mode').textContent = contestData.mode.toUpperCase();
+                
+                document.getElementById('edit-name').value = contestData.name;
+                document.getElementById('edit-description').value = contestData.description || '';
+                document.getElementById('edit-start-time').value = contestData.startTime.replace(' ', 'T');
+                document.getElementById('edit-end-time').value = contestData.endTime.replace(' ', 'T');
+                document.getElementById('edit-cover').value = contestData.coverImage || '';
+                
+                // 预览背景图
+                updateCoverPreview(contestData.coverImage || '');
+                
+                // 队伍限制
+                document.getElementById('edit-team-limit').value = contestData.teamLimit || 4;
+                document.getElementById('edit-container-limit').value = contestData.containerLimit || 1;
+                
+                // 状态显示
+                updateStatusDisplay(contestData.status);
+                
+                // 加载比赛已关联的组织
+                try {
+                    const orgRes = await fetch(`/api/admin/contests/${contestId}/organizations`, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (orgRes.ok) {
+                        const orgs = await orgRes.json();
+                        selectedOrgIds = orgs.map(o => o.id);
+                        renderOrgOptions();
+                        updateOrgDisplay();
+                    }
+                } catch (orgErr) {
+                    console.error('加载组织失败', orgErr);
+                }
+                
+            } catch (e) {
+                console.error(e);
+                showToast('加载比赛信息失败', 'error');
+            }
+        }
+
+        function updateStatusDisplay(status) {
+            const statusEl = document.getElementById('status-display');
+            const toggleBtn = document.getElementById('toggle-status-btn');
+            
+            const statusConfig = {
+                running: { 
+                    text: '● 状态: 进行中', 
+                    class: 'text-xs font-mono text-green-500 bg-green-900 bg-opacity-20 px-2 py-1 border border-green-800', 
+                    btnText: '紧急暂停', 
+                    btnAction: 'paused' 
+                },
+                pending: { 
+                    text: '○ 状态: 筹备中', 
+                    class: 'text-xs font-mono text-yellow-500 bg-yellow-900 bg-opacity-20 px-2 py-1 border border-yellow-800', 
+                    btnText: '立即开始', 
+                    btnAction: 'running' 
+                },
+                paused: { 
+                    text: '■ 状态: 已暂停', 
+                    class: 'text-xs font-mono text-orange-500 bg-orange-900 bg-opacity-20 px-2 py-1 border border-orange-800', 
+                    btnText: '恢复比赛', 
+                    btnAction: 'running' 
+                },
+                ended: { 
+                    text: '● 状态: 已结束', 
+                    class: 'text-xs font-mono text-gray-500 bg-gray-900 bg-opacity-20 px-2 py-1 border border-gray-700', 
+                    btnText: '--', 
+                    btnAction: null 
+                }
+            };
+            
+            const cfg = statusConfig[status] || statusConfig.pending;
+            statusEl.textContent = cfg.text;
+            statusEl.className = cfg.class;
+            toggleBtn.textContent = cfg.btnText;
+            toggleBtn.dataset.action = cfg.btnAction || '';
+            toggleBtn.disabled = !cfg.btnAction;
+            toggleBtn.style.opacity = cfg.btnAction ? '1' : '0.5';
+        }
+
+        // 切换状态按钮
+        document.getElementById('toggle-status-btn').addEventListener('click', async () => {
+            const newStatus = document.getElementById('toggle-status-btn').dataset.action;
+            if (!newStatus) return;
+            
+            try {
+                const res = await fetch(`/api/admin/contests/${contestId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                if (!res.ok) throw new Error('Failed');
+                contestData.status = newStatus;
+                updateStatusDisplay(newStatus);
+            } catch (e) {
+                showToast('状态切换失败', 'error');
+            }
+        });
+
+        // 保存配置
+        async function saveConfig() {
+            const name = document.getElementById('edit-name').value.trim();
+            const description = document.getElementById('edit-description').value.trim();
+            const startTime = document.getElementById('edit-start-time').value;
+            const endTime = document.getElementById('edit-end-time').value;
+            const coverImage = document.getElementById('edit-cover').value.trim();
+            const teamLimit = parseInt(document.getElementById('edit-team-limit').value) || 4;
+            const containerLimit = parseInt(document.getElementById('edit-container-limit').value) || 1;
+
+            if (!name || !startTime || !endTime) {
+                showToast('请填写必填字段', 'warning');
+                return;
+            }
+
+            try {
+                // 保存基础配置
+                const res = await fetch(`/api/admin/contests/${contestId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, description, startTime, endTime, coverImage, teamLimit, containerLimit })
+                });
+                if (!res.ok) throw new Error('Failed');
+                
+                // 保存组织关联
+                const orgRes = await fetch(`/api/admin/contests/${contestId}/organizations`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ organizationIds: selectedOrgIds })
+                });
+                if (!orgRes.ok) {
+                    console.error('保存组织关联失败');
+                }
+                
+                // 组织变更后主动刷新队伍审核列表（先刷新再提示）
+                await loadContestTeams();
+                loadContest();
+                showToast('保存成功', 'success');
+            } catch (e) {
+                showToast('保存失败', 'error');
+            }
+        }
+
+        // 生成随机邀请码（必须包含大小写字母、数字、特殊字符）
+        function generateCode() {
+            const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            const lower = 'abcdefghijklmnopqrstuvwxyz';
+            const digits = '0123456789';
+            const special = '!@#$%^&*';
+            const all = upper + lower + digits + special;
+            
+            // 确保每种字符至少有一个
+            let result = '';
+            result += upper.charAt(Math.floor(Math.random() * upper.length));
+            result += lower.charAt(Math.floor(Math.random() * lower.length));
+            result += digits.charAt(Math.floor(Math.random() * digits.length));
+            result += special.charAt(Math.floor(Math.random() * special.length));
+            
+            // 填充剩余12位
+            for (let i = 0; i < 12; i++) {
+                result += all.charAt(Math.floor(Math.random() * all.length));
+            }
+            
+            // 打乱顺序
+            result = result.split('').sort(() => Math.random() - 0.5).join('');
+            document.getElementById('edit-invite-code').value = result;
+        }
+
+        // 文件上传区域点击
+        document.getElementById('upload-zone').addEventListener('click', () => {
+            document.getElementById('cover-file').click();
+        });
+
+        // 文件选择后预览并存储
+        document.getElementById('cover-file').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const dataUrl = event.target.result;
+                    updateCoverPreview(dataUrl);
+                    // 将 base64 存储到隐藏字段，保存时提交
+                    document.getElementById('edit-cover').value = dataUrl;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // 初始化：确保比赛数据先加载完成
+        loadContest().then(() => {
+            loadCategories().then(() => {
+                loadChallenges();
+            });
+        });
+        loadOrganizations();
+        loadContestTeams();
+        loadAnnouncements(); // 初始化时加载公告
+        connectAuditWebSocket(); // 连接队伍审核WebSocket
+
+        // ========== 组织选择功能 ==========
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        async function loadOrganizations() {
+            try {
+                const res = await fetch('/api/admin/organizations', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Failed');
+                const data = await res.json();
+                allOrganizations = (Array.isArray(data) ? data : []).filter(o => o.name !== 'TG_AdminX' && o.status === 'active');
+                renderOrgOptions();
+            } catch (e) {
+                console.error(e);
+                document.getElementById('org-options').innerHTML = '<div class="text-red-500 text-xs p-2">加载失败</div>';
+            }
+        }
+
+        function toggleOrgDropdown() {
+            const dropdown = document.getElementById('org-dropdown');
+            dropdown.classList.toggle('hidden');
+            if (!dropdown.classList.contains('hidden')) {
+                document.getElementById('org-search').focus();
+            }
+        }
+
+        // 点击外部关闭下拉菜单
+        document.addEventListener('click', (e) => {
+            const container = document.getElementById('org-select-container');
+            if (container && !container.contains(e.target)) {
+                document.getElementById('org-dropdown').classList.add('hidden');
+            }
+        });
+
+        function filterOrgOptions() {
+            const searchTerm = document.getElementById('org-search').value.toLowerCase();
+            const options = document.querySelectorAll('.org-option');
+            options.forEach(opt => {
+                const name = opt.dataset.name.toLowerCase();
+                opt.style.display = name.includes(searchTerm) ? '' : 'none';
+            });
+        }
+
+        function renderOrgOptions() {
+            const container = document.getElementById('org-options');
+            if (allOrganizations.length === 0) {
+                container.innerHTML = '<div class="text-gray-500 text-xs p-2">暂无可选组织</div>';
+                return;
+            }
+            container.innerHTML = allOrganizations.map(o => `
+                <div class="org-option flex items-center gap-2 px-3 py-2 hover:bg-[#252525] cursor-pointer transition-colors ${selectedOrgIds.includes(o.id) ? 'bg-[#ff6b00] bg-opacity-10' : ''}"
+                     data-id="${o.id}" data-name="${escapeHtml(o.name)}" onclick="toggleOrgSelection(${o.id}, event)">
+                    <span class="w-4 h-4 border ${selectedOrgIds.includes(o.id) ? 'border-[#ff6b00] bg-[#ff6b00]' : 'border-gray-500'} flex items-center justify-center text-xs">
+                        ${selectedOrgIds.includes(o.id) ? '✓' : ''}
+                    </span>
+                    <span class="text-xs ${selectedOrgIds.includes(o.id) ? 'text-[#ff6b00]' : 'text-gray-300'}">${escapeHtml(o.name)}</span>
+                </div>
+            `).join('');
+        }
+
+        function toggleOrgSelection(id, event) {
+            if (event) event.stopPropagation();
+            const idx = selectedOrgIds.indexOf(id);
+            if (idx > -1) {
+                selectedOrgIds.splice(idx, 1);
+            } else {
+                selectedOrgIds.push(id);
+            }
+            renderOrgOptions();
+            updateOrgDisplay();
+        }
+
+        function removeOrgSelection(id) {
+            selectedOrgIds = selectedOrgIds.filter(i => i !== id);
+            renderOrgOptions();
+            updateOrgDisplay();
+        }
+
+        function updateOrgDisplay() {
+            const display = document.getElementById('org-select-display');
+            const tagsContainer = document.getElementById('org-selected-tags');
+            
+            if (selectedOrgIds.length === 0) {
+                display.textContent = '请选择组织...';
+                display.className = 'text-xs text-gray-400';
+                tagsContainer.innerHTML = '';
+            } else {
+                display.textContent = `已选择 ${selectedOrgIds.length} 个组织`;
+                display.className = 'text-xs text-[#ff6b00]';
+                tagsContainer.innerHTML = selectedOrgIds.map(id => {
+                    const org = allOrganizations.find(o => o.id === id);
+                    if (!org) return '';
+                    return `<span class="inline-flex items-center gap-1 bg-[#ff6b00] text-white text-[10px] px-2 py-0.5 font-bold">
+                        ${escapeHtml(org.name)}
+                        <span onclick="removeOrgSelection(${id})" class="cursor-pointer hover:text-white">×</span>
+                    </span>`;
+                }).join('');
+            }
+        }
+
+        // ========== 题目管理（新版，从题库添加） ==========
+
+        // 根据类别ID获取发光颜色
+        function getCategoryColor(categoryId) {
+            const cat = categories.find(c => c.id === categoryId);
+            return cat && cat.glowColor ? cat.glowColor : '#ff6b00';
+        }
+
+        // 加载类别列表
+        async function loadCategories() {
+            try {
+                const res = await fetch('/api/admin/categories', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    categories = await res.json();
+                    const select = document.getElementById('bank-filter-category');
+                    categories.forEach(cat => {
+                        const opt = document.createElement('option');
+                        opt.value = cat.id;
+                        opt.textContent = cat.name;
+                        select.appendChild(opt);
+                    });
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // 加载比赛题目列表
+        async function loadChallenges() {
+            try {
+                const res = await fetch(`/api/admin/contests/${contestId}/contest-challenges`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Failed');
+                challenges = await res.json() || [];
+                renderChallenges();
+            } catch (e) {
+                console.error(e);
+                document.getElementById('challenges-tbody').innerHTML = '<tr><td colspan="9" class="p-8 text-center text-gray-500">加载失败</td></tr>';
+            }
+        }
+
+        // 渲染题目列表
+                
+        function renderChallenges() {
+            const tbody = document.getElementById('challenges-tbody');
+            if (challenges.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="p-8 text-center text-gray-500">暂无题目，请从题库添加</td></tr>';
+                document.getElementById('total-challenges').textContent = '0';
+                return;
+            }
+                    
+            // 按显示顺序排序（顺序号为0的按添加顺序ID排，否则按顺序号升序）
+            challenges.sort((a, b) => {
+                const orderA = a.displayOrder || 999999;
+                const orderB = b.displayOrder || 999999;
+                if (orderA !== orderB) return orderA - orderB;
+                return (a.id || 0) - (b.id || 0);
+            });
+                        
+            document.getElementById('total-challenges').textContent = challenges.length;
+            tbody.innerHTML = challenges.map((ch, idx) => {
+                // 支持扁平和嵌套两种数据结构
+                const title = ch.title || (ch.question && ch.question.title) || 'N/A';
+                const categoryId = ch.categoryId || (ch.question && ch.question.categoryId);
+                // categoryName 可能是 sql.NullString 格式
+                let catName = ch.categoryName;
+                if (catName && typeof catName === 'object') catName = catName.String || 'N/A';
+                if (!catName) catName = (ch.question && ch.question.categoryName) || 'N/A';
+                const color = getCategoryColor(categoryId);
+                const statusText = ch.status === 'public' ? '● 公开' : '○ 隐藏';
+                const statusClass = ch.status === 'public' ? 'text-green-500' : 'text-gray-500';
+                // 显示序号
+                const orderDisplay = `<span class="text-gray-500">${idx + 1}</span>`;
+                // 临时题目标记
+                const inlineBadge = ch.isInline ? '<span class="ml-2 text-[10px] px-1.5 py-0.5 bg-yellow-500/20 text-yellow-400 border border-yellow-500/50">临时</span>' : '';
+                // 提示状态 - 显示数量
+                const hintTotal = ch.hintCount || 0;
+                const hintReleased = ch.hintReleasedCount || 0;
+                let hintDisplay = '';
+                if (hintTotal > 0) {
+                    if (hintReleased > 0) {
+                        hintDisplay = `<span class="text-green-500">${hintReleased}/${hintTotal} 已发布</span>`;
+                    } else {
+                        hintDisplay = `<span class="text-yellow-500">${hintTotal} 未发布</span>`;
+                    }
+                } else {
+                    hintDisplay = '<span class="text-gray-600">-</span>';
+                }
+                // 定时放题显示
+                let releaseTimeDisplay = '';
+                if (ch.releaseTime && ch.status === 'hidden') {
+                    const rt = new Date(ch.releaseTime);
+                    releaseTimeDisplay = `<span class="text-purple-400 text-xs">⏰ ${rt.toLocaleString('zh-CN', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}</span>`;
+                }
+                return `
+                    <tr class="table-row hover:bg-[#1a1a1a]">
+                        <td class="p-4"><input type="checkbox" class="challenge-checkbox accent-[#ff6b00]" data-id="${ch.id}" ${selectedChallenges.has(ch.id) ? 'checked' : ''} onchange="toggleChallengeSelection(${ch.id}, this)"></td>
+                        <td class="p-4">${orderDisplay}</td>
+                        <td class="p-4 text-white font-bold">${title}${inlineBadge}</td>
+                        <td class="p-4"><span class="px-2 py-0.5 border bg-opacity-10" style="color:${color};border-color:${color};background-color:${color}20">${catName}</span></td>
+                        <td class="p-4 text-white">${ch.initialScore}</td>
+                        <td class="p-4 text-gray-400">${ch.minScore}</td>
+                        <td class="p-4 ${statusClass}">${statusText}${releaseTimeDisplay ? '<br>' + releaseTimeDisplay : ''}</td>
+                        <td class="p-4 text-center">${hintDisplay}</td>
+                        <td class="p-4 text-right">
+                            <button onclick="viewChallengeFlags(${ch.id}, '${title.replace(/'/g, "\\'")}')" class="text-[#ff6b00] hover:text-white mr-3">Flag</button>
+                            ${ch.isInline 
+                                ? `<button onclick="showEditInlineChallengeModal(${ch.id})" class="text-yellow-400 hover:text-white mr-3">编辑题目</button>`
+                                : `<button onclick="editContestChallenge(${ch.id})" class="text-gray-400 hover:text-white mr-3">编辑</button>`
+                            }
+                            <button onclick="toggleChallengeStatus(${ch.id}, '${ch.status}')" class="text-gray-400 hover:text-white mr-3">${ch.status === 'public' ? '下架' : '上架'}</button>
+                            <button onclick="removeContestChallenge(${ch.id})" class="text-red-500 hover:underline">移除</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        // 题目多选操作
+        function toggleSelectAllChallenges() {
+            const selectAll = document.getElementById('select-all-challenges').checked;
+            document.querySelectorAll('.challenge-checkbox').forEach(cb => {
+                cb.checked = selectAll;
+                const id = parseInt(cb.dataset.id);
+                if (selectAll) selectedChallenges.add(id);
+                else selectedChallenges.delete(id);
+            });
+        }
+        
+        function toggleChallengeSelection(id, checkbox) {
+            if (checkbox.checked) selectedChallenges.add(id);
+            else selectedChallenges.delete(id);
+        }
+        
+        // 批量放题
+        async function batchPublishChallenges() {
+            if (selectedChallenges.size === 0) {
+                showToast('请先选择要放题的题目', 'warning');
+                return;
+            }
+            let successCount = 0;
+            let publishedTitles = [];
+            for (const id of selectedChallenges) {
+                try {
+                    const res = await fetch(`/api/admin/contest-challenges/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status: 'public' })
+                    });
+                    if (res.ok) {
+                        successCount++;
+                        // 获取题目名称
+                        const ch = challenges.find(c => c.id === id);
+                        if (ch) publishedTitles.push(ch.title || (ch.question && ch.question.title) || '未知题目');
+                    }
+                } catch (e) { console.error(e); }
+            }
+            selectedChallenges.clear();
+            document.getElementById('select-all-challenges').checked = false;
+            loadChallenges();
+            
+            // 自动发布上架公告
+            if (successCount > 0 && publishedTitles.length > 0) {
+                try {
+                    const annTitle = '题目上架通知';
+                    const annContent = `以下题目已上架，快去挑战吧！\n${publishedTitles.map(t => `【${t}】`).join('、')}`;
+                    await fetch(`/api/admin/contests/${contestId}/announcements`, {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ title: annTitle, content: annContent, pinned: false })
+                    });
+                } catch (e) { console.error('发布公告失败', e); }
+            }
+            showToast(`成功放题 ${successCount} 道题目`, 'success');
+        }
+        
+        // 批量隐藏
+        async function batchHideChallenges() {
+            if (selectedChallenges.size === 0) {
+                showToast('请先选择要隐藏的题目', 'warning');
+                return;
+            }
+            let successCount = 0;
+            for (const id of selectedChallenges) {
+                try {
+                    const res = await fetch(`/api/admin/contest-challenges/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status: 'hidden' })
+                    });
+                    if (res.ok) successCount++;
+                } catch (e) { console.error(e); }
+            }
+            selectedChallenges.clear();
+            document.getElementById('select-all-challenges').checked = false;
+            loadChallenges();
+            showToast(`成功隐藏 ${successCount} 道题目`, 'success');
+        }
+        
+        // 批量移除
+        async function batchRemoveChallenges() {
+            if (selectedChallenges.size === 0) {
+                showToast('请先选择要移除的题目', 'warning');
+                return;
+            }
+            if (!confirm(`确定要从比赛中移除 ${selectedChallenges.size} 道题目吗？`)) return;
+            
+            let successCount = 0;
+            for (const id of selectedChallenges) {
+                try {
+                    const res = await fetch(`/api/admin/contest-challenges/${id}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (res.ok) successCount++;
+                } catch (e) { console.error(e); }
+            }
+            selectedChallenges.clear();
+            document.getElementById('select-all-challenges').checked = false;
+            loadChallenges();
+            showToast(`成功移除 ${successCount} 道题目`, 'success');
+        }
+
+        // 显示批量调分弹窗
+        function showBatchScoreModal() {
+            if (selectedChallenges.size === 0) {
+                showToast('请先选择要调整分数的题目', 'warning');
+                return;
+            }
+            document.getElementById('batch-score-selected').textContent = `${selectedChallenges.size} 道题目`;
+            document.getElementById('batch-initial-score').value = '';
+            document.getElementById('batch-min-score').value = '';
+            document.getElementById('batch-difficulty').value = '';
+            document.getElementById('batch-score-modal').classList.remove('hidden');
+        }
+        
+        function hideBatchScoreModal() {
+            document.getElementById('batch-score-modal').classList.add('hidden');
+        }
+        
+        // 批量更新分数
+        async function batchUpdateScores() {
+            const initialScore = document.getElementById('batch-initial-score').value;
+            const minScore = document.getElementById('batch-min-score').value;
+            const difficulty = document.getElementById('batch-difficulty').value;
+            
+            if (!initialScore && !minScore && !difficulty) {
+                showToast('请至少填写一个要修改的值', 'warning');
+                return;
+            }
+            
+            const updateData = {};
+            if (initialScore) updateData.initialScore = parseInt(initialScore);
+            if (minScore) updateData.minScore = parseInt(minScore);
+            if (difficulty) updateData.difficulty = parseInt(difficulty);
+            
+            let successCount = 0;
+            for (const id of selectedChallenges) {
+                try {
+                    const res = await fetch(`/api/admin/contest-challenges/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify(updateData)
+                    });
+                    if (res.ok) successCount++;
+                } catch (e) { console.error(e); }
+            }
+            
+            hideBatchScoreModal();
+            selectedChallenges.clear();
+            document.getElementById('select-all-challenges').checked = false;
+            loadChallenges();
+            showToast(`成功修改 ${successCount} 道题目的分数配置`, 'success');
+        }
+
+        // ========== 批量定时放题 ==========
+        function showBatchScheduleModal() {
+            if (selectedChallenges.size === 0) {
+                showToast('请先选择要设置定时放题的题目', 'warning');
+                return;
+            }
+            document.getElementById('batch-schedule-selected').textContent = `${selectedChallenges.size} 道题目`;
+            document.getElementById('batch-release-time').value = '';
+            document.getElementById('batch-schedule-modal').classList.remove('hidden');
+        }
+        
+        function hideBatchScheduleModal() {
+            document.getElementById('batch-schedule-modal').classList.add('hidden');
+        }
+        
+        // 批量设置定时放题
+        async function batchSetSchedule() {
+            const releaseTimeValue = document.getElementById('batch-release-time').value;
+            
+            if (!releaseTimeValue) {
+                showToast('请选择放题时间', 'warning');
+                return;
+            }
+            
+            // 直接发送本地时间格式
+            const releaseTime = releaseTimeValue + ':00';
+            
+            let successCount = 0;
+            for (const id of selectedChallenges) {
+                try {
+                    const res = await fetch(`/api/admin/contest-challenges/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ releaseTime })
+                    });
+                    if (res.ok) successCount++;
+                } catch (e) { console.error(e); }
+            }
+            
+            hideBatchScheduleModal();
+            selectedChallenges.clear();
+            document.getElementById('select-all-challenges').checked = false;
+            loadChallenges();
+            showToast(`成功为 ${successCount} 道题目设置定时放题`, 'success');
+        }
+        
+        // 批量清除定时放题
+        async function clearBatchSchedule() {
+            let successCount = 0;
+            for (const id of selectedChallenges) {
+                try {
+                    const res = await fetch(`/api/admin/contest-challenges/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ releaseTime: null })
+                    });
+                    if (res.ok) successCount++;
+                } catch (e) { console.error(e); }
+            }
+            
+            hideBatchScheduleModal();
+            selectedChallenges.clear();
+            document.getElementById('select-all-challenges').checked = false;
+            loadChallenges();
+            showToast(`成功清除 ${successCount} 道题目的定时放题`, 'success');
+        }
+
+        // ========== 临时题目功能 ==========
+        let inlineChallengeId = null; // 编辑时的ID
+
+        // 显示临时题目弹窗（新建）
+        function showInlineChallengeModal() {
+            inlineChallengeId = null;
+            document.getElementById('inline-modal-title').textContent = '创建临时题目';
+            document.getElementById('inline-cc-id').value = '';
+            document.getElementById('inline-title').value = '';
+            document.getElementById('inline-category').value = '';
+            document.getElementById('inline-type').value = 'static_attachment';
+            document.getElementById('inline-initial-score').value = '500';
+            document.getElementById('inline-min-score').value = '17';
+            document.getElementById('inline-description').value = '';
+            document.getElementById('inline-flag').value = '';
+            document.getElementById('inline-attachment').value = '';
+            document.getElementById('inline-attachment-type').value = 'url';
+            document.getElementById('inline-docker-image').value = '';
+            document.getElementById('inline-ports').value = '';
+            document.getElementById('inline-cpu-limit').value = '';
+            document.getElementById('inline-memory-limit').value = '';
+            document.getElementById('inline-flag-env').value = 'FLAG';
+            document.getElementById('inline-flag-script').value = '';
+            
+            loadInlineCategories();
+            updateInlineTypeUI();
+            document.getElementById('inline-challenge-modal').classList.remove('hidden');
+        }
+
+        // 显示临时题目弹窗（编辑）
+        async function showEditInlineChallengeModal(ccId) {
+            try {
+                const res = await fetch(`/api/admin/contest-challenges/${ccId}/inline`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Failed');
+                const data = await res.json();
+                
+                // 如果是选择题，用选择题弹窗编辑
+                if (data.isChoice) {
+                    showEditChoiceQuestionModal(ccId, data);
+                    return;
+                }
+                
+                inlineChallengeId = ccId;
+                document.getElementById('inline-modal-title').textContent = '编辑临时题目';
+                document.getElementById('inline-cc-id').value = ccId;
+                document.getElementById('inline-title').value = data.title || '';
+                document.getElementById('inline-category').value = data.categoryId || '';
+                document.getElementById('inline-type').value = data.type || 'static_attachment';
+                document.getElementById('inline-initial-score').value = data.initialScore || 500;
+                document.getElementById('inline-min-score').value = data.minScore || 17;
+                document.getElementById('inline-description').value = data.description || '';
+                document.getElementById('inline-flag').value = data.flag || '';
+                document.getElementById('inline-attachment').value = data.attachmentUrl || '';
+                document.getElementById('inline-attachment-type').value = data.attachmentType || 'url';
+                document.getElementById('inline-docker-image').value = data.dockerImage || '';
+                document.getElementById('inline-ports').value = data.ports || '';
+                document.getElementById('inline-cpu-limit').value = data.cpuLimit || '';
+                document.getElementById('inline-memory-limit').value = data.memoryLimit || '';
+                document.getElementById('inline-flag-env').value = data.flagEnv || 'FLAG';
+                document.getElementById('inline-flag-script').value = data.flagScript || '';
+                
+                await loadInlineCategories();
+                updateInlineTypeUI();
+                document.getElementById('inline-challenge-modal').classList.remove('hidden');
+            } catch (e) {
+                showToast('加载临时题目失败', 'error');
+            }
+        }
+
+        function hideInlineChallengeModal() {
+            document.getElementById('inline-challenge-modal').classList.add('hidden');
+        }
+
+        // 加载分类到临时题目下拉框
+        async function loadInlineCategories() {
+            try {
+                const res = await fetch('/api/categories', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) return;
+                const cats = await res.json() || [];
+                const select = document.getElementById('inline-category');
+                const currentVal = select.value;
+                select.innerHTML = '<option value="">选择分类...</option>';
+                cats.forEach(c => {
+                    select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+                });
+                if (currentVal) select.value = currentVal;
+            } catch (e) {
+                console.error('Load categories error:', e);
+            }
+        }
+
+        // 根据题目类型更新UI
+        function updateInlineTypeUI() {
+            const type = document.getElementById('inline-type').value;
+            const containerSection = document.getElementById('inline-container-section');
+            const flagInjectSection = document.getElementById('inline-flag-inject-section');
+            const flagInput = document.getElementById('inline-flag');
+            
+            // 容器配置区域
+            if (type.includes('container')) {
+                containerSection.classList.remove('hidden');
+                flagInjectSection.classList.remove('hidden');
+            } else {
+                containerSection.classList.add('hidden');
+                flagInjectSection.classList.add('hidden');
+            }
+            
+            // Flag 输入框
+            if (type.startsWith('dynamic')) {
+                flagInput.placeholder = '动态Flag由系统自动生成';
+                flagInput.disabled = true;
+                flagInput.value = '';
+            } else {
+                flagInput.placeholder = 'flag{...}';
+                flagInput.disabled = false;
+            }
+        }
+
+        // 添加选项（用于不定项选择题弹窗）
+        function addChoiceOption(text = '', isCorrect = false) {
+            const container = document.getElementById('choice-options-list');
+            const row = document.createElement('div');
+            row.className = 'flex items-center gap-2 bg-[#111] p-2 border border-[#333]';
+            row.innerHTML = `
+                <input type="checkbox" class="choice-correct w-4 h-4 accent-cyan-500" ${isCorrect ? 'checked' : ''}>
+                <input type="text" class="choice-text tactical-input flex-1" placeholder="选项内容..." value="${escapeHtml(text)}">
+                <button type="button" onclick="removeChoiceOption(this)" class="text-red-500 hover:text-red-400 text-sm px-2">×</button>
+            `;
+            container.appendChild(row);
+        }
+
+        // 删除选项
+        function removeChoiceOption(btn) {
+            btn.closest('div').remove();
+        }
+
+        // HTML转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 保存临时题目
+        async function saveInlineChallenge() {
+            const title = document.getElementById('inline-title').value.trim();
+            const categoryId = document.getElementById('inline-category').value;
+            
+            if (!title) {
+                showToast('请输入题目标题', 'error');
+                return;
+            }
+            if (!categoryId) {
+                showToast('请选择题目分类', 'error');
+                return;
+            }
+            
+            const type = document.getElementById('inline-type').value;
+            const ports = document.getElementById('inline-ports').value.trim();
+            
+            const data = {
+                title: title,
+                categoryId: parseInt(categoryId),
+                type: type,
+                flagType: type.startsWith('dynamic') ? 'dynamic' : 'static',
+                description: document.getElementById('inline-description').value,
+                flag: document.getElementById('inline-flag').value.trim(),
+                attachmentUrl: document.getElementById('inline-attachment').value.trim(),
+                attachmentType: document.getElementById('inline-attachment-type').value,
+                dockerImage: document.getElementById('inline-docker-image').value.trim(),
+                ports: ports ? JSON.stringify(ports.split(',').map(p => p.trim())) : '',
+                cpuLimit: document.getElementById('inline-cpu-limit').value.trim(),
+                memoryLimit: document.getElementById('inline-memory-limit').value.trim(),
+                flagEnv: document.getElementById('inline-flag-env').value.trim() || 'FLAG',
+                flagScript: document.getElementById('inline-flag-script').value.trim(),
+                initialScore: parseInt(document.getElementById('inline-initial-score').value) || 500,
+                minScore: parseInt(document.getElementById('inline-min-score').value) || 17,
+                difficulty: 5,
+                isChoice: false
+            };
+            
+            try {
+                let res;
+                if (inlineChallengeId) {
+                    res = await fetch(`/api/admin/contest-challenges/${inlineChallengeId}/inline`, {
+                        method: 'PUT',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                } else {
+                    res = await fetch(`/api/admin/contests/${contestId}/inline-challenge`, {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                }
+                
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.message || err.error || 'Failed');
+                }
+                
+                hideInlineChallengeModal();
+                loadChallenges();
+                showToast(inlineChallengeId ? '临时题目更新成功' : '临时题目创建成功', 'success');
+            } catch (e) {
+                showToast('保存失败: ' + e.message, 'error');
+            }
+        }
+
+        // ========== 不定项选择题功能 ==========
+        let choiceQuestionId = null;
+
+        function showChoiceQuestionModal() {
+            choiceQuestionId = null;
+            document.getElementById('choice-modal-title').textContent = '创建不定项选择题';
+            document.getElementById('choice-cc-id').value = '';
+            document.getElementById('choice-title').value = '';
+            document.getElementById('choice-initial-score').value = '500';
+            document.getElementById('choice-min-score').value = '17';
+            document.getElementById('choice-description').value = '';
+            document.getElementById('choice-max-attempts').value = '3';
+            document.getElementById('choice-options-list').innerHTML = '';
+            document.getElementById('choice-question-modal').classList.remove('hidden');
+        }
+
+        function showEditChoiceQuestionModal(ccId, data) {
+            choiceQuestionId = ccId;
+            document.getElementById('choice-modal-title').textContent = '编辑不定项选择题';
+            document.getElementById('choice-cc-id').value = ccId;
+            document.getElementById('choice-title').value = data.title || '';
+            document.getElementById('choice-initial-score').value = data.initialScore || 500;
+            document.getElementById('choice-min-score').value = data.minScore || 17;
+            document.getElementById('choice-description').value = data.description || '';
+            document.getElementById('choice-max-attempts').value = data.maxAttempts || 3;
+            
+            // 加载选项
+            document.getElementById('choice-options-list').innerHTML = '';
+            if (data.choices) {
+                try {
+                    const choices = JSON.parse(data.choices);
+                    const correctAnswers = (data.choiceAnswer || '').split(',').map(s => s.trim());
+                    choices.forEach((text, idx) => {
+                        const isCorrect = correctAnswers.includes(String(idx));
+                        addChoiceOption(text, isCorrect);
+                    });
+                } catch (e) {
+                    console.error('Parse choices error:', e);
+                }
+            }
+            
+            document.getElementById('choice-question-modal').classList.remove('hidden');
+        }
+
+        function hideChoiceQuestionModal() {
+            document.getElementById('choice-question-modal').classList.add('hidden');
+        }
+
+        async function saveChoiceQuestion() {
+            const title = document.getElementById('choice-title').value.trim();
+            if (!title) {
+                showToast('请输入题目标题', 'error');
+                return;
+            }
+            
+            // 收集选项和正确答案
+            const rows = document.querySelectorAll('#choice-options-list > div');
+            const choices = [];
+            const correctIndices = [];
+            rows.forEach((row) => {
+                const text = row.querySelector('.choice-text').value.trim();
+                const isCorrect = row.querySelector('.choice-correct').checked;
+                if (text) {
+                    if (isCorrect) correctIndices.push(choices.length);
+                    choices.push(text);
+                }
+            });
+            
+            if (choices.length < 2) {
+                showToast('至少需要2个选项', 'error');
+                return;
+            }
+            if (correctIndices.length === 0) {
+                showToast('请至少选择1个正确答案', 'error');
+                return;
+            }
+            
+            const data = {
+                title: title,
+                categoryId: 8, // 不定项选择分类 ID
+                type: 'static_attachment',
+                flagType: 'static',
+                description: document.getElementById('choice-description').value,
+                initialScore: parseInt(document.getElementById('choice-initial-score').value) || 500,
+                minScore: parseInt(document.getElementById('choice-min-score').value) || 17,
+                difficulty: 5,
+                isChoice: true,
+                choices: JSON.stringify(choices),
+                choiceAnswer: correctIndices.join(','),
+                maxAttempts: parseInt(document.getElementById('choice-max-attempts').value) || 3
+            };
+            
+            try {
+                let res;
+                if (choiceQuestionId) {
+                    res = await fetch(`/api/admin/contest-challenges/${choiceQuestionId}/inline`, {
+                        method: 'PUT',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                } else {
+                    res = await fetch(`/api/admin/contests/${contestId}/inline-challenge`, {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                }
+                
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.message || err.error || 'Failed');
+                }
+                
+                hideChoiceQuestionModal();
+                loadChallenges();
+                showToast(choiceQuestionId ? '不定项选择题更新成功' : '不定项选择题创建成功', 'success');
+            } catch (e) {
+                showToast('保存失败: ' + e.message, 'error');
+            }
+        }
+
+        // 显示从题库添加弹窗
+        function showAddFromBankModal() {
+            selectedQuestions.clear();
+            updateSelectedCount();
+            document.getElementById('bank-search').value = '';
+            document.getElementById('bank-filter-category').value = '';
+            document.getElementById('bank-filter-difficulty').value = '';
+            document.getElementById('bank-initial-score').value = '500';
+            document.getElementById('bank-min-score').value = '17';
+            
+            document.getElementById('add-from-bank-modal').classList.remove('hidden');
+            loadQuestionBank();
+        }
+
+        function hideAddFromBankModal() {
+            document.getElementById('add-from-bank-modal').classList.add('hidden');
+        }
+
+        // 加载题库列表
+        let allQuestionBank = [];
+        async function loadQuestionBank() {
+            try {
+                const res = await fetch('/api/admin/questions', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Failed');
+                allQuestionBank = await res.json() || [];
+                
+                // 过滤已添加的题目
+                const addedIds = new Set(challenges.map(c => c.questionId));
+                allQuestionBank = allQuestionBank.filter(q => !addedIds.has(q.id));
+                
+                filterQuestionBank();
+            } catch (e) {
+                console.error(e);
+                document.getElementById('question-bank-list').innerHTML = '<tr><td colspan="5" class="p-4 text-center text-red-500">加载失败</td></tr>';
+            }
+        }
+
+        // 前端筛选题库
+        function filterQuestionBank() {
+            const searchTerm = (document.getElementById('bank-search').value || '').toLowerCase().trim();
+            const categoryId = document.getElementById('bank-filter-category').value;
+            const difficulty = document.getElementById('bank-filter-difficulty').value;
+            
+            questionBank = allQuestionBank.filter(q => {
+                // 搜索名称
+                if (searchTerm && !q.title.toLowerCase().includes(searchTerm)) return false;
+                // 筛选类别
+                if (categoryId && q.categoryId != categoryId) return false;
+                // 筛选难度
+                if (difficulty && q.difficulty !== difficulty) return false;
+                return true;
+            });
+            
+            renderQuestionBank();
+        }
+
+        function renderQuestionBank() {
+            const tbody = document.getElementById('question-bank-list');
+            if (questionBank.length === 0) {
+                const searchTerm = (document.getElementById('bank-search').value || '').trim();
+                if (searchTerm) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">未找到匹配的题目</td></tr>';
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">暂无可添加的题目</td></tr>';
+                }
+                return;
+            }
+            
+            const difficultyNames = { 'easy': '简单', 'medium': '中等', 'hard': '困难' };
+            const typeNames = { 'static_attachment': '静态附件', 'static_container': '静态容器', 'dynamic_attachment': '动态附件', 'dynamic_container': '动态容器' };
+            
+            tbody.innerHTML = questionBank.map(q => {
+                const color = getCategoryColor(q.categoryId);
+                return `
+                <tr class="hover:bg-[#1a1a1a] cursor-pointer" onclick="toggleQuestionSelection(${q.id}, this)">
+                    <td class="p-3 text-center">
+                        <input type="checkbox" ${selectedQuestions.has(q.id) ? 'checked' : ''} class="accent-[#ff6b00]" onclick="event.stopPropagation(); toggleQuestionSelection(${q.id}, this.closest('tr'))">
+                    </td>
+                    <td class="p-3 text-white">${q.title}</td>
+                    <td class="p-3"><span class="px-2 py-0.5 border bg-opacity-10" style="color:${color};border-color:${color};background-color:${color}20">${q.categoryName || 'N/A'}</span></td>
+                    <td class="p-3 text-gray-400">${difficultyNames[q.difficulty] || q.difficulty}</td>
+                    <td class="p-3 text-gray-400">${typeNames[q.type] || q.type}</td>
+                </tr>
+            `}).join('');
+        }
+
+        function toggleQuestionSelection(id, row) {
+            if (selectedQuestions.has(id)) {
+                selectedQuestions.delete(id);
+                row.querySelector('input[type="checkbox"]').checked = false;
+            } else {
+                selectedQuestions.add(id);
+                row.querySelector('input[type="checkbox"]').checked = true;
+            }
+            updateSelectedCount();
+            updateSelectAllState();
+        }
+
+        function toggleSelectAll(checked) {
+            // 只对当前筛选后显示的题目进行全选/取消
+            questionBank.forEach(q => {
+                if (checked) {
+                    selectedQuestions.add(q.id);
+                } else {
+                    selectedQuestions.delete(q.id);
+                }
+            });
+            renderQuestionBank();
+            updateSelectedCount();
+        }
+
+        function updateSelectAllState() {
+            const selectAllCheckbox = document.getElementById('select-all-bank');
+            if (selectAllCheckbox && questionBank.length > 0) {
+                selectAllCheckbox.checked = questionBank.every(q => selectedQuestions.has(q.id));
+            }
+        }
+
+        function updateSelectedCount() {
+            document.getElementById('selected-count').textContent = `已选择: ${selectedQuestions.size} 道题目`;
+        }
+
+        // 添加选中的题目到比赛
+        async function addSelectedQuestions() {
+            if (selectedQuestions.size === 0) {
+                showToast('请选择至少一道题目', 'warning');
+                return;
+            }
+            
+            const initialScore = parseInt(document.getElementById('bank-initial-score').value) || 500;
+            const minScore = parseInt(document.getElementById('bank-min-score').value) || 17;
+            const questionIds = Array.from(selectedQuestions);
+            
+            try {
+                const res = await fetch(`/api/admin/contests/${contestId}/contest-challenges`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ questionIds, initialScore, minScore })
+                });
+                const data = await res.json();
+                hideAddFromBankModal();
+                loadChallenges();
+                if (res.ok) {
+                    showToast(`成功添加 ${data.added || 0} 道题目`, 'success');
+                } else {
+                    showToast(data.error || '添加失败', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showToast('添加失败', 'error');
+            }
+        }
+
+        // 编辑比赛题目
+        function editContestChallenge(id) {
+            const ch = challenges.find(c => c.id === id);
+            if (!ch) return;
+            
+            const title = ch.title || (ch.question && ch.question.title) || 'N/A';
+            document.getElementById('edit-cc-id').value = id;
+            document.getElementById('edit-cc-title').value = title;
+            document.getElementById('edit-cc-initial').value = ch.initialScore;
+            document.getElementById('edit-cc-min').value = ch.minScore;
+            document.getElementById('edit-cc-status').value = ch.status;
+            
+            // 定时放题时间
+            const releaseTimeInput = document.getElementById('edit-cc-release-time');
+            const releaseTimeStatus = document.getElementById('release-time-status');
+            if (ch.releaseTime) {
+                const rt = new Date(ch.releaseTime);
+                // 转换为本地时间格式 (datetime-local 需要 YYYY-MM-DDTHH:mm)
+                const localDT = rt.toISOString().slice(0, 16);
+                releaseTimeInput.value = localDT;
+                releaseTimeStatus.textContent = `已设置: ${rt.toLocaleString('zh-CN')}`;
+                releaseTimeStatus.className = 'text-xs text-purple-400';
+            } else {
+                releaseTimeInput.value = '';
+                releaseTimeStatus.textContent = '未设置';
+                releaseTimeStatus.className = 'text-xs text-gray-500';
+            }
+            
+            // 加载提示列表
+            loadChallengeHints(id);
+            
+            document.getElementById('edit-challenge-modal').classList.remove('hidden');
+        }
+
+        // 清除定时放题
+        function clearReleaseTime() {
+            document.getElementById('edit-cc-release-time').value = '';
+            const releaseTimeStatus = document.getElementById('release-time-status');
+            releaseTimeStatus.textContent = '未设置';
+            releaseTimeStatus.className = 'text-xs text-gray-500';
+        }
+
+        // 加载题目提示列表
+        let currentHints = [];
+        async function loadChallengeHints(challengeId) {
+            const container = document.getElementById('hints-list-container');
+            container.innerHTML = '<div class="text-xs text-gray-500 text-center py-2">加载中...</div>';
+            
+            try {
+                const res = await fetch(`/api/admin/contest-challenges/${challengeId}/hints`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Failed');
+                currentHints = await res.json() || [];
+                renderHintsList();
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = '<div class="text-xs text-red-500 text-center py-2">加载失败</div>';
+            }
+        }
+
+        function renderHintsList() {
+            const container = document.getElementById('hints-list-container');
+            const countEl = document.getElementById('hints-count');
+            const releasedCount = currentHints.filter(h => h.released).length;
+            countEl.textContent = `${currentHints.length} 条提示 (${releasedCount} 已发布)`;
+            
+            if (currentHints.length === 0) {
+                container.innerHTML = '<div class="text-xs text-gray-500 text-center py-4">暂无提示，请在下方添加</div>';
+                return;
+            }
+            
+            container.innerHTML = currentHints.map((hint, idx) => `
+                <div class="flex items-start gap-2 p-2 bg-[#111] border border-[#333] ${hint.released ? 'border-l-2 border-l-green-500' : ''}">
+                    <span class="text-xs text-gray-500 w-6 shrink-0">#${idx + 1}</span>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm text-white break-all">${escapeHtml(hint.content)}</p>
+                        <p class="text-[10px] text-gray-500 mt-1">
+                            ${hint.released ? '<span class="text-green-500">✓ 已发布</span>' : '<span class="text-yellow-500">○ 未发布</span>'}
+                            ${hint.releasedAt ? ' · ' + formatTime(hint.releasedAt) : ''}
+                        </p>
+                    </div>
+                    <div class="flex gap-2 shrink-0">
+                        ${!hint.released ? `<button onclick="releaseHint(${hint.id})" class="text-xs text-[#ff6b00] hover:text-white">发布</button>` : ''}
+                        <button onclick="deleteHint(${hint.id})" class="text-xs text-red-500 hover:text-white">删除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function formatTime(isoString) {
+            if (!isoString) return '';
+            const d = new Date(isoString);
+            return d.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+        }
+
+        // 添加新提示
+        async function addNewHint() {
+            const content = document.getElementById('new-hint-content').value.trim();
+            if (!content) {
+                showToast('请输入提示内容', 'warning');
+                return;
+            }
+            
+            const challengeId = document.getElementById('edit-cc-id').value;
+            
+            try {
+                const res = await fetch(`/api/admin/contest-challenges/${challengeId}/hints`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ content })
+                });
+                if (!res.ok) throw new Error('Failed');
+                
+                document.getElementById('new-hint-content').value = '';
+                showToast('提示添加成功', 'success');
+                loadChallengeHints(challengeId);
+                loadChallenges(); // 刷新列表
+            } catch (e) {
+                showToast('添加失败', 'error');
+            }
+        }
+
+        // 发布提示
+        async function releaseHint(hintId) {
+            if (!confirm('确定要发布这条提示吗？发布后将自动生成公告。')) return;
+            
+            const challengeId = document.getElementById('edit-cc-id').value;
+            
+            try {
+                const res = await fetch(`/api/admin/contest-challenges/${challengeId}/hints/${hintId}/release`, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                
+                if (!res.ok) {
+                    const data = await res.json();
+                    showToast(data.message || '发布失败', 'error');
+                    return;
+                }
+                
+                showToast('提示已发布并生成公告', 'success');
+                loadChallengeHints(challengeId);
+                loadChallenges();
+            } catch (e) {
+                showToast('发布失败', 'error');
+            }
+        }
+
+        // 删除提示
+        async function deleteHint(hintId) {
+            if (!confirm('确定要删除这条提示吗？')) return;
+            
+            const challengeId = document.getElementById('edit-cc-id').value;
+            
+            try {
+                const res = await fetch(`/api/admin/contest-challenges/${challengeId}/hints/${hintId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Failed');
+                
+                showToast('提示已删除', 'success');
+                loadChallengeHints(challengeId);
+                loadChallenges();
+            } catch (e) {
+                showToast('删除失败', 'error');
+            }
+        }
+
+        function hideEditChallengeModal() {
+            document.getElementById('edit-challenge-modal').classList.add('hidden');
+        }
+
+        async function saveContestChallenge() {
+            const id = document.getElementById('edit-cc-id').value;
+            const initialScore = parseInt(document.getElementById('edit-cc-initial').value) || 500;
+            const minScore = parseInt(document.getElementById('edit-cc-min').value) || 100;
+            const status = document.getElementById('edit-cc-status').value;
+            const releaseTimeValue = document.getElementById('edit-cc-release-time').value;
+            
+            // 构建请求数据
+            const requestData = { initialScore, minScore, status };
+            
+            // 处理定时放题时间
+            if (releaseTimeValue) {
+                // 直接发送本地时间格式，避免时区问题
+                requestData.releaseTime = releaseTimeValue + ':00';
+            } else {
+                // 明确传递 null 清除定时
+                requestData.releaseTime = null;
+            }
+            
+            try {
+                const res = await fetch(`/api/admin/contest-challenges/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                if (!res.ok) throw new Error('Failed');
+                
+                showToast('保存成功', 'success');
+                hideEditChallengeModal();
+                loadChallenges();
+            } catch (e) {
+                showToast('保存失败', 'error');
+            }
+        }
+
+        async function toggleChallengeStatus(id, currentStatus) {
+            const newStatus = currentStatus === 'public' ? 'hidden' : 'public';
+            try {
+                const res = await fetch(`/api/admin/contest-challenges/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                if (!res.ok) throw new Error('Failed');
+                loadChallenges();
+            } catch (e) {
+                showToast('操作失败', 'error');
+            }
+        }
+
+        async function removeContestChallenge(id) {
+            if (!confirm('确定要从比赛中移除这道题目吗？')) return;
+            try {
+                const res = await fetch(`/api/admin/contest-challenges/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Failed');
+                loadChallenges();
+            } catch (e) {
+                showToast('移除失败', 'error');
+            }
+        }
+
+        // ========== 查看队伍Flag功能 ==========
+        async function viewChallengeFlags(challengeId, title) {
+            document.getElementById('flags-challenge-title').textContent = title;
+            document.getElementById('view-flags-modal').classList.remove('hidden');
+            document.getElementById('flags-list-tbody').innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-500">加载中...</td></tr>';
+            document.getElementById('flags-count').textContent = '共 0 条记录';
+            
+            try {
+                const res = await fetch(`/api/admin/contest-challenges/${challengeId}/flags?mode=jeopardy`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Failed');
+                const flags = await res.json() || [];
+                renderFlagsList(flags);
+            } catch (e) {
+                console.error(e);
+                document.getElementById('flags-list-tbody').innerHTML = '<tr><td colspan="3" class="p-4 text-center text-red-500">加载失败</td></tr>';
+            }
+        }
+
+        function renderFlagsList(flags) {
+            const tbody = document.getElementById('flags-list-tbody');
+            document.getElementById('flags-count').textContent = `共 ${flags.length} 条记录`;
+            
+            if (flags.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-500">暂无Flag记录（队伍未创建过容器）</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = flags.map(f => `
+                <tr class="table-row hover:bg-[#1a1a1a]">
+                    <td class="p-3 text-white">${f.teamName}</td>
+                    <td class="p-3 text-[#ff6b00] select-all cursor-pointer" onclick="copyFlag(this)" title="点击复制">${f.flag}</td>
+                    <td class="p-3 text-gray-400">${f.createdAt || '-'}</td>
+                </tr>
+            `).join('');
+        }
+
+        function hideFlagsModal() {
+            document.getElementById('view-flags-modal').classList.add('hidden');
+        }
+
+        function copyFlag(el) {
+            const text = el.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const original = el.textContent;
+                el.textContent = '✓ 已复制';
+                el.classList.add('text-green-500');
+                setTimeout(() => {
+                    el.textContent = original;
+                    el.classList.remove('text-green-500');
+                }, 1000);
+            });
+        }
+
+        // ========== 三血奖励配置 ==========
+        function toggleBonusModal(show) {
+            const modal = document.getElementById('bonus-modal');
+            if (show) {
+                // 加载当前配置
+                loadBonusConfig();
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        async function loadBonusConfig() {
+            try {
+                const res = await fetch(`/api/admin/contests/${contestId}/bonus`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('bonus-first').value = data.firstBlood || 5;
+                    document.getElementById('bonus-second').value = data.secondBlood || 3;
+                    document.getElementById('bonus-third').value = data.thirdBlood || 1;
+                }
+            } catch (e) {
+                console.log('加载三血配置失败，使用默认值');
+            }
+        }
+
+        async function saveBonusConfig() {
+            const firstBlood = parseInt(document.getElementById('bonus-first').value) || 0;
+            const secondBlood = parseInt(document.getElementById('bonus-second').value) || 0;
+            const thirdBlood = parseInt(document.getElementById('bonus-third').value) || 0;
+            
+            try {
+                const res = await fetch(`/api/admin/contests/${contestId}/bonus`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ firstBlood, secondBlood, thirdBlood })
+                });
+                if (!res.ok) throw new Error('Failed');
+                toggleBonusModal(false);
+                showToast('三血奖励配置已保存', 'success');
+            } catch (e) {
+                showToast('保存失败', 'error');
+            }
+        }
+
+        // ========== 队伍审核功能 ==========
+
+        // WebSocket 实时推送队伍审核
+        function connectAuditWebSocket() {
+            if (!contestId) return;
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            auditWs = new WebSocket(`${wsProtocol}//${location.host}/api/admin/contests/${contestId}/teams/ws?token=${encodeURIComponent(token)}`);
+            
+            auditWs.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'new_teams' && data.teams) {
+                        // 有新的待审核队伍，更新列表
+                        const currentFilter = document.getElementById('audit-status-filter').value;
+                        // 如果当前筛选为全部或待审核，添加新队伍
+                        if (!currentFilter || currentFilter === 'pending') {
+                            data.teams.forEach(newTeam => {
+                                // 检查是否已存在
+                                if (!contestTeams.find(t => t.teamId === newTeam.teamId)) {
+                                    contestTeams.unshift(newTeam);
+                                }
+                            });
+                            renderContestTeams();
+                        }
+                    } else if (data.type === 'teams_removed' && data.teamIds) {
+                        // 移除被删除的队伍
+                        contestTeams = contestTeams.filter(t => !data.teamIds.includes(t.teamId));
+                        renderContestTeams();
+                    } else if (data.type === 'full_refresh') {
+                        // 组织变更后需要完全重新加载队伍列表
+                        loadContestTeams();
+                    }
+                } catch (e) {
+                    console.error('Parse audit ws message error:', e);
+                }
+            };
+            
+            auditWs.onclose = () => {
+                // 断线重连
+                setTimeout(connectAuditWebSocket, 3000);
+            };
+            
+            auditWs.onerror = () => {
+                auditWs.close();
+            };
+        }
+
+        async function loadContestTeams() {
+            const status = document.getElementById('audit-status-filter').value;
+            let url = `/api/admin/contests/${contestId}/teams`;
+            if (status) url += `?status=${status}`;
+
+            try {
+                const res = await fetch(url, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Failed');
+                contestTeams = await res.json() || [];
+                selectedTeamIds.clear();
+                document.getElementById('select-all-teams').checked = false;
+                renderContestTeams();
+            } catch (e) {
+                console.error(e);
+                document.getElementById('audit-teams-tbody').innerHTML = '<tr><td colspan="9" class="p-8 text-center text-gray-500">加载失败</td></tr>';
+            }
+        }
+
+        function renderContestTeams() {
+            const tbody = document.getElementById('audit-teams-tbody');
+            document.getElementById('audit-count').textContent = `共 ${contestTeams.length} 支队伍`;
+
+            if (contestTeams.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="p-8 text-center text-gray-500">暂无队伍申请</td></tr>';
+                return;
+            }
+            
+            // ID升序排序
+            contestTeams.sort((a, b) => (a.teamId || 0) - (b.teamId || 0));
+
+            const statusConfig = {
+                'pending': { text: '○ 待审核', class: 'text-yellow-500' },
+                'approved': { text: '● 已通过', class: 'text-green-500' },
+                'rejected': { text: '■ 已拒绝', class: 'text-red-500' },
+                'banned': { text: '✗ 已封禁', class: 'text-orange-500' },
+                'cheating_banned': { text: '☠ 作弊封禁', class: 'text-red-600' }
+            };
+
+            // 根据状态生成操作按钮
+            function getActions(team) {
+                const status = team.status;
+                const id = team.id;
+                
+                if (status === 'pending') {
+                    return `
+                        <button onclick="reviewTeam(${id}, 'approve')" class="text-green-500 hover:underline mr-2">通过</button>
+                        <button onclick="reviewTeam(${id}, 'reject')" class="text-red-500 hover:underline">拒绝</button>
+                    `;
+                } else if (status === 'approved') {
+                    return `
+                        <button onclick="reviewTeam(${id}, 'revoke')" class="text-yellow-500 hover:underline mr-2">撤销</button>
+                        <button onclick="reviewTeam(${id}, 'ban')" class="text-orange-500 hover:underline mr-2">封禁</button>
+                        <button onclick="reviewTeam(${id}, 'cheating_ban')" class="text-red-600 hover:underline">作弊</button>
+                    `;
+                } else if (status === 'rejected') {
+                    return `
+                        <button onclick="reviewTeam(${id}, 'approve')" class="text-green-500 hover:underline">重新通过</button>
+                    `;
+                } else if (status === 'banned' || status === 'cheating_banned') {
+                    return `
+                        <button onclick="reviewTeam(${id}, 'revoke')" class="text-yellow-500 hover:underline">解封</button>
+                    `;
+                }
+                return '<span class="text-gray-600">-</span>';
+            }
+
+            tbody.innerHTML = contestTeams.map(team => {
+                const cfg = statusConfig[team.status] || statusConfig.pending;
+                return `
+                    <tr class="table-row hover:bg-[#1a1a1a]">
+                        <td class="p-3">
+                            <input type="checkbox" class="team-checkbox" data-id="${team.teamId}" onchange="toggleTeamSelection(${team.teamId})" ${selectedTeamIds.has(team.teamId) ? 'checked' : ''}>
+                        </td>
+                        <td class="p-3 text-gray-500">${team.teamId}</td>
+                        <td class="p-3 text-white font-bold">${team.teamName || 'N/A'}</td>
+                        <td class="p-3 text-gray-400">${team.orgName || '-'}</td>
+                        <td class="p-3 ${cfg.class}">${cfg.text}</td>
+                        <td class="p-3 text-gray-400">${team.createdAt || '-'}</td>
+                        <td class="p-3 text-gray-400">${team.reviewedAt || '-'}</td>
+                        <td class="p-3 text-left">${getActions(team)}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function toggleTeamSelection(teamId) {
+            if (selectedTeamIds.has(teamId)) {
+                selectedTeamIds.delete(teamId);
+            } else {
+                selectedTeamIds.add(teamId);
+            }
+            updateTeamSelectAllState();
+        }
+
+        function toggleSelectAllTeams() {
+            const checked = document.getElementById('select-all-teams').checked;
+            // 支持选择任何状态的队伍
+            if (checked) {
+                contestTeams.forEach(t => selectedTeamIds.add(t.teamId));
+            } else {
+                selectedTeamIds.clear();
+            }
+            renderContestTeams();
+        }
+
+        function updateTeamSelectAllState() {
+            // 支持选择任何状态的队伍
+            const allSelected = contestTeams.length > 0 && contestTeams.every(t => selectedTeamIds.has(t.teamId));
+            document.getElementById('select-all-teams').checked = allSelected;
+        }
+
+        async function reviewTeam(id, action) {
+            const confirmMsgs = {
+                'approve': '确定通过该队伍的申请？',
+                'reject': '确定拒绝该队伍的申请？',
+                'revoke': '确定撤销/解封该队伍？',
+                'ban': '确定封禁该队伍？',
+                'cheating_ban': '确定将该队伍标记为作弊封禁？'
+            };
+            
+            if (!confirm(confirmMsgs[action] || '确定执行此操作？')) return;
+
+            // 封禁和作弊封禁可以输入原因
+            let reason = '';
+            if (action === 'reject' || action === 'ban' || action === 'cheating_ban') {
+                reason = prompt('请输入原因（可不填）：') || '';
+                if (reason === null) return; // 用户取消
+            }
+
+            try {
+                const res = await fetch(`/api/admin/contests/${contestId}/teams/${id}/review`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ action, reason })
+                });
+                if (!res.ok) throw new Error('Failed');
+                loadContestTeams();
+            } catch (e) {
+                showToast('操作失败', 'error');
+            }
+        }
+
+        async function batchApprove() {
+            if (selectedTeamIds.size === 0) {
+                showToast('请先选择队伍', 'warning');
+                return;
+            }
+            if (!confirm(`确定批量通过 ${selectedTeamIds.size} 支队伍的申请？`)) return;
+
+            try {
+                const res = await fetch(`/api/admin/contests/${contestId}/teams/batch-review`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ teamIds: Array.from(selectedTeamIds), action: 'approve' })
+                });
+                if (!res.ok) throw new Error('Failed');
+                const result = await res.json();
+                showToast(`成功通过 ${result.count} 支队伍`, 'success');
+                loadContestTeams();
+            } catch (e) {
+                showToast('批量审核失败', 'error');
+            }
+        }
+
+        async function batchReject() {
+            if (selectedTeamIds.size === 0) {
+                showToast('请先选择队伍', 'warning');
+                return;
+            }
+            const reason = prompt('请输入拒绝原因（可不填）：');
+            if (reason === null) return; // 用户取消
+
+            try {
+                const res = await fetch(`/api/admin/contests/${contestId}/teams/batch-review`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ teamIds: Array.from(selectedTeamIds), action: 'reject', reason: reason })
+                });
+                if (!res.ok) throw new Error('Failed');
+                const result = await res.json();
+                showToast(`成功拒绝 ${result.count} 支队伍`, 'success');
+                loadContestTeams();
+            } catch (e) {
+                showToast('批量审核失败', 'error');
+            }
+        }
+
+        async function batchBan() {
+            if (selectedTeamIds.size === 0) {
+                showToast('请先选择队伍', 'warning');
+                return;
+            }
+            if (!confirm(`确定批量封禁 ${selectedTeamIds.size} 支队伍？`)) return;
+            const reason = prompt('请输入封禁原因（可不填）：');
+            if (reason === null) return;
+
+            try {
+                const res = await fetch(`/api/admin/contests/${contestId}/teams/batch-review`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ teamIds: Array.from(selectedTeamIds), action: 'ban', reason: reason })
+                });
+                if (!res.ok) throw new Error('Failed');
+                const result = await res.json();
+                showToast(`成功封禁 ${result.count} 支队伍`, 'success');
+                loadContestTeams();
+            } catch (e) {
+                showToast('批量封禁失败', 'error');
+            }
+        }
+
+        async function batchCheatBan() {
+            if (selectedTeamIds.size === 0) {
+                showToast('请先选择队伍', 'warning');
+                return;
+            }
+            if (!confirm(`确定将 ${selectedTeamIds.size} 支队伍标记为作弊封禁？`)) return;
+            const reason = prompt('请输入作弊原因（可不填）：');
+            if (reason === null) return;
+
+            try {
+                const res = await fetch(`/api/admin/contests/${contestId}/teams/batch-review`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ teamIds: Array.from(selectedTeamIds), action: 'cheating_ban', reason: reason })
+                });
+                if (!res.ok) throw new Error('Failed');
+                const result = await res.json();
+                showToast(`成功标记 ${result.count} 支队伍为作弊封禁`, 'success');
+                loadContestTeams();
+            } catch (e) {
+                showToast('批量作弊封禁失败', 'error');
+            }
+        }
+
+        // ========== 公告管理 ===========
+
+        async function loadAnnouncements() {
+            try {
+                const res = await fetch(`/api/admin/contests/${contestId}/announcements`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Failed');
+                announcements = await res.json() || [];
+                renderAnnouncements();
+            } catch (e) {
+                console.error('加载公告失败', e);
+                document.getElementById('announcements-list').innerHTML = '<div class="p-8 text-center text-red-500 font-mono text-sm">加载失败</div>';
+            }
+        }
+
+        function renderAnnouncements() {
+            const container = document.getElementById('announcements-list');
+            document.getElementById('ann-count').textContent = `共 ${announcements.length} 条公告`;
+
+            if (announcements.length === 0) {
+                container.innerHTML = '<div class="p-8 text-center text-gray-500 font-mono text-sm">暂无公告</div>';
+                return;
+            }
+
+            const typeConfig = {
+                'manual': { icon: '📢', label: '手动发布', color: 'text-blue-400' },
+                'challenge_open': { icon: '✅', label: '题目开放', color: 'text-green-400' },
+                'challenge_close': { icon: '❌', label: '题目下架', color: 'text-gray-400' },
+                'first_blood': { icon: '🥇', label: '一血', color: 'text-yellow-400' },
+                'second_blood': { icon: '🥈', label: '二血', color: 'text-gray-300' },
+                'third_blood': { icon: '🥉', label: '三血', color: 'text-orange-400' },
+                'cheating': { icon: '⚠️', label: '违规处罚', color: 'text-red-500' }
+            };
+
+            container.innerHTML = announcements.map(ann => {
+                const cfg = typeConfig[ann.type] || { icon: '📣', label: ann.type, color: 'text-gray-400' };
+                return `
+                    <div class="p-4 hover:bg-[#1a1a1a] transition-colors">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 mb-2">
+                                    ${ann.isPinned ? '<span class="text-[#ff6b00] text-xs">📌</span>' : ''}
+                                    <span class="text-lg">${cfg.icon}</span>
+                                    <span class="text-xs px-2 py-0.5 border border-[#333] ${cfg.color}">${cfg.label}</span>
+                                    <span class="text-xs text-gray-500 font-mono">${ann.createdAt}</span>
+                                </div>
+                                <h4 class="text-white font-bold mb-1 truncate">${escapeHtml(ann.title)}</h4>
+                                <p class="text-gray-400 text-sm line-clamp-2">${escapeHtml(ann.content || '')}</p>
+                            </div>
+                            <div class="flex gap-2 shrink-0">
+                                ${ann.type === 'manual' ? `
+                                    <button onclick="editAnnouncement(${ann.id})" class="text-xs text-gray-500 hover:text-[#ff6b00] transition-colors">编辑</button>
+                                    <button onclick="deleteAnnouncement(${ann.id})" class="text-xs text-gray-500 hover:text-red-500 transition-colors">删除</button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function publishAnnouncement() {
+            const title = document.getElementById('ann-title').value.trim();
+            const content = document.getElementById('ann-content').value.trim();
+            const isPinned = document.getElementById('ann-pinned').checked;
+
+            if (!title) {
+                showToast('请输入公告标题', 'warning');
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/admin/contests/${contestId}/announcements`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ title, content, isPinned })
+                });
+                if (!res.ok) throw new Error('Failed');
+                
+                // 清空表单
+                document.getElementById('ann-title').value = '';
+                document.getElementById('ann-content').value = '';
+                document.getElementById('ann-pinned').checked = false;
+                
+                showToast('公告发布成功', 'success');
+                loadAnnouncements();
+            } catch (e) {
+                showToast('发布失败', 'error');
+            }
+        }
+        
+        // 快捷公告
+        async function quickAnnounce(type) {
+            const templates = {
+                'challenge_open': { title: '题目上架', content: '题目『{title}』已上架，快去挑战吧！' },
+                'challenge_close': { title: '题目下架', content: '题目『{title}』已下架。' },
+                'first_blood': { title: '一血公告', content: '恭喜队伍『{team}』获得题目『{title}』的一血！🥇' },
+                'second_blood': { title: '二血公告', content: '恭喜队伍『{team}』获得题目『{title}』的二血！🥈' },
+                'third_blood': { title: '三血公告', content: '恭喜队伍『{team}』获得题目『{title}』的三血！🥉' },
+                'hint': { title: '题目提示', content: '题目『{title}』发布新提示：{hint}' },
+                'cheating': { title: '违规处罚', content: '队伍『{team}』因违规行为被处罚，原因：{reason}' },
+                'ban': { title: '封禁公告', content: '队伍『{team}』已被封禁，原因：{reason}' }
+            };
+            
+            const template = templates[type];
+            let title = template.title;
+            let content = template.content;
+            
+            // 根据类型提示输入信息
+            if (['challenge_open', 'challenge_close'].includes(type)) {
+                const qTitle = prompt('请输入题目名称:');
+                if (!qTitle) return;
+                content = content.replace('{title}', qTitle);
+            } else if (['first_blood', 'second_blood', 'third_blood'].includes(type)) {
+                const team = prompt('请输入队伍名称:');
+                if (!team) return;
+                const qTitle = prompt('请输入题目名称:');
+                if (!qTitle) return;
+                content = content.replace('{team}', team).replace('{title}', qTitle);
+            } else if (type === 'hint') {
+                const qTitle = prompt('请输入题目名称:');
+                if (!qTitle) return;
+                const hint = prompt('请输入提示内容:');
+                if (!hint) return;
+                content = content.replace('{title}', qTitle).replace('{hint}', hint);
+            } else if (['cheating', 'ban'].includes(type)) {
+                const team = prompt('请输入队伍名称:');
+                if (!team) return;
+                const reason = prompt('请输入原因:');
+                if (!reason) return;
+                content = content.replace('{team}', team).replace('{reason}', reason);
+            }
+            
+            // 自动发布公告
+            try {
+                const res = await fetch(`/api/admin/contests/${contestId}/announcements`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ title, content, pinned: false })
+                });
+                if (!res.ok) throw new Error('Failed');
+                showToast('公告发布成功', 'success');
+                loadAnnouncements();
+            } catch (e) {
+                showToast('公告发布失败', 'error');
+            }
+        }
+
+        async function editAnnouncement(id) {
+            const ann = announcements.find(a => a.id === id);
+            if (!ann) return;
+
+            const newTitle = prompt('编辑公告标题:', ann.title);
+            if (newTitle === null) return;
+
+            const newContent = prompt('编辑公告内容:', ann.content || '');
+            if (newContent === null) return;
+
+            try {
+                const res = await fetch(`/api/admin/contests/${contestId}/announcements/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ title: newTitle, content: newContent })
+                });
+                if (!res.ok) throw new Error('Failed');
+                showToast('公告已更新', 'success');
+                loadAnnouncements();
+            } catch (e) {
+                showToast('更新失败', 'error');
+            }
+        }
+
+        async function deleteAnnouncement(id) {
+            if (!confirm('确定删除这条公告？')) return;
+
+            try {
+                const res = await fetch(`/api/admin/contests/${contestId}/announcements/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Failed');
+                showToast('公告已删除', 'success');
+                loadAnnouncements();
+            } catch (e) {
+                showToast('删除失败', 'error');
+            }
+        }
+
+        // 初始化时加载公告
+        document.addEventListener('DOMContentLoaded', () => {
+            // Tab切换时加载公告
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (btn.dataset.tab === 'broadcast') {
+                        loadAnnouncements();
+                    }
+                });
+            });
+        });
+
+        // ========== Flag格式设置 ==========
+        function showFlagFormatModal() {
+            if (!contestData) {
+                showToast('比赛数据未加载', 'error');
+                return;
+            }
+            const formatInput = document.getElementById('flag-format-input');
+            formatInput.value = (contestData && contestData.flagFormat) || 'flag{[GUID]}';
+            updateFlagPreview();
+            document.getElementById('flag-format-modal').classList.remove('hidden');
+        }
+
+        function hideFlagFormatModal() {
+            document.getElementById('flag-format-modal').classList.add('hidden');
+        }
+
+        function updateFlagPreview() {
+            const format = document.getElementById('flag-format-input').value || 'flag{[GUID]}';
+            const preview = format.replace('[GUID]', 'a1b2c3d4-5678-4abc-8def-123456789abc');
+            document.getElementById('flag-format-preview').textContent = preview;
+        }
+
+        async function saveFlagFormat() {
+            const format = document.getElementById('flag-format-input').value.trim() || 'flag{[GUID]}';
+            
+            // 验证格式必须包含 [GUID]
+            if (!format.includes('[GUID]')) {
+                showToast('格式必须包含 [GUID] 占位符', 'error');
+                return;
+            }
+            
+            // 显示确认提示
+            if (contestData.flagFormat && contestData.flagFormat !== format) {
+                if (!confirm('修改Flag格式后，所有已生成的Flag将被删除！确定要继续吗？')) {
+                    return;
+                }
+            }
+            
+            try {
+                const res = await fetch(`/api/admin/contests/${contestId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ flagFormat: format })
+                });
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || 'Failed');
+                }
+                
+                // 更新本地数据
+                contestData.flagFormat = format;
+                
+                showToast('Flag格式已保存', 'success');
+                hideFlagFormatModal();
+            } catch (e) {
+                showToast('保存失败: ' + e.message, 'error');
+            }
+        }
+
+        // ========== 拖拽调整顺序 ==========
+        let dragOrderList = []; // 存储拖拽排序列表
+        let draggedItem = null;
+
+        function showBatchOrderModal() {
+            // 打开弹窗时初始化列表
+            initDragOrderList();
+            renderDragList();
+            document.getElementById('batch-order-modal').classList.remove('hidden');
+        }
+
+        function hideBatchOrderModal() {
+            document.getElementById('batch-order-modal').classList.add('hidden');
+        }
+
+        // 初始化拖拽列表（只在打开弹窗时调用）
+        function initDragOrderList() {
+            dragOrderList = [...challenges].sort((a, b) => {
+                const orderA = a.displayOrder || 999999;
+                const orderB = b.displayOrder || 999999;
+                if (orderA !== orderB) return orderA - orderB;
+                return (a.id || 0) - (b.id || 0);
+            });
+        }
+
+        // 渲染拖拽列表（不重置dragOrderList）
+        function renderDragList() {
+            const container = document.getElementById('order-list-container');
+            if (dragOrderList.length === 0) {
+                container.innerHTML = '<div class="p-4 text-center text-gray-500">暂无题目</div>';
+                return;
+            }
+            
+            container.innerHTML = `<div id="drag-list" class="divide-y divide-[#222]">
+                ${dragOrderList.map((ch, idx) => {
+                    const title = ch.title || (ch.question && ch.question.title) || 'N/A';
+                    let catName = ch.categoryName;
+                    if (catName && typeof catName === 'object') catName = catName.String || 'N/A';
+                    if (!catName) catName = 'N/A';
+                    const statusText = ch.status === 'public' ? '公开' : '隐藏';
+                    const statusClass = ch.status === 'public' ? 'text-green-500' : 'text-gray-500';
+                    return `
+                        <div class="drag-item flex items-center gap-3 p-3 bg-[#1a1a1a] hover:bg-[#222] cursor-move transition-colors" 
+                             data-id="${ch.id}" data-idx="${idx}" draggable="true">
+                            <span class="text-gray-600 text-lg">☰</span>
+                            <span class="text-cyan-400 font-mono w-8">${idx + 1}</span>
+                            <span class="text-white flex-1">${title}</span>
+                            <span class="text-gray-500 text-xs">${catName}</span>
+                            <span class="${statusClass} text-xs">${statusText}</span>
+                        </div>
+                    `;
+                }).join('')}
+            </div>`;
+            
+            // 绑定拖拽事件
+            initDragEvents();
+        }
+
+        function initDragEvents() {
+            const items = document.querySelectorAll('.drag-item');
+            items.forEach(item => {
+                item.addEventListener('dragstart', handleDragStart);
+                item.addEventListener('dragend', handleDragEnd);
+                item.addEventListener('dragover', handleDragOver);
+                item.addEventListener('dragleave', handleDragLeave);
+                item.addEventListener('drop', handleDrop);
+            });
+        }
+
+        function handleDragStart(e) {
+            draggedItem = this;
+            this.style.opacity = '0.4';
+            this.style.background = '#333';
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', this.dataset.idx);
+        }
+
+        function handleDragEnd(e) {
+            this.style.opacity = '1';
+            this.style.background = '';
+            document.querySelectorAll('.drag-item').forEach(item => {
+                item.style.borderTop = '';
+                item.style.borderBottom = '';
+                item.style.background = '';
+            });
+            draggedItem = null;
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            if (!draggedItem || this === draggedItem) return;
+            
+            // 清除所有元素的边框
+            document.querySelectorAll('.drag-item').forEach(item => {
+                item.style.borderTop = '';
+                item.style.borderBottom = '';
+            });
+            
+            // 根据鼠标位置显示边框
+            const rect = this.getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
+            if (e.clientY < midY) {
+                this.style.borderTop = '3px solid #ff6b00';
+                this.dataset.insertBefore = 'true';
+            } else {
+                this.style.borderBottom = '3px solid #ff6b00';
+                this.dataset.insertBefore = 'false';
+            }
+        }
+
+        function handleDragLeave(e) {
+            this.style.borderTop = '';
+            this.style.borderBottom = '';
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!draggedItem || this === draggedItem) return;
+            
+            const fromIdx = parseInt(draggedItem.dataset.idx);
+            const toIdx = parseInt(this.dataset.idx);
+            const insertBefore = this.dataset.insertBefore === 'true';
+            
+            console.log('Drop:', {fromIdx, toIdx, insertBefore, listLen: dragOrderList.length});
+            
+            // 从数组中移除被拖拽的元素
+            const movedItem = dragOrderList.splice(fromIdx, 1)[0];
+            
+            // 计算新的插入位置
+            let newIdx;
+            if (fromIdx < toIdx) {
+                // 向下拖，删除后索引要减1
+                newIdx = insertBefore ? toIdx - 1 : toIdx;
+            } else {
+                // 向上拖
+                newIdx = insertBefore ? toIdx : toIdx + 1;
+            }
+            newIdx = Math.max(0, Math.min(newIdx, dragOrderList.length));
+            
+            console.log('Insert at:', newIdx);
+            
+            // 插入到新位置
+            dragOrderList.splice(newIdx, 0, movedItem);
+            
+            // 清除样式并重新渲染（注意：这里调用renderDragList，不重置数组）
+            this.style.borderTop = '';
+            this.style.borderBottom = '';
+            renderDragList();
+        }
+
+        // 还原默认顺序（按添加顺序）
+        function resetOrderToDefault() {
+            dragOrderList = [...challenges].sort((a, b) => (a.id || 0) - (b.id || 0));
+            renderDragList();
+            showToast('已还原为默认顺序', 'info');
+        }
+
+        // 保存顺序
+        async function saveBatchOrder() {
+            const orders = dragOrderList.map((ch, idx) => ({
+                id: ch.id,
+                displayOrder: idx + 1
+            }));
+            
+            try {
+                const res = await fetch(`/api/admin/contests/${contestId}/contest-challenges/order`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ orders })
+                });
+                
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || 'Failed');
+                }
+                
+                const result = await res.json();
+                showToast(`已更新 ${result.updated} 道题目的顺序`, 'success');
+                hideBatchOrderModal();
+                loadChallenges(); // 重新加载题目列表
+            } catch (e) {
+                showToast('保存失败: ' + e.message, 'error');
+            }
+        }
+    </script>
+
+</body>
+</html>

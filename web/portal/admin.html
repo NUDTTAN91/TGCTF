@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="author" content="tan91">
+    <link rel="icon" type="image/svg+xml" href="../TeamIco.svg">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/fonts.css">
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --bg-panel: #1e1e1e;
+            --border-color: #333;
+            --accent: #ff6b00; /* 战术橙 */
+            --danger: #ef4444; /* 警告红 */
+            --text-main: #e0e0e0;
+            --text-dim: #737373;
+        }
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Noto Sans SC', sans-serif; }
+        .font-eng { font-family: 'Chakra Petch', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* 侧边栏样式 */
+        .sidebar-item { border-left: 2px solid transparent; transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { background: rgba(255, 107, 0, 0.05); border-left-color: var(--accent); color: white; }
+        .sidebar-item.active .icon { color: var(--accent); }
+
+        /* 战术面板卡片 */
+        .admin-card { background: var(--bg-panel); border: 1px solid var(--border-color); position: relative; transition: all 0.3s ease; }
+        .admin-card:hover { transform: translateY(-2px); border-color: #555; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        .admin-card::after { content: ''; position: absolute; top: 0; right: 0; width: 0; height: 0; border-top: 20px solid var(--border-color); border-left: 20px solid transparent; }
+        
+        /* 滚动条 */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+    </style>
+    <script src="js/portal-auth.js"></script>
+</head>
+<body class="flex h-screen overflow-hidden selection:bg-[#ff6b00] selection:text-black">
+
+    <!-- 左侧侧边栏 -->
+    <aside class="w-48 bg-[#161616] border-r border-[#333] flex flex-col z-20 shadow-xl">
+        <div class="h-16 flex items-center px-6 border-b border-[#333]">
+            <div class="bg-[#ff6b00] text-black font-black text-xl px-2 py-0.5 font-eng tracking-tighter mr-3">TG</div>
+            <span class="font-bold text-gray-300 tracking-wider text-sm">管理中枢</span>
+        </div>
+        <nav class="flex-1 py-6 space-y-1 font-mono text-xs overflow-y-auto">
+            <a href="/portal/admin.html" class="sidebar-item active flex items-center px-6 py-3 text-gray-400">
+                <span class="icon mr-3">⌂</span> 概览
+            </a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-4">赛事核心</p>
+            <a href="/portal/admin-contests.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚑</span> 比赛管理</a>
+            <a href="/portal/admin-question-bank.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">☷</span> 题库</a>
+            <a href="/portal/admin-users.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">웃</span> 用户管理</a>
+            <a href="/portal/admin-teams.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">◈</span> 队伍管理</a>
+            <a href="/portal/admin-organizations.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🏢</span> 组织管理</a>
+            <a href="/portal/admin-data-import.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">📥</span> 数据导入</a>
+            <a href="/portal/admin-admins.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400 super-only"><span class="icon mr-3">👤</span> 管理员管理</a>
+            <p class="px-6 text-[#555] mb-2 font-bold mt-6">运维监控</p>
+            <!-- 侧边栏图标已更换为 🐳 -->
+            <a href="/portal/admin-docker.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🐳</span> docker实例管理</a>
+            <a href="/portal/admin-anti-cheat.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🛡️</span> 防作弊系统</a>
+            <a href="/portal/admin-logs.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚠</span> 系统日志</a>
+            <a href="/portal/admin-settings.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚙</span> 系统设置</a>
+        </nav>
+        <div class="p-4 border-t border-[#333]">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-[#333] rounded-full flex items-center justify-center text-[#ff6b00] font-bold">A</div>
+                <div><p class="text-xs text-white font-bold">超级管理员</p><p class="text-[10px] text-green-500">● 连接稳定</p></div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 右侧内容区 -->
+    <div class="flex-1 flex flex-col min-w-0 bg-[#121212]">
+        <header class="h-16 bg-[#161616] border-b border-[#333] flex items-center justify-between px-8 z-10">
+            <!-- 左侧：位置 -->
+            <div class="flex items-center gap-4 text-xs font-mono">
+                <span class="text-gray-500">位置:</span><span class="text-[#ff6b00]">天格后台</span><span class="text-gray-600">/</span><span class="text-white">全局概览</span>
+            </div>
+            <!-- 右侧：按钮组 -->
+            <div class="flex items-center gap-3">
+                <a href="/home.html" class="font-mono text-xs font-bold border border-gray-500 text-gray-400 px-4 py-2 hover:border-white hover:text-white transition-all uppercase tracking-wider">← 返回前台</a>
+                <button id="logout-btn" class="font-mono text-xs font-bold border border-[#ff6b00] text-[#ff6b00] px-4 py-2 hover:bg-[#ff6b00] hover:text-black transition-all uppercase tracking-wider">Logout_离线</button>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <main class="flex-1 flex flex-col pt-8 px-8 relative overflow-y-auto">
+            <!-- 背景纹理 -->
+            <div class="absolute inset-0 z-0 opacity-10 pointer-events-none" style="background-image: radial-gradient(#333 1px, transparent 1px); background-size: 20px 20px;"></div>
+            
+            <div class="relative z-10 w-full max-w-[1920px] mx-auto flex-1 flex flex-col">
+                
+                <!-- 核心数据卡片 (5项) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                    
+                    <!-- 指标 1: 比赛数 -->
+                    <div class="admin-card p-6 group flex flex-col justify-between h-32">
+                        <div class="flex justify-between items-start">
+                            <div class="text-xs text-gray-500 font-mono uppercase tracking-widest">比赛数</div>
+                            <span class="text-[#ff6b00] opacity-50 group-hover:opacity-100 transition-opacity">⚑</span>
+                        </div>
+                        <div class="text-5xl font-eng font-bold text-white" id="stat-contests">--</div>
+                    </div>
+
+                    <!-- 指标 2: 用户数 -->
+                    <div class="admin-card p-6 group flex flex-col justify-between h-32">
+                        <div class="flex justify-between items-start">
+                            <div class="text-xs text-gray-500 font-mono uppercase tracking-widest">用户数</div>
+                            <span class="text-[#ff6b00] opacity-50 group-hover:opacity-100 transition-opacity">웃</span>
+                        </div>
+                        <div class="text-5xl font-eng font-bold text-white" id="stat-users">--</div>
+                    </div>
+
+                    <!-- 指标 3: 队伍数 -->
+                    <div class="admin-card p-6 group flex flex-col justify-between h-32">
+                        <div class="flex justify-between items-start">
+                            <div class="text-xs text-gray-500 font-mono uppercase tracking-widest">队伍数</div>
+                            <span class="text-[#ff6b00] opacity-50 group-hover:opacity-100 transition-opacity">◈</span>
+                        </div>
+                        <div class="text-5xl font-eng font-bold text-white" id="stat-teams">--</div>
+                    </div>
+
+                    <!-- 指标 4: 总题目数 -->
+                    <div class="admin-card p-6 group flex flex-col justify-between h-32">
+                        <div class="flex justify-between items-start">
+                            <div class="text-xs text-gray-500 font-mono uppercase tracking-widest">总题目数</div>
+                            <span class="text-[#ff6b00] opacity-50 group-hover:opacity-100 transition-opacity">☷</span>
+                        </div>
+                        <div class="text-5xl font-eng font-bold text-white" id="stat-challenges">--</div>
+                    </div>
+
+                    <!-- 指标 5: Docker启动数量 -->
+                    <!-- 卡片图标已更换为 🐳 -->
+                    <div class="admin-card p-6 border-l-4 border-l-blue-500 group flex flex-col justify-between h-32">
+                        <div class="flex justify-between items-start">
+                            <div class="text-xs text-gray-500 font-mono uppercase tracking-widest">Docker 启动数</div>
+                            <span class="text-blue-400 text-lg opacity-90 animate-pulse">🐳</span>
+                        </div>
+                        <div class="text-5xl font-eng font-bold text-blue-400" id="stat-docker">--</div>
+                    </div>
+
+                </div>
+
+                <!-- 装饰性占位 -->
+                <div class="flex-1 flex flex-col items-center justify-center opacity-10 select-none pointer-events-none">
+                    <div class="text-9xl font-black text-[#333] font-eng">TG CORE</div>
+                    <div class="text-sm font-mono text-[#555] tracking-[0.5em] mt-6">SYSTEM MONITORING ACTIVE</div>
+                </div>
+
+            </div>
+
+            <footer class="py-1 border-t border-[#333] flex items-center justify-center flex-shrink-0 mt-auto">
+                <div class="flex items-center justify-center gap-4 text-xs flex-wrap">
+                    <div class="flex items-center gap-1">
+                        <div class="bg-[#ff6b00] text-black font-black px-1.5 py-0.5 font-eng tracking-tighter">TG</div>
+                        <span class="text-gray-500">天格后台管理系统</span>
+                    </div>
+                    <span class="text-white font-mono">Copyright © 2021-present tan91. All Rights Reserved.</span>
+                    <a href="https://github.com/NUDTTAN91" target="_blank" class="text-[#ff6b00] hover:text-white transition-colors"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg></a>
+                    <a href="https://blog.csdn.net/ZXW_NUDT" target="_blank" class="text-[#ff6b00] hover:text-white transition-colors"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></a>
+                </div>
+            </footer>
+
+        </main>
+    </div>
+
+    <script>
+        // 解析 JWT Token 获取用户信息
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // 登录检查：未登录则跳转到登录页
+        const token = localStorage.getItem('tg_token');
+        let userRole = null;
+        let userPermissions = [];
+        if (!token) {
+            window.location.href = '/login.html';
+        } else {
+            // 检查是否为管理员（super 或 admin）
+            const payload = parseJwt(token);
+            if (!payload || (payload.role !== 'super' && payload.role !== 'admin')) {
+                // 非管理员跳转登录
+                window.location.href = '/login.html';
+            }
+            userRole = payload.role;
+            
+            // 超级管理员不应该进入 portal，跳转到 admin
+            if (userRole === 'super') {
+                window.location.href = '/admin/admin.html';
+            }
+            
+            // 更新左下角用户信息
+            document.querySelector('.p-4.border-t p.text-xs').textContent = '普通管理员';
+        }
+
+        // 退出登录
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('tg_token');
+            window.location.href = '/login.html';
+        });
+
+        // 加载概览数据
+        async function loadOverviewStats() {
+            // 普通管理员概览页留空
+            if (userRole === 'admin') {
+                document.querySelector('.grid.grid-cols-1').innerHTML = '';
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/admin/overview', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('stat-contests').textContent = data.contests.toLocaleString();
+                    document.getElementById('stat-users').textContent = data.users.toLocaleString();
+                    document.getElementById('stat-teams').textContent = data.teams.toLocaleString();
+                    document.getElementById('stat-challenges').textContent = data.challenges.toLocaleString();
+                    document.getElementById('stat-docker').textContent = data.docker.toLocaleString();
+                }
+            } catch (e) {
+                console.error('加载概览数据失败:', e);
+            }
+        }
+
+        // 加载普通管理员的权限列表
+        async function loadMyPermissions() {
+            try {
+                const res = await fetch('/api/admin-common/my-permissions', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    const permDiv = document.getElementById('my-permissions');
+                    if (!data.permissions || data.permissions.length === 0) {
+                        permDiv.innerHTML = '暂无权限，请联系超级管理员';
+                        permDiv.className = 'mt-2 text-xs text-gray-500';
+                    } else {
+                        // 构建可点击的权限卡片
+                        let html = '<div class="flex flex-wrap gap-3 justify-center mt-4">';
+                        const monitorContests = new Set();
+                        
+                        data.permissions.forEach(p => {
+                            // 新格式：contest.{id}.monitor
+                            const monitorMatch = p.permission.match(/^contest\.(\d+)\.monitor$/);
+                            if (monitorMatch) {
+                                monitorContests.add(monitorMatch[1]);
+                            }
+                            // 兼容旧格式：contest.monitor.view + resourceIds
+                            if (p.permission === 'contest.monitor.view' && p.resourceIds) {
+                                const contestIds = p.resourceIds.split(',');
+                                contestIds.forEach(cid => monitorContests.add(cid.trim()));
+                            }
+                        });
+                        
+                        monitorContests.forEach(cid => {
+                            html += `
+                                <a href="/contest-monitor.html?id=${cid}" 
+                                   class="inline-flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] border border-[#333] hover:border-[#ff6b00] hover:bg-[#222] transition-all rounded cursor-pointer">
+                                    <span class="text-lg">📊</span>
+                                    <span class="text-white">比赛 #${cid} 数据大屏</span>
+                                </a>`;
+                        });
+                        
+                        html += '</div>';
+                        permDiv.innerHTML = monitorContests.size > 0 ? html : '暂无权限';
+                    }
+                }
+            } catch (e) {
+                console.error('加载权限失败:', e);
+            }
+        }
+
+        loadOverviewStats();
+    </script>
+
+</body>
+</html>

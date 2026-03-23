@@ -138,6 +138,18 @@ func HandleCreateUser(c *gin.Context, db *sql.DB) {
 		return
 	}
 
+	// 禁止通过用户管理创建 admin 角色，应使用管理员管理页面
+	if role == "admin" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "USE_ADMIN_PAGE", "message": "请使用「管理员管理」页面创建普通管理员"})
+		return
+	}
+
+	// 禁止创建超级管理员
+	if role == "super" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "FORBIDDEN", "message": "不允许创建超级管理员"})
+		return
+	}
+
 	var email *string
 	if req.Email != "" {
 		email = &req.Email
@@ -215,6 +227,15 @@ func HandleUpdateUser(c *gin.Context, db *sql.DB) {
 	if role, ok := rawReq["role"].(string); ok && role != "" {
 		if role != "user" && role != "admin" && role != "super" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "INVALID_ROLE"})
+			return
+		}
+		// 禁止通过用户管理修改角色为 admin 或 super
+		if role == "admin" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "USE_ADMIN_PAGE", "message": "请使用「管理员管理」页面管理普通管理员"})
+			return
+		}
+		if role == "super" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "FORBIDDEN", "message": "不允许设置超级管理员角色"})
 			return
 		}
 		updates = append(updates, "role = $"+strconv.Itoa(argIndex))

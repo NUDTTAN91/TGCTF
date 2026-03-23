@@ -93,6 +93,7 @@
             <a href="/admin/admin-teams.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">◈</span> 队伍管理</a>
             <a href="/admin/admin-organizations.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🏢</span> 组织管理</a>
             <a href="/admin/admin-data-import.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">📥</span> 数据导入</a>
+            <a href="/admin/admin-admins.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400 super-only"><span class="icon mr-3">👤</span> 管理员管理</a>
             <p class="px-6 text-[#555] mb-2 font-bold mt-6">运维监控</p>
             <a href="/admin/admin-docker.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🐳</span> docker实例管理</a>
             <a href="/admin/admin-anti-cheat.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🛡️</span> 防作弊系统</a>
@@ -237,8 +238,23 @@
             window.location.href = '/login.html';
         } else {
             const payload = parseJwt(token);
-            if (!payload || payload.role !== 'super') {
-                alert('权限不足：仅超级管理员可访问此页面');
+            if (!payload) {
+                window.location.href = '/login.html';
+            } else if (payload.role === 'super') {
+                // 超级管理员直接放行
+            } else if (payload.role === 'admin') {
+                // 普通管理员需要检查 contest.menu.view 权限
+                fetch('/api/admin-common/my-permissions', { headers: { 'Authorization': 'Bearer ' + token } })
+                    .then(r => r.json())
+                    .then(data => {
+                        const hasMenuPerm = data.permissions?.some(p => p.permission === 'contest.menu.view');
+                        if (!hasMenuPerm) {
+                            alert('权限不足：您没有比赛管理权限');
+                            window.location.href = '/admin/admin.html';
+                        }
+                    });
+            } else {
+                alert('权限不足：仅管理员可访问此页面');
                 window.location.href = '/home.html';
             }
         }
@@ -319,7 +335,13 @@
         // 加载组织列表
         async function loadOrganizations() {
             try {
-                const res = await fetch('/api/admin/organizations', {
+                // 根据角色选择不同的API
+                const payload = parseJwt(token);
+                const apiUrl = payload?.role === 'super' 
+                    ? '/api/admin/organizations' 
+                    : '/api/admin-common/organizations';
+                
+                const res = await fetch(apiUrl, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
                 if (!res.ok) throw new Error('Failed');
@@ -418,7 +440,13 @@
         // 获取比赛列表
         async function loadContests() {
             try {
-                const res = await fetch('/api/admin/contests', {
+                // 根据角色选择不同的API
+                const payload = parseJwt(token);
+                const apiUrl = payload?.role === 'super' 
+                    ? '/api/admin/contests' 
+                    : '/api/admin-common/my-contests';
+                
+                const res = await fetch(apiUrl, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
                 if (!res.ok) throw new Error('Failed to load contests');

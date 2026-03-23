@@ -55,6 +55,7 @@
             <a href="/admin/admin-teams.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">◈</span> 队伍管理</a>
             <a href="/admin/admin-organizations.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🏢</span> 组织管理</a>
             <a href="/admin/admin-data-import.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">📥</span> 数据导入</a>
+            <a href="/admin/admin-admins.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400 super-only"><span class="icon mr-3">👤</span> 管理员管理</a>
             <p class="px-6 text-[#555] mb-2 font-bold mt-6">运维监控</p>
             <!-- 侧边栏图标已更换为 🐳 -->
             <a href="/admin/admin-docker.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🐳</span> docker实例管理</a>
@@ -180,15 +181,26 @@
 
         // 登录检查：未登录则跳转到登录页
         const token = localStorage.getItem('tg_token');
+        let userRole = null;
         if (!token) {
             window.location.href = '/login.html';
         } else {
-            // 检查是否为超级管理员
+            // 检查是否为管理员（super 或 admin）
             const payload = parseJwt(token);
-            if (!payload || payload.role !== 'super') {
-                alert('权限不足：仅超级管理员可访问此页面');
+            if (!payload || (payload.role !== 'super' && payload.role !== 'admin')) {
+                alert('权限不足：仅管理员可访问此页面');
                 window.location.href = '/home.html';
             }
+            userRole = payload.role;
+            
+            // 根据角色显示/隐藏超管专属菜单
+            if (userRole !== 'super') {
+                document.querySelectorAll('.super-only').forEach(el => el.style.display = 'none');
+            }
+            
+            // 更新左下角用户信息
+            const roleText = userRole === 'super' ? '超级管理员' : '普通管理员';
+            document.querySelector('.p-4.border-t p.text-xs').textContent = roleText;
         }
 
         // 退出登录
@@ -199,6 +211,21 @@
 
         // 加载概览数据
         async function loadOverviewStats() {
+            // 普通管理员不显示概览数据
+            if (userRole === 'admin') {
+                document.querySelector('.grid.grid-cols-1').innerHTML = `
+                    <div class="col-span-5 admin-card p-8 text-center">
+                        <div class="text-6xl mb-4 opacity-30">👤</div>
+                        <div class="text-xl font-bold text-white mb-2">欢迎，普通管理员</div>
+                        <div class="text-sm text-gray-500 mb-6">您的权限由超级管理员授予，请联系超级管理员获取相应权限。</div>
+                        <div class="text-xs text-gray-600">当前可用权限：</div>
+                        <div id="my-permissions" class="mt-2 text-xs text-[#ff6b00]">加载中...</div>
+                    </div>
+                `;
+                loadMyPermissions();
+                return;
+            }
+
             try {
                 const res = await fetch('/api/admin/overview', {
                     headers: { 'Authorization': 'Bearer ' + token }
@@ -215,6 +242,55 @@
                 console.error('加载概览数据失败:', e);
             }
         }
+
+        // 加载普通管理员的权限列表
+        async function loadMyPermissions() {
+            try {
+                const res = await fetch('/api/admin-common/my-permissions', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    const permDiv = document.getElementById('my-permissions');
+                    if (!data.permissions || data.permissions.length === 0) {
+                        permDiv.innerHTML = '暂无权限，请联系超级管理员';
+                        permDiv.className = 'mt-2 text-xs text-gray-500';
+                    } else {
+                        // 构建可点击的权限卡片
+                        let html = '<div class="flex flex-wrap gap-3 justify-center mt-4">';
+                        const monitorContests = new Set();
+                        
+                        data.permissions.forEach(p => {
+                            // 新格式：contest.{id}.monitor
+                            const monitorMatch = p.permission.match(/^contest\.(\d+)\.monitor$/);
+                            if (monitorMatch) {
+                                monitorContests.add(monitorMatch[1]);
+                            }
+                            // 兼容旧格式：contest.monitor.view + resourceIds
+                            if (p.permission === 'contest.monitor.view' && p.resourceIds) {
+                                const contestIds = p.resourceIds.split(',');
+                                contestIds.forEach(cid => monitorContests.add(cid.trim()));
+                            }
+                        });
+                        
+                        monitorContests.forEach(cid => {
+                            html += `
+                                <a href="/contest-monitor.html?id=${cid}" 
+                                   class="inline-flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] border border-[#333] hover:border-[#ff6b00] hover:bg-[#222] transition-all rounded cursor-pointer">
+                                    <span class="text-lg">📊</span>
+                                    <span class="text-white">比赛 #${cid} 数据大屏</span>
+                                </a>`;
+                        });
+                        
+                        html += '</div>';
+                        permDiv.innerHTML = monitorContests.size > 0 ? html : '暂无权限';
+                    }
+                }
+            } catch (e) {
+                console.error('加载权限失败:', e);
+            }
+        }
+
         loadOverviewStats();
     </script>
 

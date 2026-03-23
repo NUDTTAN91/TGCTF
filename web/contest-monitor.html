@@ -195,6 +195,37 @@
         const contestId = urlParams.get('id');
         const token = localStorage.getItem('tg_token');
 
+        function parseJwt(t) {
+            try {
+                const base64Url = t.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                return JSON.parse(decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
+            } catch (e) { return null; }
+        }
+
+        // 权限检查
+        async function checkMonitorPermission() {
+            if (!token) { showNoPermission('请先登录'); return false; }
+            const payload = parseJwt(token);
+            if (!payload) { showNoPermission('登录已过期'); return false; }
+            if (payload.role === 'super') return true; // 超管直接通过
+            if (payload.role !== 'admin') { showNoPermission('仅管理员可访问数据大屏'); return false; }
+            // 普通管理员检查具体权限
+            try {
+                const res = await fetch('/api/admin-common/my-permissions', { headers: { 'Authorization': 'Bearer ' + token } });
+                if (!res.ok) { showNoPermission('权限验证失败'); return false; }
+                const data = await res.json();
+                const permissions = data.permissions || [];
+                const hasPermission = permissions.some(p => p.permission === `contest.${contestId}.monitor`);
+                if (!hasPermission) { showNoPermission('您没有此比赛的数据大屏权限'); return false; }
+                return true;
+            } catch (e) { showNoPermission('权限验证失败'); return false; }
+        }
+
+        function showNoPermission(message) {
+            document.body.innerHTML = `<div class="flex items-center justify-center h-screen bg-[#0a0a0a]"><div class="text-center"><div style="font-size:96px;margin-bottom:24px;opacity:0.3;">🔒</div><div style="font-size:24px;font-weight:bold;color:white;margin-bottom:8px;">无操作权限</div><div style="font-size:14px;color:#888;">${message}</div><a href="/home.html" style="display:inline-block;margin-top:24px;padding:10px 24px;background:#ff6b00;color:black;font-weight:bold;font-size:14px;text-decoration:none;">返回首页</a></div></div>`;
+        }
+
         if (!contestId) {
             document.body.innerHTML = '<div class="flex items-center justify-center h-screen text-2xl text-red-500 font-mono">ERROR: Contest ID not specified</div>';
         }
@@ -413,10 +444,17 @@
         // === 3. 加载综合数据 ===
         async function loadMonitorData() {
             try {
-                const res = await fetch(`/api/contests/${contestId}/monitor`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
+                const res = await fetch(`/api/contests/${contestId}/monitor?token=${encodeURIComponent(token)}`);
                 if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    if (res.status === 403) {
+                        document.body.innerHTML = `<div class="flex items-center justify-center h-screen flex-col gap-4">
+                            <div class="text-4xl text-red-500 font-mono">ACCESS DENIED</div>
+                            <div class="text-gray-500">${errData.message || '您没有查看此比赛数据大屏的权限'}</div>
+                            <a href="/admin/admin.html" class="text-[#ff6b00] hover:underline">← 返回管理后台</a>
+                        </div>`;
+                        return;
+                    }
                     document.getElementById('connection-status').innerHTML = '<span class="text-red-500">● Disconnected</span>';
                     return;
                 }
@@ -694,7 +732,12 @@
         }
 
         if (contestId) {
-            init();
+            // 先检查权限，有权限才初始化
+            checkMonitorPermission().then(hasPermission => {
+                if (hasPermission) {
+                    init();
+                }
+            });
         }
     </script>
 

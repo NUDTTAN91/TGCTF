@@ -52,7 +52,11 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 普通用户ID从101开始
+-- UID 分配规则：
+-- 超级管理员: 1 (固定)
+-- 普通管理员: 11-100
+-- 普通用户: 101+
+-- 序列从 101 开始，管理员 UID 由超管手动指定
 ALTER SEQUENCE users_id_seq RESTART WITH 101;
 
 CREATE INDEX idx_users_username ON users(username);
@@ -60,6 +64,21 @@ CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_users_status ON users(status);
 CREATE INDEX idx_users_team_id ON users(team_id);
 CREATE INDEX idx_users_organization ON users(organization_id);
+
+-- 管理员权限表（普通管理员的细粒度权限控制）
+CREATE TABLE IF NOT EXISTS admin_permissions (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,  -- 普通管理员 UID
+    permission VARCHAR(50) NOT NULL,            -- 权限标识，如 'contest.monitor.view'
+    resource_type VARCHAR(20),                  -- 资源类型，如 'contest'
+    resource_ids TEXT,                          -- 资源 ID 列表，如 '1,2,3' 或 '*' 表示全部
+    granted_by INTEGER REFERENCES users(id),    -- 授权人（超管）
+    granted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, permission, resource_type)
+);
+
+CREATE INDEX idx_admin_permissions_user ON admin_permissions(user_id);
+CREATE INDEX idx_admin_permissions_permission ON admin_permissions(permission);
 
 -- 比赛表
 CREATE TABLE IF NOT EXISTS contests (

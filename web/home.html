@@ -210,10 +210,13 @@
             window.location.href = '/change-password.html';
         }
         
-        // 如果是超级管理员，显示后台入口
+        // 如果是管理员（超级管理员或普通管理员），显示后台入口
         const payload = parseJwt(token);
-        if (payload && payload.role === 'super') {
-            document.getElementById('admin-entry').classList.remove('hidden');
+        if (payload && (payload.role === 'super' || payload.role === 'admin')) {
+            const adminEntry = document.getElementById('admin-entry');
+            adminEntry.classList.remove('hidden');
+            // 根据角色设置不同的入口
+            adminEntry.href = payload.role === 'super' ? '/admin/admin.html' : '/portal/admin.html';
         }
 
         // 加载统计数据

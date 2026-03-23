@@ -106,7 +106,7 @@ func main() {
 
 		// 大屏WebSocket实时推送（不经过中间件，自己验证token）
 		api.GET("/contests/:id/monitor/ws", func(c *gin.Context) {
-			monitor.HandleMonitorWebSocket(c, []byte(jwtSecret))
+			monitor.HandleMonitorWebSocket(c, []byte(jwtSecret), db)
 		})
 
 		// ========== 公开的排行榜和大屏API（无需认证）==========
@@ -123,7 +123,7 @@ func main() {
 			monitor.HandleGetRecentSolves(c, db)
 		})
 		api.GET("/contests/:id/monitor", func(c *gin.Context) {
-			monitor.HandleGetMonitorData(c, db)
+			monitor.HandleGetMonitorData(c, db, []byte(jwtSecret))
 		})
 
 		// 需要登录的用户API
@@ -615,6 +615,38 @@ func main() {
 				admin.HandleUpdateSystemSettings(c, db)
 			})
 
+			// ========== 普通管理员管理 ==========
+			adminAPI.GET("/admins", func(c *gin.Context) {
+				admin.HandleListAdmins(c, db)
+			})
+			adminAPI.POST("/admins", func(c *gin.Context) {
+				admin.HandleCreateAdmin(c, db)
+			})
+			adminAPI.GET("/admins/me", func(c *gin.Context) {
+				admin.HandleGetCurrentAdmin(c, db)
+			})
+			adminAPI.GET("/admins/:id", func(c *gin.Context) {
+				admin.HandleGetAdmin(c, db)
+			})
+			adminAPI.PUT("/admins/:id", func(c *gin.Context) {
+				admin.HandleUpdateAdmin(c, db)
+			})
+			adminAPI.DELETE("/admins/:id", func(c *gin.Context) {
+				admin.HandleDeleteAdmin(c, db)
+			})
+			adminAPI.POST("/admins/:id/reset-password", func(c *gin.Context) {
+				admin.HandleResetAdminPassword(c, db)
+			})
+			adminAPI.POST("/admins/:id/permissions", func(c *gin.Context) {
+				admin.HandleGrantPermission(c, db)
+			})
+			adminAPI.DELETE("/admins/:id/permissions/:permissionId", func(c *gin.Context) {
+				admin.HandleRevokePermission(c, db)
+			})
+			adminAPI.GET("/contests-for-permission", func(c *gin.Context) {
+				admin.HandleGetAllContestsForPermission(c, db)
+			})
+
 			// ========== 系统日志 ==========
 			adminAPI.GET("/logs", func(c *gin.Context) {
 				logs.HandleGetLogs(c, db)
@@ -728,6 +760,24 @@ func main() {
 				// 更新运行中的调度器
 				awdf.UpdateDefenseInterval(contestID, req.Interval)
 				c.JSON(200, gin.H{"success": true, "message": "防守间隔已更新"})
+			})
+		}
+
+		// ========== 管理后台公共 API（超管和普通管理员都可访问） ==========
+		adminCommonAPI := api.Group("/admin-common")
+		adminCommonAPI.Use(adminAuthMiddleware([]byte(jwtSecret), db))
+		{
+			// 获取当前管理员的权限列表
+			adminCommonAPI.GET("/my-permissions", func(c *gin.Context) {
+				admin.HandleGetMyPermissions(c, db)
+			})
+			// 普通管理员可访问的比赛列表（只返回有权限的比赛）
+			adminCommonAPI.GET("/my-contests", func(c *gin.Context) {
+				admin.HandleGetMyContests(c, db)
+			})
+			// 普通管理员可访问的组织列表
+			adminCommonAPI.GET("/organizations", func(c *gin.Context) {
+				admin.HandleListOrganizations(c, db)
 			})
 		}
 	}

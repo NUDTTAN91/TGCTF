@@ -178,11 +178,13 @@ func HandleCreateUserInstance(c *gin.Context, db *sql.DB) {
 			WHERE cc.id = $1 AND cc.contest_id = $2`,
 			challengeID, contestID).Scan(&questionID, &dockerImage, &ports, &cpuLimit, &memoryLimit, &flagEnv, &flagScript)
 	} else {
-		// Jeopardy/AWD 模式：查询 contest_challenges 和 question_bank
+		// Jeopardy/AWD 模式：查询 contest_challenges 和 question_bank（支持临时题目）
 		err = db.QueryRow(`
-			SELECT q.id, q.docker_image, q.ports, q.cpu_limit, q.memory_limit, q.flag_env, q.flag_script
+			SELECT COALESCE(q.id, 0), COALESCE(q.docker_image, cc.inline_docker_image), COALESCE(q.ports, cc.inline_ports), 
+			       COALESCE(q.cpu_limit, cc.inline_cpu_limit), COALESCE(q.memory_limit, cc.inline_memory_limit), 
+			       COALESCE(q.flag_env, cc.inline_flag_env), COALESCE(q.flag_script, cc.inline_flag_script)
 			FROM contest_challenges cc
-			JOIN question_bank q ON cc.question_id = q.id
+			LEFT JOIN question_bank q ON cc.question_id = q.id
 			WHERE cc.id = $1 AND cc.contest_id = $2`,
 			challengeID, contestID).Scan(&questionID, &dockerImage, &ports, &cpuLimit, &memoryLimit, &flagEnv, &flagScript)
 	}
@@ -381,7 +383,7 @@ func HandleCreateUserInstance(c *gin.Context, db *sql.DB) {
 	if contestMode == "awd-f" {
 		db.QueryRow(`SELECT q.title FROM question_bank_awdf q JOIN contest_challenges_awdf cc ON q.id = cc.question_id WHERE cc.id = $1`, challengeID).Scan(&challengeName)
 	} else {
-		db.QueryRow(`SELECT q.title FROM question_bank q JOIN contest_challenges cc ON q.id = cc.question_id WHERE cc.id = $1`, challengeID).Scan(&challengeName)
+		db.QueryRow(`SELECT COALESCE(q.title, cc.inline_title) FROM contest_challenges cc LEFT JOIN question_bank q ON q.id = cc.question_id WHERE cc.id = $1`, challengeID).Scan(&challengeName)
 	}
 	logs.WriteLog(db, logs.TypeContainerCreate, logs.LevelSuccess, &userID, &teamID.Int64, &contestIDInt, &challengeIDInt, clientIP,
 		displayName+" 启动题目 ["+challengeName+"] 的容器实例", map[string]interface{}{
@@ -543,7 +545,7 @@ func HandleDestroyUserInstance(c *gin.Context, db *sql.DB) {
 	challengeIDInt, _ := strconv.ParseInt(challengeID, 10, 64)
 	var displayName, challengeName string
 	db.QueryRow(`SELECT display_name FROM users WHERE id = $1`, userID).Scan(&displayName)
-	db.QueryRow(`SELECT q.title FROM question_bank q JOIN contest_challenges cc ON q.id = cc.question_id WHERE cc.id = $1`, challengeID).Scan(&challengeName)
+	db.QueryRow(`SELECT COALESCE(q.title, cc.inline_title) FROM contest_challenges cc LEFT JOIN question_bank q ON q.id = cc.question_id WHERE cc.id = $1`, challengeID).Scan(&challengeName)
 	logs.WriteLog(db, logs.TypeContainerDestroy, logs.LevelSuccess, &userID, &teamID.Int64, &contestIDInt, &challengeIDInt, clientIP,
 		displayName+" 销毁题目 ["+challengeName+"] 的容器实例", map[string]interface{}{
 			"containerId": containerID,
@@ -642,7 +644,7 @@ func HandleExtendUserInstance(c *gin.Context, db *sql.DB) {
 	challengeIDInt, _ := strconv.ParseInt(challengeID, 10, 64)
 	var displayName, challengeName string
 	db.QueryRow(`SELECT display_name FROM users WHERE id = $1`, userID).Scan(&displayName)
-	db.QueryRow(`SELECT q.title FROM question_bank q JOIN contest_challenges cc ON q.id = cc.question_id WHERE cc.id = $1`, challengeID).Scan(&challengeName)
+	db.QueryRow(`SELECT COALESCE(q.title, cc.inline_title) FROM contest_challenges cc LEFT JOIN question_bank q ON q.id = cc.question_id WHERE cc.id = $1`, challengeID).Scan(&challengeName)
 	logs.WriteLog(db, logs.TypeContainerExtend, logs.LevelInfo, &userID, &teamID.Int64, &contestIDInt, &challengeIDInt, clientIP,
 		displayName+" 续期题目 ["+challengeName+"] 的容器实例", map[string]interface{}{
 			"extendMinutes": extendTTL,

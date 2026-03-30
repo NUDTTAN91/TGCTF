@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -47,6 +48,26 @@ var GetContainerExtendTTL SettingsGetter
 var GetContainerExtendWindow SettingsGetter
 var AllocatePorts PortAllocator
 
+// 并发控制：防止同一队伍对同一题目并发创建多个容器
+var (
+	instanceMu    sync.Mutex
+	instanceLocks = make(map[string]*sync.Mutex)
+)
+
+// 全局端口分配锁：确保端口分配到 docker run 完成之间不会有竞态
+var portAllocMu sync.Mutex
+
+// getInstanceLock 获取指定队伍+题目组合的互斥锁
+func getInstanceLock(teamID int64, challengeID string) *sync.Mutex {
+	key := fmt.Sprintf("%d_%s", teamID, challengeID)
+	instanceMu.Lock()
+	defer instanceMu.Unlock()
+	if _, ok := instanceLocks[key]; !ok {
+		instanceLocks[key] = &sync.Mutex{}
+	}
+	return instanceLocks[key]
+}
+
 // HandleCreateUserInstance 创建队伍容器实例
 func HandleCreateUserInstance(c *gin.Context, db *sql.DB) {
 	contestID := c.Param("id")
@@ -65,6 +86,11 @@ func HandleCreateUserInstance(c *gin.Context, db *sql.DB) {
 		return
 	}
 	fmt.Printf("[DEBUG] userID=%d, teamID=%d\n", userID, teamID.Int64)
+
+	// 获取队伍+题目的互斥锁，防止并发创建多个容器实例
+	lock := getInstanceLock(teamID.Int64, challengeID)
+	lock.Lock()
+	defer lock.Unlock()
 
 	// 检查该题目是否已有实例
 	var existingID int64
@@ -211,11 +237,20 @@ func HandleCreateUserInstance(c *gin.Context, db *sql.DB) {
 	args := []string{"run", "-d", "--name", containerName}
 
 	// 从端口池分配端口
+	// 使用全局锁确保端口分配到 docker run 完成之间的原子性
 	portInfo := make(map[string]string)
+	needsPortLock := len(portList) > 0 && AllocatePorts != nil
+	if needsPortLock {
+		portAllocMu.Lock()
+	}
+	
 	if len(portList) > 0 {
 		if AllocatePorts != nil {
 			allocatedPorts, err := AllocatePorts(db, len(portList))
 			if err != nil {
+				if needsPortLock {
+					portAllocMu.Unlock()
+				}
 				c.JSON(http.StatusInternalServerError, gin.H{
 					"error":   "PORT_ALLOCATION_FAILED",
 					"message": "端口分配失败: " + err.Error(),
@@ -276,7 +311,17 @@ func HandleCreateUserInstance(c *gin.Context, db *sql.DB) {
 	fmt.Printf("[DEBUG] Docker args: %v\n", args)
 	runCmd := exec.CommandContext(ctx, "docker", args...)
 	output, err := runCmd.CombinedOutput()
+	
+	// docker run 完成后释放端口锁
+	if needsPortLock {
+		portAllocMu.Unlock()
+	}
+	
 	if err != nil {
+		// 清理失败的容器（可能处于 Created 状态）
+		cleanCmd := exec.Command("docker", "rm", "-f", containerName)
+		cleanCmd.Run() // 忽略清理错误
+		
 		fmt.Printf("[DEBUG] Docker run failed: %v, output: %s\n", err, string(output))
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "CONTAINER_CREATE_FAILED",

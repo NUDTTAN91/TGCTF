@@ -35,7 +35,8 @@ type Challenge struct {
 type PublicChallenge struct {
 	ID                int64   `json:"id"`
 	ContestID         int64   `json:"contestId"`
-	QuestionID        int64   `json:"questionId"`
+	QuestionID        *int64  `json:"questionId"`        // 指针类型，临时题目为 NULL
+	IsInline          bool    `json:"isInline"`          // 是否为临时题目
 	Name              string  `json:"name"`
 	Category          string  `json:"category"`
 	Type              string  `json:"type"`
@@ -371,12 +372,22 @@ func HandlePublicChallenges(c *gin.Context, db *sql.DB) {
 		}
 	} else {
 		// Jeopardy/AWD 模式：查询 contest_challenges 和 question_bank
+		// 使用 LEFT JOIN 支持临时题目（question_id 为 NULL）
 		rows, err := db.Query(`
-			SELECT cc.id, cc.contest_id, cc.question_id, q.title, cat.name as category, q.type, COALESCE(q.description,''), 
-			       cc.initial_score, cc.min_score, cc.difficulty, cc.status, COALESCE(cc.display_order, 0), COALESCE(q.attachment_url,''), COALESCE(q.attachment_type,'url'), cc.created_at, cc.updated_at
+			SELECT cc.id, cc.contest_id, cc.question_id,
+			       COALESCE(q.title, cc.inline_title) as title,
+			       COALESCE(cat.name, icat.name) as category,
+			       COALESCE(q.type, cc.inline_type) as type,
+			       COALESCE(q.description, cc.inline_description, '') as description,
+			       cc.initial_score, cc.min_score, cc.difficulty, cc.status, COALESCE(cc.display_order, 0),
+			       COALESCE(q.attachment_url, cc.inline_attachment_url, '') as attachment_url,
+			       COALESCE(q.attachment_type, cc.inline_attachment_type, 'url') as attachment_type,
+			       cc.created_at, cc.updated_at,
+			       (cc.question_id IS NULL) as is_inline
 			FROM contest_challenges cc
-			JOIN question_bank q ON cc.question_id = q.id
+			LEFT JOIN question_bank q ON cc.question_id = q.id
 			LEFT JOIN categories cat ON q.category_id = cat.id
+			LEFT JOIN categories icat ON cc.inline_category_id = icat.id
 			WHERE cc.contest_id = $1 AND cc.status = 'public'
 			ORDER BY CASE WHEN cc.display_order = 0 THEN 999999 ELSE cc.display_order END, cc.id`, contestID)
 		if err != nil {
@@ -389,9 +400,13 @@ func HandlePublicChallenges(c *gin.Context, db *sql.DB) {
 			var ch PublicChallenge
 			var initialScore, minScore, difficulty int
 			var createdAt, updatedAt sql.NullTime
-			if err := rows.Scan(&ch.ID, &ch.ContestID, &ch.QuestionID, &ch.Name, &ch.Category, &ch.Type, &ch.Description,
-				&initialScore, &minScore, &difficulty, &ch.Status, &ch.DisplayOrder, &ch.AttachmentURL, &ch.AttachmentType, &createdAt, &updatedAt); err != nil {
+			var category sql.NullString
+			if err := rows.Scan(&ch.ID, &ch.ContestID, &ch.QuestionID, &ch.Name, &category, &ch.Type, &ch.Description,
+				&initialScore, &minScore, &difficulty, &ch.Status, &ch.DisplayOrder, &ch.AttachmentURL, &ch.AttachmentType, &createdAt, &updatedAt, &ch.IsInline); err != nil {
 				continue
+			}
+			if category.Valid {
+				ch.Category = category.String
 			}
 			solveCount := challengeSolveCountMap[ch.ID]
 			ch.Score = calculateDynamicScore(initialScore, minScore, difficulty, solveCount)

@@ -1725,7 +1725,21 @@
                 document.getElementById('inline-attachment').value = data.attachmentUrl || '';
                 document.getElementById('inline-attachment-type').value = data.attachmentType || 'url';
                 document.getElementById('inline-docker-image').value = data.dockerImage || '';
-                document.getElementById('inline-ports').value = data.ports || '';
+                // 将 JSON 数组格式的 ports 转换为逗号分隔字符串显示
+                let portsDisplay = '';
+                if (data.ports) {
+                    try {
+                        const portsArr = JSON.parse(data.ports);
+                        if (Array.isArray(portsArr)) {
+                            portsDisplay = portsArr.join(',');
+                        } else {
+                            portsDisplay = data.ports;
+                        }
+                    } catch (e) {
+                        portsDisplay = data.ports; // 解析失败则原样显示
+                    }
+                }
+                document.getElementById('inline-ports').value = portsDisplay;
                 document.getElementById('inline-cpu-limit').value = data.cpuLimit || '';
                 document.getElementById('inline-memory-limit').value = data.memoryLimit || '';
                 document.getElementById('inline-flag-env').value = data.flagEnv || 'FLAG';

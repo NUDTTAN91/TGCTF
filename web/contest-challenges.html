@@ -12,1932 +12,2341 @@
             --bg-dark: #0a0a0a;
             --bg-card: #141414;
             --accent: #ff6b00;
+            --accent-glow: rgba(255, 107, 0, 0.6);
+            --accent-dim: rgba(255, 107, 0, 0.3);
             --text-main: #e0e0e0;
-            --text-dim: #555;
+            --text-dim: #888;
+            --text-muted: #555;
+            --border: #333;
+            --border-dim: #222;
             --success: #22c55e;
+            --success-glow: rgba(34, 197, 94, 0.5);
             --danger: #ef4444;
             --info: #3b82f6;
             --gold: #ffd700;
             --silver: #c0c0c0;
             --bronze: #cd7f32;
+            --cyan: #05d9e8;
+            --purple: #a855f7;
+            --yellow: #eab308;
         }
-        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Noto Sans SC', sans-serif; overflow: hidden; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            background-image: radial-gradient(#1a1a1a 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
         .font-eng { font-family: 'Chakra Petch', sans-serif; }
         .font-mono { font-family: 'JetBrains Mono', monospace; }
 
-        /* === 左侧栏样式 === */
-        .stat-grid-item { background: #1a1a1a; padding: 8px; border: 1px solid #2a2a2a; }
-        .stat-label { font-size: 10px; color: #555; font-family: 'JetBrains Mono', monospace; }
-        .stat-value { font-size: 14px; font-weight: bold; font-family: 'Chakra Petch', sans-serif; color: white; }
-
-        /* 战况日志 */
-        .event-item {
-            padding: 10px 0; border-bottom: 1px solid #1a1a1a; font-family: 'Noto Sans SC', sans-serif; font-size: 0.75rem;
-            display: flex; flex-direction: column; gap: 4px; transition: 0.2s; opacity: 0.7;
+        /* === 顶部导航 === */
+        .top-header {
+            height: 60px;
+            background: #0d0d0d;
+            border-bottom: 1px solid var(--border-dim);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
-        .event-item:hover { opacity: 1; background: rgba(255,255,255,0.02); padding-left: 4px; }
-        
-        .tag-event { padding: 1px 4px; border-radius: 2px; font-weight: bold; font-size: 0.65rem; display: inline-block; width: fit-content; font-family: 'JetBrains Mono', monospace; }
-        .tag-blood { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.4); }
-        .tag-new { background: rgba(34, 197, 94, 0.2); color: var(--success); border: 1px solid rgba(34, 197, 94, 0.4); }
-        .tag-hint { background: rgba(59, 130, 246, 0.2); color: var(--info); border: 1px solid rgba(59, 130, 246, 0.4); }
-        .tag-sys { background: #222; color: #888; border: 1px solid #444; }
-
-        /* === 顶部样式 === */
-        .countdown-box {
-            font-family: 'Chakra Petch', sans-serif; font-weight: 700; font-size: 1.5rem;
-            color: white; text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
-            display: flex; gap: 0.5rem; align-items: center;
+        .logo {
+            font-family: 'Chakra Petch', sans-serif;
+            font-size: 20px;
+            font-weight: 900;
+            color: white;
+            letter-spacing: -1px;
+            text-decoration: none;
         }
-        .time-unit { background: #111; border: 1px solid #333; padding: 0 8px; border-radius: 2px; min-width: 40px; text-align: center; color: var(--accent); }
-
-        /* 开关 */
-        .tactical-toggle { position: relative; display: inline-block; width: 36px; height: 18px; flex-shrink: 0; }
-        .tactical-toggle input { opacity: 0; width: 0; height: 0; }
-        .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border: 1px solid #555; }
-        .toggle-slider:before { position: absolute; content: ""; height: 10px; width: 10px; left: 3px; bottom: 3px; background-color: #888; transition: .4s; }
-        input:checked + .toggle-slider { background-color: rgba(255, 107, 0, 0.2); border-color: var(--accent); }
-        input:checked + .toggle-slider:before { transform: translateX(18px); background-color: var(--accent); }
-
-        /* 分类按钮 */
-        .cat-btn {
-            padding: 8px 24px; font-family: 'Noto Sans SC', sans-serif; font-weight: bold; font-size: 0.875rem;
-            border: 1px solid transparent; color: #666; transition: all 0.2s; cursor: pointer;
-            position: relative; overflow: hidden; white-space: nowrap;
+        .logo span { color: var(--accent); }
+        .nav-links { display: flex; gap: 5px; }
+        .nav-link {
+            padding: 8px 18px;
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+            font-family: 'JetBrains Mono', monospace;
+            clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
         }
-        .cat-btn:hover { color: white; background: rgba(255,255,255,0.05); }
-        .cat-btn.active {
-            color: black; background: var(--accent); border-color: var(--accent);
-            box-shadow: 0 0 15px rgba(255, 107, 0, 0.4);
-            clip-path: polygon(10px 0, 100% 0, 100% 100%, 0 100%, 0 10px);
+        .nav-link:hover { color: white; background: rgba(255, 107, 0, 0.1); }
+        .nav-link.active { color: var(--accent); background: rgba(255, 107, 0, 0.15); }
+        .user-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 15px 6px 6px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            cursor: pointer;
+            transition: all 0.3s;
         }
+        .user-btn:hover { border-color: var(--accent); }
+        .user-avatar-small {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--accent), var(--purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 11px;
+            clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+            overflow: hidden;
+        }
+        .user-avatar-small img { width: 100%; height: 100%; object-fit: cover; }
+        .user-name { font-size: 12px; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+
+        /* === 比赛头部 === */
+        .comp-header {
+            background: linear-gradient(180deg, #111, transparent);
+            border-bottom: 1px solid var(--border-dim);
+            padding: 30px 40px;
+        }
+        .comp-header-inner {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+        .comp-info { flex: 1; }
+        .comp-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 15px;
+            background: var(--accent);
+            color: black;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            font-family: 'Chakra Petch', sans-serif;
+            animation: pulse-glow 2s infinite;
+            clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+        }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 10px var(--accent-glow); }
+            50% { box-shadow: 0 0 25px var(--accent-glow), 0 0 50px var(--accent-dim); }
+        }
+        .comp-status::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: #fff;
+            border-radius: 50%;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .comp-title {
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            font-family: 'Chakra Petch', sans-serif;
+            letter-spacing: 1px;
+        }
+        .comp-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            font-size: 12px;
+            color: var(--text-dim);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .comp-meta span { display: flex; align-items: center; gap: 8px; }
+        .comp-meta .icon { color: var(--accent); }
+
+        /* 倒计时 */
+        .timer-section { text-align: center; }
+        .timer-label {
+            font-size: 10px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .timer { display: flex; gap: 10px; }
+        .timer-block {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border);
+            padding: 12px 18px;
+            text-align: center;
+            min-width: 70px;
+            clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+        }
+        .timer-value {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--accent);
+            text-shadow: 0 0 15px var(--accent-glow);
+            font-family: 'Chakra Petch', sans-serif;
+            font-variant-numeric: tabular-nums;
+        }
+        .timer-unit {
+            font-size: 9px;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* 队伍统计 */
+        .team-stats {
+            display: flex;
+            gap: 25px;
+            padding: 20px 30px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border);
+            clip-path: polygon(15px 0, 100% 0, calc(100% - 15px) 100%, 0 100%);
+        }
+        .team-stat { text-align: center; }
+        .team-stat-value {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--cyan);
+            text-shadow: 0 0 15px rgba(5, 217, 232, 0.5);
+            font-family: 'Chakra Petch', sans-serif;
+        }
+        .team-stat-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* 用户信息卡片 */
+        .user-info-card {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px 25px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border);
+            clip-path: polygon(15px 0, 100% 0, calc(100% - 15px) 100%, 0 100%);
+        }
+        .user-avatar-lg {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 2px solid var(--accent);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--accent), var(--purple));
+            box-shadow: 0 0 15px var(--accent-dim);
+        }
+        .user-avatar-lg img { width: 100%; height: 100%; object-fit: cover; }
+        .avatar-fallback {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+        }
+        .user-info-text { display: flex; flex-direction: column; gap: 4px; }
+        .user-info-name { font-size: 14px; font-weight: 700; color: white; font-family: 'JetBrains Mono', monospace; }
+        .user-info-team { font-size: 11px; color: var(--cyan); font-family: 'JetBrains Mono', monospace; }
+
+        /* === 主内容区域 === */
+        .content {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 30px 40px;
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 30px;
+        }
+
+        /* === 工具栏 === */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            gap: 20px;
+        }
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Chakra Petch', sans-serif;
+        }
+        .section-title .icon { color: var(--accent); }
+        .toolbar-right { display: flex; align-items: center; gap: 15px; }
+        .search-box {
+            background: #111;
+            border: 1px solid var(--border);
+            padding: 8px 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .search-box input {
+            background: transparent;
+            border: none;
+            color: white;
+            outline: none;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            width: 150px;
+        }
+        .search-box input::placeholder { color: var(--text-muted); }
+        .search-icon { color: var(--text-muted); font-size: 12px; }
+        .filter-btn {
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .filter-btn.active { background: var(--accent); color: black; border-color: var(--accent); }
+
+        /* === 分类快速导航 === */
+        .category-nav {
+            position: sticky;
+            top: 60px;
+            z-index: 90;
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-dim);
+        }
+        .category-nav-inner { display: flex; gap: 10px; flex-wrap: wrap; }
+        .category-nav-btn {
+            padding: 10px 20px;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            font-family: 'Chakra Petch', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s;
+            clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .category-nav-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(255, 107, 0, 0.1); }
+        .category-nav-btn.active { background: var(--accent); color: black; border-color: var(--accent); box-shadow: 0 0 15px var(--accent-dim); }
+        .category-nav-btn .nav-icon { font-size: 14px; }
+
+        /* === 分类区域 === */
+        .challenges-section { display: flex; flex-direction: column; gap: 20px; }
+        .category-row { background: #111; border: 1px solid var(--border); overflow: hidden; }
+        .category-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 20px;
+            background: rgba(255, 107, 0, 0.03);
+            border-bottom: 1px solid var(--border-dim);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .category-header:hover { background: rgba(255, 107, 0, 0.08); }
+        .category-header.collapsed { border-bottom: none; }
+        .category-info { display: flex; align-items: center; gap: 12px; }
+        .category-icon {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+        }
+        .category-name { font-weight: 700; font-size: 13px; letter-spacing: 1px; font-family: 'Chakra Petch', sans-serif; }
+        .category-progress { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
+        .progress-bar { width: 100px; height: 6px; background: #222; border-radius: 3px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--success), var(--cyan)); border-radius: 3px; transition: width 0.3s; }
+        .collapse-icon { color: var(--text-muted); transition: transform 0.3s; }
+        .category-header.collapsed .collapse-icon { transform: rotate(-90deg); }
+        .category-body {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+        .category-body.collapsed { display: none; }
 
         /* === 题目卡片 === */
-        .module-card {
-            background: #111; border: 1px solid #333; position: relative; height: 160px;
-            display: flex; flex-direction: column; justify-content: space-between; transition: all 0.3s; overflow: hidden;
-            background-image: radial-gradient(#222 1px, transparent 1px); background-size: 10px 10px; cursor: pointer;
+        .challenge-card {
+            background: #0d0d0d;
+            border: 1px solid var(--border);
+            position: relative;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background-image: radial-gradient(#1a1a1a 1px, transparent 1px);
+            background-size: 10px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
-        .module-card::before {
-            content: ''; position: absolute; top: 0; right: 0;
-            border-top: 20px solid var(--cat-color, var(--accent)); border-left: 20px solid transparent; opacity: 0; transition: 0.3s;
+        .challenge-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            border-top: 20px solid var(--card-color, var(--accent));
+            border-left: 20px solid transparent;
+            opacity: 0;
+            transition: 0.3s;
         }
-        .module-card:hover { border-color: #666; transform: translateY(-4px); box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5); }
-        .module-card:hover::before { opacity: 1; }
-
-        .module-card:hover .card-title { color: var(--cat-color, var(--accent)); }
-        .module-normal:hover .status-bar { background: var(--cat-color, var(--accent)); }
-        .module-solved { opacity: 0.5; border-color: #222; background-image: none; }
-        .module-solved:hover { opacity: 1; border-color: var(--success); }
-        .module-solved .status-bar { background: var(--success); }
-        .module-solved::before { display: none; }
-        
-        .module-blood { border-color: #500; background: rgba(50, 0, 0, 0.2); }
-        .module-blood:hover { border-color: var(--danger); box-shadow: 0 0 20px rgba(239, 68, 68, 0.2); }
-        .module-blood .status-bar { background: var(--danger); }
-        .blood-anim { animation: pulse-red 2s infinite; }
-        @keyframes pulse-red { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
-
-        .status-bar { height: 3px; width: 100%; background: #333; transition: 0.3s; }
+        .challenge-card:hover {
+            border-color: var(--card-color, var(--accent));
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+        .challenge-card:hover::before { opacity: 1; }
+        .challenge-card.solved { opacity: 0.5; border-color: #222; background-image: none; }
+        .challenge-card.solved:hover { opacity: 1; border-color: var(--success); }
+        .challenge-card.solved::before { display: none; }
+        .challenge-card.solved .status-bar { background: var(--card-color, var(--accent)); opacity: 0.2; }
+        .solved-watermark {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+        .solved-watermark span {
+            font-family: 'Chakra Petch', sans-serif;
+            font-weight: 900;
+            font-size: 2.5rem;
+            transform: rotate(-12deg);
+            user-select: none;
+            transition: 0.3s;
+        }
+        .status-bar { height: 3px; width: 100%; background: #333; transition: 0.3s; margin-top: auto; }
+        .challenge-card:hover .status-bar { background: var(--card-color, var(--accent)); }
+        .challenge-card.solved:hover .status-bar { background: var(--card-color, var(--accent)); opacity: 0.3; }
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .card-category { font-size: 10px; font-family: 'JetBrains Mono', monospace; padding: 2px 8px; border: 1px solid; }
+        .card-score { font-size: 20px; font-weight: 800; font-family: 'Chakra Petch', sans-serif; color: white; }
+        .card-name { font-size: 14px; font-weight: 700; color: white; transition: color 0.2s; }
+        .challenge-card:hover .card-name { color: var(--card-color, var(--accent)); }
+        .card-solves { font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; display: flex; justify-content: space-between; align-items: center; }
+        .solved-badge { font-weight: 700; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
 
         /* 三血条 */
-        .blood-bar { display: flex; gap: 4px; padding-top: 8px; margin-top: auto; border-top: 1px solid #222; }
+        .blood-bar { display: flex; gap: 4px; padding-top: 10px; border-top: 1px solid var(--border-dim); }
         .blood-item {
-            flex: 1; height: 24px; display: flex; align-items: center; gap: 4px; 
-            font-size: 0.65rem; font-family: 'JetBrains Mono', monospace; color: #666;
-            background: rgba(255,255,255,0.02); padding: 0 4px; border-radius: 2px; overflow: hidden; white-space: nowrap;
+            flex: 1;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.02);
+            padding: 0 6px;
+            overflow: hidden;
+            white-space: nowrap;
         }
-        .medal-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+        .medal-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
         .medal-gold { background: var(--gold); box-shadow: 0 0 5px var(--gold); }
         .medal-silver { background: var(--silver); }
         .medal-bronze { background: var(--bronze); }
+        .medal-empty { background: #333; }
 
-        /* === 弹窗 === */
-        #modal-overlay.hidden { display: none; }
-        #modal-overlay:not(.hidden) { display: flex; align-items: center; justify-content: center; }
+        /* === 右侧边栏 === */
+        .sidebar-right { display: flex; flex-direction: column; gap: 20px; }
+        .panel { background: #111; border: 1px solid var(--border); overflow: hidden; }
+        .panel-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-dim);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .panel-title {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Chakra Petch', sans-serif;
+        }
+        .panel-title .icon { color: var(--accent); }
+        .panel-badge { padding: 3px 10px; background: var(--accent); color: black; font-size: 10px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+        .panel-body { padding: 0; }
 
+        /* 排行榜 */
+        .scoreboard-list { display: flex; flex-direction: column; }
+        .scoreboard-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            transition: all 0.3s;
+        }
+        .scoreboard-item:last-child { border-bottom: none; }
+        .scoreboard-item:hover { background: rgba(255, 107, 0, 0.05); }
+        .scoreboard-item.highlight { background: rgba(5, 217, 232, 0.1); border-left: 3px solid var(--cyan); }
+        .sb-rank { width: 28px; font-size: 14px; font-weight: 800; text-align: center; font-family: 'Chakra Petch', sans-serif; }
+        .sb-rank.r1 { color: var(--gold); text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+        .sb-rank.r2 { color: var(--silver); }
+        .sb-rank.r3 { color: var(--bronze); }
+        .sb-team { flex: 1; min-width: 0; }
+        .sb-team-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sb-team-solves { font-size: 10px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+        .sb-score { font-size: 15px; font-weight: 800; color: var(--success); text-shadow: 0 0 10px var(--success-glow); font-family: 'Chakra Petch', sans-serif; }
+
+        /* 分数趋势图 */
+        .chart-mini { height: 120px; position: relative; padding: 15px; }
+        .chart-svg { width: 100%; height: 100%; }
+        .chart-line { fill: none; stroke: var(--accent); stroke-width: 2; filter: drop-shadow(0 0 5px var(--accent-glow)); }
+        .chart-area { fill: url(#chartGradient); }
+        .chart-labels { display: flex; justify-content: space-between; padding: 5px 15px 15px; font-size: 9px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+
+        /* 实时战报 */
+        .live-feed { max-height: 350px; overflow-y: auto; }
+        .feed-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+        .feed-item:last-child { border-bottom: none; }
+        .feed-icon {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            flex-shrink: 0;
+            clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+        }
+        .feed-icon.solve { background: rgba(34, 197, 94, 0.15); color: var(--success); }
+        .feed-icon.first-blood { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+        .feed-icon.announcement { background: rgba(59, 130, 246, 0.15); color: var(--info); }
+        .feed-icon.new-challenge { background: rgba(34, 197, 94, 0.15); color: var(--success); }
+        .feed-icon.warning { background: rgba(234, 179, 8, 0.15); color: var(--yellow); }
+        .feed-content { flex: 1; min-width: 0; }
+        .feed-text { font-size: 12px; line-height: 1.5; }
+        .feed-text strong { color: var(--cyan); }
+        .feed-text .challenge { color: var(--yellow); }
+        .feed-time { font-size: 10px; color: var(--text-muted); margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
+        .feed-points { font-size: 12px; font-weight: 700; color: var(--success); white-space: nowrap; font-family: 'JetBrains Mono', monospace; }
+
+        /* === 模态弹窗 === */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .modal-overlay.show { display: flex; opacity: 1; }
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            width: 100%;
+            max-width: 1100px;
+            max-height: 85vh;
+            display: flex;
+            overflow: hidden;
+            position: relative;
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .modal-overlay.show .modal { transform: scale(1); }
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 36px;
+            height: 36px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        .modal-close:hover { border-color: var(--accent); color: var(--accent); transform: rotate(90deg); }
+        .modal-main {
+            width: 75%;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            border-right: 1px solid var(--border-dim);
+        }
+        .modal-header { margin-bottom: 30px; }
+        .modal-category-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            padding: 4px 12px;
+            margin-bottom: 10px;
+        }
+        .modal-score { font-size: 36px; font-weight: 900; font-family: 'Chakra Petch', sans-serif; color: white; margin-left: 15px; }
+        .modal-title { font-size: 28px; font-weight: 800; font-family: 'Chakra Petch', sans-serif; margin-top: 8px; }
+        .modal-section { margin-bottom: 25px; }
+        .modal-section-title {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .modal-section-title::before { content: '//'; color: var(--text-muted); }
+        .modal-description {
+            background: #0d0d0d;
+            border: 1px solid var(--border);
+            padding: 20px;
+            font-size: 14px;
+            line-height: 1.8;
+            color: var(--text-dim);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .modal-description code { background: rgba(255, 107, 0, 0.15); padding: 2px 8px; color: var(--accent); }
+        .flag-section {
+            background: linear-gradient(135deg, rgba(255, 107, 0, 0.08), rgba(5, 217, 232, 0.03));
+            border: 1px solid var(--accent-dim);
+            padding: 20px;
+            margin-top: auto;
+        }
+        .flag-wrapper { display: flex; gap: 10px; }
+        .flag-input {
+            flex: 1;
+            padding: 14px 18px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border);
+            color: white;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s;
+        }
+        .flag-input:focus { border-color: var(--accent); box-shadow: 0 0 20px var(--accent-dim); }
+        .flag-input::placeholder { color: var(--text-muted); }
+        .flag-submit {
+            padding: 14px 30px;
+            background: var(--accent);
+            border: none;
+            color: black;
+            font-family: 'Chakra Petch', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s;
+            clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+        }
+        .flag-submit:hover { background: white; box-shadow: 0 0 25px var(--accent-glow); }
+        .modal-sidebar {
+            width: 25%;
+            background: #0d0d0d;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-sidebar-header { padding: 20px; border-bottom: 1px solid var(--border-dim); }
+        .modal-sidebar-title { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
+        .solvers-list { flex: 1; overflow-y: auto; }
+        .solver-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border-dim);
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .solver-rank { width: 24px; color: var(--text-muted); }
+        .solver-rank.r1 { color: var(--gold); }
+        .solver-rank.r2 { color: var(--silver); }
+        .solver-rank.r3 { color: var(--bronze); }
+        .solver-name { flex: 1; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .solver-time { color: var(--text-muted); font-size: 10px; }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 18px 25px;
+            background: #111;
+            border: 1px solid var(--border);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { border-color: var(--success); box-shadow: 0 0 30px var(--success-glow); }
+        .toast.error { border-color: var(--danger); box-shadow: 0 0 30px rgba(239, 68, 68, 0.5); }
+        .toast-icon { font-size: 22px; }
+        .toast.success .toast-icon { color: var(--success); }
+        .toast.error .toast-icon { color: var(--danger); }
+        .toast-content h4 { font-size: 14px; margin-bottom: 2px; font-family: 'Chakra Petch', sans-serif; }
+        .toast-content p { font-size: 12px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
+
+        /* 回到顶部按钮 */
+        .back-to-top {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 50px;
+            height: 50px;
+            background: var(--accent);
+            border: none;
+            color: black;
+            font-size: 20px;
+            font-weight: 700;
+            cursor: pointer;
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px);
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            box-shadow: 0 4px 20px var(--accent-dim);
+        }
+        .back-to-top.show { opacity: 1; visibility: visible; transform: translateY(0); }
+        .back-to-top:hover { background: white; box-shadow: 0 6px 30px var(--accent-glow); transform: translateY(-3px); }
+
+        /* 滚动条 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-dark); }
+        ::-webkit-scrollbar-thumb { background: #333; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+        /* 弹窗内部组件 - 保留原有样式 */
         .attachment-card { background: #1a1a1a; border: 1px solid #333; padding: 12px; display: flex; align-items: center; gap: 12px; transition: all 0.2s; cursor: pointer; width: fit-content; }
         .attachment-card:hover { border-color: var(--accent); background: rgba(255, 107, 0, 0.05); }
         .file-icon { width: 32px; height: 32px; background: #222; display: flex; align-items: center; justify-content: center; border-radius: 4px; color: #888; font-size: 1.2rem; }
-
         .hint-box { border: 1px dashed #444; margin-bottom: 8px; overflow: hidden; }
         .hint-header { padding: 10px 14px; background: rgba(255,255,255,0.02); cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; font-family: 'JetBrains Mono', monospace; color: #888; transition: 0.2s; }
         .hint-header:hover { color: white; background: rgba(255,255,255,0.05); }
         .hint-content { padding: 14px; font-size: 0.85rem; color: #ccc; border-top: 1px dashed #444; background: #111; display: none; }
         .hint-box.open .hint-content { display: block; }
-
         .btn-launch {
-            width: 100%; height: 50px; background: rgba(255, 107, 0, 0.05); border: 1px dashed var(--accent); color: var(--accent); font-family: 'Chakra Petch', sans-serif; font-weight: bold; font-size: 0.9rem; letter-spacing: 0.1em; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
+            width: 100%; height: 50px; background: rgba(255, 107, 0, 0.05); border: 1px dashed var(--accent); color: var(--accent);
+            font-family: 'Chakra Petch', sans-serif; font-weight: bold; font-size: 0.9rem; letter-spacing: 0.1em;
+            transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
         }
         .btn-launch:hover { background: var(--accent); color: black; border-style: solid; box-shadow: 0 0 20px rgba(255, 107, 0, 0.3); }
-
         .instance-panel { display: none; margin-top: 10px; }
         .instance-panel.active { display: block; }
-
         .instance-row { background: #000; border: 1px solid #333; padding: 12px 16px; display: flex; gap: 8px; align-items: center; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; color: var(--info); margin-bottom: 8px; }
         .copy-icon { opacity: 0.5; cursor: pointer; transition: 0.2s; }
         .copy-icon:hover { opacity: 1; color: white; }
-
-        .tactical-input { background: #000; border: 1px solid #333; color: white; padding: 0 16px; height: 48px; width: 100%; outline: none; font-family: 'JetBrains Mono', monospace; transition: 0.2s; font-size: 0.9rem; }
-        .tactical-input:focus { border-color: var(--accent); }
-        
-        .btn-submit-new { height: 48px; padding: 0 32px; background: var(--accent); color: black; font-weight: 900; font-family: 'Chakra Petch', sans-serif; letter-spacing: 0.1em; clip-path: polygon(10px 0, 100% 0, 100% 100%, 0 100%, 0 10px); transition: 0.2s; display: flex; align-items: center; justify-content: center; white-space: nowrap; }
-        .btn-submit-new:hover { background: white; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255,107,0,0.4); }
-
-        /* 滚动条 */
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: #0a0a0a; }
-        ::-webkit-scrollbar-thumb { background: #333; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
         /* 确认弹窗 */
         #confirm-overlay { transition: opacity 0.15s; }
         #confirm-overlay.hidden { opacity: 0; pointer-events: none; }
         #confirm-box { background: #1a1a1a; border: 1px solid #333; padding: 24px; min-width: 320px; }
         .confirm-title { font-size: 1rem; font-weight: bold; color: white; margin-bottom: 12px; }
-        .confirm-msg { font-size: 0.875rem; color: #888; margin-bottom: 20px; }
+        .confirm-msg { font-size: 0.875rem; color: #888; margin-bottom: 20px; white-space: pre-wrap; }
         .confirm-btns { display: flex; gap: 12px; justify-content: flex-end; }
         .confirm-btn { padding: 8px 20px; font-size: 0.8rem; font-weight: bold; border: 1px solid #444; cursor: pointer; transition: 0.2s; }
         .confirm-btn-cancel { background: transparent; color: #888; }
         .confirm-btn-cancel:hover { background: #222; color: white; }
         .confirm-btn-danger { background: var(--danger); color: white; border-color: var(--danger); }
         .confirm-btn-danger:hover { background: #dc2626; }
+
+        /* 响应式 */
+        @media (max-width: 1200px) {
+            .content { grid-template-columns: 1fr; }
+            .sidebar-right { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        }
+        @media (max-width: 900px) {
+            .sidebar-right { grid-template-columns: 1fr; }
+            .comp-header-inner { flex-direction: column; text-align: center; }
+            .team-stats { width: 100%; justify-content: center; }
+            .timer { justify-content: center; }
+            .modal { flex-direction: column; max-height: 90vh; }
+            .modal-main, .modal-sidebar { width: 100%; }
+            .modal-sidebar { max-height: 200px; }
+        }
+        @media (max-width: 768px) {
+            .content { padding: 20px; }
+            .comp-header { padding: 20px; }
+            .category-body { grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 15px; }
+            .nav-links { display: none; }
+            .toolbar { flex-direction: column; align-items: stretch; }
+            .toolbar-right { justify-content: center; flex-wrap: wrap; }
+        }
     </style>
 </head>
-<body class="flex h-screen w-screen selection:bg-[#ff6b00] selection:text-black bg-[#0a0a0a]">
+<body>
 
-    <!-- 左侧控制台 -->
-    <aside class="w-80 bg-[#0d0d0d] border-r border-[#222] flex flex-col z-20 shrink-0 relative">
-        <div class="h-20 flex items-center px-6 border-b border-[#222]">
-            <a href="/home.html" class="text-2xl font-black font-eng text-white tracking-tighter hover:text-[#ff6b00] transition">
-                TG <span class="text-[#ff6b00]">_</span> CTF
-            </a>
+<!-- 顶部导航 -->
+<header class="top-header">
+    <a href="/home.html" class="logo">TG <span>_</span> CTF</a>
+    <nav class="nav-links">
+        <a href="/home.html" class="nav-link">仪表盘</a>
+        <a href="/contests.html" class="nav-link active">比赛</a>
+        <a href="javascript:void(0)" onclick="goToLeaderboard()" class="nav-link">排行榜</a>
+        <a href="#" class="nav-link">规则</a>
+    </nav>
+    <button class="user-btn" onclick="window.location.href='/profile.html'">
+        <div class="user-avatar-small" id="nav-avatar">
+            <img id="nav-avatar-img" src="" alt="" style="display:none">
+            <span id="nav-avatar-text">U</span>
         </div>
+        <span class="user-name" id="nav-username">用户名</span>
+    </button>
+</header>
 
-        <!-- 1. 用户信息 -->
-        <div id="user-info-panel" class="p-6 border-b border-[#222] bg-[#111]">
-            <div class="flex items-center gap-4 mb-4">
-                <div class="w-12 h-12 bg-[#222] border border-[#444] rounded flex items-center justify-center relative shadow-lg overflow-hidden">
-                    <img id="user-avatar-img" src="" alt="" class="w-full h-full object-cover hidden">
-                    <span id="user-avatar" class="text-lg font-bold text-gray-400">U</span>
-                    <div class="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-[#111] rounded-full"></div>
-                </div>
-                <div>
-                    <div id="user-display-name" class="text-white font-bold font-eng tracking-wide text-lg">用户名</div>
-                    <div id="user-uid" class="text-[10px] text-gray-500 font-mono">UID: --</div>
-                </div>
-            </div>
-            <div id="stats-panel" class="grid grid-cols-2 gap-y-3 gap-x-2">
-                <div class="stat-grid-item">
-                    <div class="stat-label">战队排名</div>
-                    <div id="stat-team-rank" class="stat-value text-[#ff6b00]">--</div>
-                </div>
-                <div class="stat-grid-item">
-                    <div class="stat-label">个人排名</div>
-                    <div id="stat-user-rank" class="stat-value text-white">--</div>
-                </div>
-                <div class="stat-grid-item">
-                    <div class="stat-label">个人解题</div>
-                    <div id="stat-solved" class="stat-value text-white">0</div>
-                </div>
-                <div class="stat-grid-item">
-                    <div class="stat-label">总积分</div>
-                    <div id="stat-score" class="stat-value text-white">0</div>
-                </div>
+<!-- 比赛头部 -->
+<div class="comp-header">
+    <div class="comp-header-inner">
+        <div class="comp-info">
+            <div class="comp-status" id="contest-status">进行中</div>
+            <h1 class="comp-title" id="contest-name">比赛名称</h1>
+            <div class="comp-meta">
+                <span id="contest-time"><span class="icon">📅</span> 加载中...</span>
+                <span id="contest-teams"><span class="icon">👥</span> -- Teams</span>
+                <span id="contest-challenges-count"><span class="icon">🚩</span> -- Challenges</span>
             </div>
         </div>
 
-        <!-- 2. 比赛公告 -->
-        <div class="flex-1 flex flex-col min-h-0 bg-[#0a0a0a]">
-            <div class="px-4 py-3 border-b border-[#222] bg-[#0f0f0f] flex justify-between items-center">
-                <span class="text-[10px] font-mono text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                    <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span> 比赛公告
-                </span>
-                <span class="text-[10px] text-[#333]">AUTO-REFRESH</span>
-            </div>
-            
-            <div class="flex-1 overflow-y-auto p-4 space-y-2" id="event-log">
-                <div class="event-item">
-                    <div class="flex justify-between items-center"><span class="tag-event tag-sys">系统</span><span class="text-gray-600 font-mono">--:--:--</span></div>
-                    <p class="text-gray-400">等待战报数据...</p>
+        <div class="timer-section">
+            <div class="timer-label">剩余时间</div>
+            <div class="timer">
+                <div class="timer-block">
+                    <div class="timer-value" id="hours">--</div>
+                    <div class="timer-unit">时</div>
+                </div>
+                <div class="timer-block">
+                    <div class="timer-value" id="minutes">--</div>
+                    <div class="timer-unit">分</div>
+                </div>
+                <div class="timer-block">
+                    <div class="timer-value" id="seconds">--</div>
+                    <div class="timer-unit">秒</div>
                 </div>
             </div>
         </div>
-        <div class="p-3 text-[10px] text-[#333] text-center font-mono border-t border-[#222]">TG_OS v2.0.4</div>
-    </aside>
 
-    <!-- 右侧内容区 -->
-    <main class="flex-1 flex flex-col min-w-0 relative z-10 bg-[#0a0a0a]">
-        
-        <!-- 1. 顶部 Header -->
-        <header class="h-20 flex items-center justify-between px-8 border-b border-[#222] bg-[#0a0a0a] shrink-0">
-            <div class="flex flex-col">
-                <h1 id="contest-name" class="text-lg font-bold text-white font-eng tracking-wide">比赛名称</h1>
-                <span id="contest-mode" class="text-xs text-gray-500 font-mono">加载中...</span>
+        <div class="team-stats">
+            <div class="team-stat">
+                <div class="team-stat-value" id="stat-team-rank">--</div>
+                <div class="team-stat-label">排名</div>
             </div>
-
-            <!-- 倒计时 -->
-            <div class="flex flex-col items-center">
-                <span class="text-[10px] text-[#ff6b00] font-mono mb-1 tracking-[0.2em] uppercase">剩余时间</span>
-                <div class="countdown-box">
-                    <span id="cd-hours" class="time-unit">--</span> : <span id="cd-minutes" class="time-unit">--</span> : <span id="cd-seconds" class="time-unit">--</span>
-                </div>
+            <div class="team-stat">
+                <div class="team-stat-value" id="stat-score">0</div>
+                <div class="team-stat-label">得分</div>
             </div>
-
-            <div class="flex items-center gap-4">
-                <a href="javascript:void(0)" onclick="goToLeaderboard()" class="flex items-center gap-2 px-4 py-2 bg-[#111] border border-[#333] hover:border-[#ff6b00] text-gray-400 hover:text-[#ff6b00] transition font-mono text-xs">
-                    <span>📊</span>
-                    <span>排行榜</span>
-                </a>
-                <input type="text" id="search-input" placeholder="搜索题目..." class="bg-black border border-[#333] text-xs text-white px-3 py-1.5 w-48 outline-none font-mono focus:border-[#ff6b00] transition">
-                <label class="flex items-center gap-2 cursor-pointer select-none group">
-                    <span class="text-[10px] text-gray-500 font-mono group-hover:text-gray-300">隐藏已解出</span>
-                    <label class="tactical-toggle"><input type="checkbox" id="hide-solved"><span class="toggle-slider"></span></label>
-                </label>
-            </div>
-        </header>
-
-        <!-- 2. 分类筛选栏 -->
-        <div class="h-14 border-b border-[#222] bg-[#0d0d0d] flex items-center px-8 gap-4 overflow-x-auto" id="category-bar">
-            <button class="cat-btn active" data-category="ALL">全部 (0)</button>
-            <!-- 分类按钮由 JS 动态生成 -->
-        </div>
-
-        <!-- 3. 题目列表 -->
-        <div class="flex-1 overflow-y-auto p-8">
-            <div id="challenges-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-                <!-- 动态加载题目卡片 -->
+            <div class="team-stat">
+                <div class="team-stat-value" id="stat-solved">0</div>
+                <div class="team-stat-label">已解</div>
             </div>
         </div>
-    </main>
 
-    <!-- 题目详情弹窗 -->
-    <div id="modal-overlay" class="fixed inset-0 z-50 items-center justify-center bg-black bg-opacity-90 hidden">
-        <div id="modal-content" class="bg-[#141414] border border-[#333] w-full max-w-7xl h-[85vh] shadow-2xl flex overflow-hidden relative">
-            
-            <button onclick="closeModal()" class="absolute top-6 right-6 text-gray-500 hover:text-white z-20 text-2xl transition transform hover:rotate-90">✕</button>
+        <div class="user-info-card">
+            <div class="user-avatar-lg" id="header-avatar">
+                <img id="header-avatar-img" src="" alt="" style="display:none">
+                <span class="avatar-fallback" id="header-avatar-text">U</span>
+            </div>
+            <div class="user-info-text">
+                <div class="user-info-name" id="header-username">用户名</div>
+                <div class="user-info-team" id="header-team">队伍名称</div>
+            </div>
+        </div>
+    </div>
+</div>
 
-            <!-- 左侧：作战区 (75%) -->
-            <div class="w-[75%] p-12 flex flex-col border-r border-[#222] relative">
-                <div class="mb-8">
-                    <div class="flex items-center gap-3 mb-2">
-                        <span id="modal-category" class="text-[10px] font-mono text-[#ff6b00] border border-[#ff6b00]/30 px-2 py-0.5 bg-[#ff6b00]/5">WEB</span>
-                        <span id="modal-score" class="text-4xl font-black font-eng text-white">100 PTS</span>
-                    </div>
-                    <h2 id="modal-title" class="text-4xl font-bold text-white font-eng tracking-wide">题目名称</h2>
+<!-- 主内容 -->
+<div class="content">
+    <!-- 左侧题目区域 -->
+    <div class="challenges-section">
+        <div class="toolbar">
+            <h2 class="section-title"><span class="icon">🚩</span> Challenges</h2>
+            <div class="toolbar-right">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="search-input" placeholder="搜索题目..." oninput="filterChallenges()">
                 </div>
+                <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">全部</button>
+                <button class="filter-btn" data-filter="unsolved" onclick="setFilter('unsolved')">未解出</button>
+                <button class="filter-btn" data-filter="solved" onclick="setFilter('solved')">已解出</button>
+            </div>
+        </div>
 
-                <div class="flex-grow overflow-y-auto pr-6 custom-scrollbar mb-6">
-                    <div id="modal-description" class="text-base text-gray-400 leading-8 font-mono mb-10" style="word-break: break-word; white-space: pre-wrap;">
-                        <p class="mb-6">题目描述加载中...</p>
-                    </div>
+        <!-- 分类快速导航 -->
+        <div class="category-nav" id="categoryNav">
+            <div class="category-nav-inner" id="category-nav-inner">
+                <button class="category-nav-btn active" data-category="ALL" onclick="scrollToCategory('ALL')">
+                    <span class="nav-icon">📋</span> ALL
+                </button>
+            </div>
+        </div>
 
-                    <!-- 附件 -->
-                    <div id="attachment-section" class="mb-10 hidden">
-                        <p class="text-xs text-gray-600 font-mono mb-3 uppercase tracking-wider">附件下载</p>
-                        <div id="attachment-list" class="flex flex-wrap gap-4"></div>
-                    </div>
+        <div id="challenges-grid"></div>
+    </div>
 
-                    <!-- 提示 -->
-                    <div id="hints-section" class="mb-8 hidden">
-                        <p class="text-xs text-gray-600 font-mono mb-3 uppercase tracking-wider">题目提示</p>
-                        <div id="hints-list"></div>
-                    </div>
-                </div>
-
-                <div class="mt-auto pt-8 border-t border-[#333]">
-                    <!-- 动态容器部署区域 -->
-                    <div id="deploy-section" class="mb-8" style="display:none;">
-                        <button id="btn-deploy" class="btn-launch" onclick="deployInstance()" style="display:none;">
-                            <span>🚀 部署作战环境 (DEPLOY INSTANCE)</span>
-                        </button>
-                        <!-- 部署进度条 -->
-                        <div id="deploy-progress-panel" class="instance-panel" style="display:none;">
-                            <div class="text-center mb-4">
-                                <span class="text-sm text-[#ff6b00] font-mono">🚀 正在部署作战环境...</span>
-                            </div>
-                            <div class="w-full h-2 bg-[#222] rounded overflow-hidden">
-                                <div id="deploy-progress-bar" class="h-full bg-[#ff6b00] transition-all duration-100" style="width: 0%"></div>
-                            </div>
-                            <div class="text-center mt-2">
-                                <span id="deploy-progress-text" class="text-xs text-gray-500 font-mono">0%</span>
-                            </div>
-                        </div>
-                        <div id="instance-panel" class="instance-panel">
-                            <div class="flex justify-between items-center mb-3">
-                                <span class="text-xs text-gray-500 font-mono uppercase tracking-widest flex items-center gap-2">
-                                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Active Instance
-                                    <span id="instance-creator-info" class="text-yellow-500 ml-2" style="display:none;"></span>
-                                </span>
-                                <div class="text-xs text-gray-500 flex gap-4">
-                                    <span>剩余时间: <span id="instance-ttl" class="text-white font-bold">--:--</span></span>
-                                    <button class="text-[#ff6b00] hover:text-white hover:underline" onclick="extendInstance()">延长</button>
-                                    <button id="btn-destroy" class="text-red-500 hover:text-white hover:underline" onclick="destroyInstance()">销毁</button>
-                                </div>
-                            </div>
-                            <div id="instance-addresses" class="flex flex-col gap-2">
-                                <!-- 动态填充容器地址 -->
-                            </div>
+    <!-- 右侧边栏 -->
+    <div class="sidebar-right">
+        <!-- 实时战报 -->
+        <div class="panel">
+            <div class="panel-header">
+                <h3 class="panel-title"><span class="icon">📡</span> 实时战报</h3>
+            </div>
+            <div class="panel-body">
+                <div class="live-feed" id="liveFeed">
+                    <div class="feed-item">
+                        <div class="feed-icon announcement">📢</div>
+                        <div class="feed-content">
+                            <div class="feed-text">等待战报数据...</div>
+                            <div class="feed-time">--:--:--</div>
                         </div>
                     </div>
-
-                    <div class="flex gap-4">
-                        <input type="text" id="flag-input" class="tactical-input" placeholder="TG{flag_here...}">
-                        <button onclick="submitFlag()" class="btn-submit-new w-56 shadow-lg">提交 // SUBMIT</button>
-                    </div>
-                    
-                    <!-- 选择题答题区域 -->
-                    <div id="choice-answer-section" class="hidden">
-                        <div class="mb-4">
-                            <div class="flex justify-between items-center mb-3">
-                                <span class="text-xs text-gray-500 font-mono">☑ 不定项选择题（可多选）</span>
-                                <span id="choice-attempts-info" class="text-xs text-yellow-500 font-mono">剩余次数: 3</span>
-                            </div>
-                            <div id="choice-options-list" class="space-y-2">
-                                <!-- 选项将动态添加 -->
-                            </div>
-                        </div>
-                        <button onclick="submitChoice()" class="btn-submit-new w-full shadow-lg">提交答案 // SUBMIT</button>
-                    </div>
                 </div>
             </div>
+        </div>
 
-            <!-- 右侧：榜单 (25%) -->
-            <div class="w-[25%] bg-[#111] flex flex-col border-l border-[#222]">
-                <div class="p-6 border-b border-[#222] bg-[#161616]"><h3 class="text-xs font-bold text-gray-400 font-mono uppercase tracking-wider">解题榜</h3></div>
-                <div class="flex-1 overflow-y-auto p-0 custom-scrollbar">
-                    <table class="w-full text-left text-[10px] font-mono">
-                        <tbody id="solvers-list" class="divide-y divide-[#222]">
-                            <!-- 动态加载 -->
-                        </tbody>
-                    </table>
+        <!-- 分数趋势 -->
+        <div class="panel">
+            <div class="panel-header">
+                <h3 class="panel-title"><span class="icon">📈</span> 分数趋势</h3>
+            </div>
+            <div class="panel-body">
+                <div class="chart-mini">
+                    <svg class="chart-svg" viewBox="0 0 340 100" preserveAspectRatio="none">
+                        <defs>
+                            <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color: #ff6b00; stop-opacity: 0.3"/>
+                                <stop offset="100%" style="stop-color: #ff6b00; stop-opacity: 0"/>
+                            </linearGradient>
+                        </defs>
+                        <path class="chart-area" d="M0,100 L0,85 L40,78 L80,65 L120,58 L160,45 L200,38 L240,28 L280,22 L320,18 L340,15 L340,100 Z"/>
+                        <path class="chart-line" d="M0,85 L40,78 L80,65 L120,58 L160,45 L200,38 L240,28 L280,22 L320,18 L340,15"/>
+                    </svg>
+                </div>
+                <div class="chart-labels">
+                    <span>Start</span>
+                    <span>Now</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 排行榜 -->
+        <div class="panel">
+            <div class="panel-header">
+                <h3 class="panel-title"><span class="icon">🏆</span> 实时排行榜</h3>
+                <span class="panel-badge">TOP 10</span>
+            </div>
+            <div class="panel-body">
+                <div class="scoreboard-list" id="scoreboardList">
+                    <div class="scoreboard-item">
+                        <span class="sb-rank">--</span>
+                        <div class="sb-team"><div class="sb-team-name">加载中...</div></div>
+                        <span class="sb-score">--</span>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- 确认弹窗 -->
-    <div id="confirm-overlay" class="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-80 hidden">
-        <div id="confirm-box">
-            <div class="confirm-title" id="confirm-title">确认操作</div>
-            <div class="confirm-msg" id="confirm-msg">确定要执行此操作吗？</div>
-            <div class="confirm-btns">
-                <button class="confirm-btn confirm-btn-cancel" onclick="hideConfirm()">取消</button>
-                <button class="confirm-btn confirm-btn-danger" id="confirm-ok-btn">确定</button>
+<!-- 题目详情弹窗 -->
+<div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+        <button class="modal-close" onclick="closeModal()">✕</button>
+        
+        <div class="modal-main">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center;">
+                    <span class="modal-category-badge" id="modal-category">WEB</span>
+                    <span class="modal-score" id="modal-score">100 PTS</span>
+                </div>
+                <h2 class="modal-title" id="modal-title">题目名称</h2>
+            </div>
+
+            <div class="modal-section" style="flex-grow:1;overflow-y:auto;padding-right:10px;">
+                <h4 class="modal-section-title">Description</h4>
+                <div class="modal-description" id="modal-description">题目描述加载中...</div>
+
+                <!-- 附件 -->
+                <div id="attachment-section" class="mt-6 hidden">
+                    <p class="text-xs text-gray-600 font-mono mb-3 uppercase tracking-wider">附件下载</p>
+                    <div id="attachment-list" class="flex flex-wrap gap-4"></div>
+                </div>
+
+                <!-- 提示 -->
+                <div id="hints-section" class="mt-6 hidden">
+                    <p class="text-xs text-gray-600 font-mono mb-3 uppercase tracking-wider">题目提示</p>
+                    <div id="hints-list"></div>
+                </div>
+            </div>
+
+            <div class="flag-section">
+                <!-- 动态容器部署区域 -->
+                <div id="deploy-section" class="mb-4" style="display:none;">
+                    <button id="btn-deploy" class="btn-launch" onclick="deployInstance()" style="display:none;">
+                        <span>🚀 部署作战环境 (DEPLOY INSTANCE)</span>
+                    </button>
+                    <div id="deploy-progress-panel" class="instance-panel" style="display:none;">
+                        <div class="text-center mb-4">
+                            <span class="text-sm text-[#ff6b00] font-mono">🚀 正在部署作战环境...</span>
+                        </div>
+                        <div class="w-full h-2 bg-[#222] rounded overflow-hidden">
+                            <div id="deploy-progress-bar" class="h-full bg-[#ff6b00] transition-all duration-100" style="width: 0%"></div>
+                        </div>
+                        <div class="text-center mt-2">
+                            <span id="deploy-progress-text" class="text-xs text-gray-500 font-mono">0%</span>
+                        </div>
+                    </div>
+                    <div id="instance-panel" class="instance-panel">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-xs text-gray-500 font-mono uppercase tracking-widest flex items-center gap-2">
+                                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Active Instance
+                                <span id="instance-creator-info" class="text-yellow-500 ml-2" style="display:none;"></span>
+                            </span>
+                            <div class="text-xs text-gray-500 flex gap-4">
+                                <span>剩余时间: <span id="instance-ttl" class="text-white font-bold">--:--</span></span>
+                                <button class="text-[#ff6b00] hover:text-white hover:underline" onclick="extendInstance()">延长</button>
+                                <button id="btn-destroy" class="text-red-500 hover:text-white hover:underline" onclick="destroyInstance()">销毁</button>
+                            </div>
+                        </div>
+                        <div id="instance-addresses" class="flex flex-col gap-2"></div>
+                    </div>
+                </div>
+
+                <h4 class="modal-section-title">Submit Flag</h4>
+                <div class="flag-wrapper" id="flag-section">
+                    <input type="text" class="flag-input" id="flag-input" placeholder="TG{flag_here...}">
+                    <button class="flag-submit" onclick="submitFlag()">SUBMIT</button>
+                </div>
+                
+                <!-- 选择题答题区域 -->
+                <div id="choice-answer-section" class="hidden">
+                    <div class="mb-4">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-xs text-gray-500 font-mono">☑ 不定项选择题（可多选）</span>
+                            <span id="choice-attempts-info" class="text-xs text-yellow-500 font-mono">剩余次数: 3</span>
+                        </div>
+                        <div id="choice-options-list" class="space-y-2"></div>
+                    </div>
+                    <button onclick="submitChoice()" class="flag-submit w-full">提交答案 // SUBMIT</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- 封禁遮罩层 -->
-    <div id="banned-overlay" class="fixed inset-0 z-[100] flex items-center justify-center hidden" style="background: rgba(50, 50, 50, 0.95);">
-        <div class="text-center">
-            <div class="text-6xl mb-6">🚫</div>
-            <div class="text-3xl font-bold text-red-500 mb-4">您的队伍已被封禁！</div>
-            <div id="banned-reason" class="text-gray-400 text-sm mb-8"></div>
-            <a href="/home.html" class="inline-block px-6 py-3 bg-[#333] text-white hover:bg-[#444] transition">返回首页</a>
+        <div class="modal-sidebar">
+            <div class="modal-sidebar-header">
+                <h3 class="modal-sidebar-title">解题榜</h3>
+            </div>
+            <div class="solvers-list" id="solvers-list"></div>
         </div>
     </div>
+</div>
 
-    <script>
-        const token = localStorage.getItem('tg_token');
-        let contestId = null;
-        let contestData = null;
-        let challengesData = [];
-        let categories = [];  // 类别列表
-        let currentCategory = 'ALL';
-        let currentChallengeId = null;
-        let isAdminMode = false;
-        let userInfo = null;
-        let teamSolves = [];  // 队伍已解题目
-        let totalScore = 0;   // 队伍总分
+<!-- Toast -->
+<div class="toast" id="toast">
+    <span class="toast-icon">✓</span>
+    <div class="toast-content">
+        <h4>Success!</h4>
+        <p>操作成功</p>
+    </div>
+</div>
 
-        function parseJwt(token) {
-            try {
-                const base64Url = token.split('.')[1];
-                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
-                return JSON.parse(jsonPayload);
-            } catch (e) { return null; }
+<!-- 回到顶部按钮 -->
+<button class="back-to-top" id="backToTop" onclick="scrollToTop()" title="回到顶部">▲</button>
+
+<!-- 确认弹窗 -->
+<div id="confirm-overlay" class="fixed inset-0 z-[1100] flex items-center justify-center bg-black bg-opacity-80 hidden">
+    <div id="confirm-box">
+        <div class="confirm-title" id="confirm-title">确认操作</div>
+        <div class="confirm-msg" id="confirm-msg">确定要执行此操作吗？</div>
+        <div class="confirm-btns">
+            <button class="confirm-btn confirm-btn-cancel" onclick="hideConfirm()">取消</button>
+            <button class="confirm-btn confirm-btn-danger" id="confirm-ok-btn">确定</button>
+        </div>
+    </div>
+</div>
+
+<!-- 封禁遮罩层 -->
+<div id="banned-overlay" class="fixed inset-0 z-[1200] flex items-center justify-center hidden" style="background: rgba(50, 50, 50, 0.95);">
+    <div class="text-center">
+        <div class="text-6xl mb-6">🚫</div>
+        <div class="text-3xl font-bold text-red-500 mb-4">您的队伍已被封禁！</div>
+        <div id="banned-reason" class="text-gray-400 text-sm mb-8"></div>
+        <a href="/home.html" class="inline-block px-6 py-3 bg-[#333] text-white hover:bg-[#444] transition">返回首页</a>
+    </div>
+</div>
+
+<script>
+// ========== 全局变量 ==========
+    const token = localStorage.getItem('tg_token');
+    let contestId = null;
+    let contestData = null;
+    let challengesData = [];
+    let categories = [];
+    let currentCategory = 'ALL';
+    let currentChallengeId = null;
+    let isAdminMode = false;
+    let userInfo = null;
+    let teamSolves = [];
+    let totalScore = 0;
+    let myTeamId = null;
+    let myTeamName = '';
+    let scoreboardData = [];
+    let announcementsData = [];
+    let collapsedCategories = new Set();
+    let currentFilter = 'all';
+
+    // ========== 工具函数 ==========
+    function parseJwt(token) {
+        try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+            return JSON.parse(jsonPayload);
+        } catch (e) { return null; }
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function formatFeedTime(timestamp) {
+        if (!timestamp) return '--:--:--';
+        const now = Date.now();
+        let ts = timestamp;
+        if (typeof timestamp === 'string') {
+            ts = new Date(timestamp.replace(' ', 'T')).getTime();
         }
-
-        // 权限检查
-        if (!token) {
-            window.location.href = '/login.html';
-        }
+        const diff = Math.floor((now - ts) / 1000);
         
-        // 验证 token 是否有效（重置密码后会失效）
-        async function validateToken() {
-            try {
-                const resp = await fetch('/api/profile', {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (resp.status === 401) {
-                    localStorage.removeItem('tg_token');
-                    localStorage.removeItem('tg_must_change_password');
-                    window.location.href = '/login.html';
-                }
-            } catch (e) {
-                console.error('Token validation failed', e);
-            }
-        }
-        validateToken();
+        let relativeTime;
+        if (diff < 60) relativeTime = '刚刚';
+        else if (diff < 3600) relativeTime = Math.floor(diff / 60) + '分钟前';
+        else if (diff < 86400) relativeTime = Math.floor(diff / 3600) + '小时前';
+        else relativeTime = Math.floor(diff / 86400) + '天前';
         
-        // 检查是否需要强制修改密码（防绕过）
-        if (localStorage.getItem('tg_must_change_password') === 'true') {
-            alert('请先修改密码后再访问系统');
-            window.location.href = '/change-password.html';
+        const date = new Date(ts);
+        const timeStr = `${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}:${String(date.getSeconds()).padStart(2,'0')}`;
+        return `${relativeTime} | ${timeStr}`;
+    }
+
+    // ========== 权限检查 ==========
+    if (!token) {
+        window.location.href = '/login.html';
+    }
+    
+    async function validateToken() {
+        try {
+            const resp = await fetch('/api/profile', { headers: { 'Authorization': 'Bearer ' + token } });
+            if (resp.status === 401) {
+                localStorage.removeItem('tg_token');
+                localStorage.removeItem('tg_must_change_password');
+                window.location.href = '/login.html';
+            }
+        } catch (e) { console.error('Token validation failed', e); }
+    }
+    validateToken();
+    
+    if (localStorage.getItem('tg_must_change_password') === 'true') {
+        alert('请先修改密码后再访问系统');
+        window.location.href = '/change-password.html';
+    }
+    
+    const payload = parseJwt(token);
+    if (!payload) {
+        window.location.href = '/login.html';
+    } else {
+        userInfo = payload;
+        if (payload.role === 'super') isAdminMode = true;
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    contestId = urlParams.get('id');
+    if (!contestId) {
+        alert('未指定比赛ID');
+        window.location.href = '/contests.html';
+    }
+
+    // ========== 初始化 ==========
+    async function init() {
+        if (userInfo) {
+            document.getElementById('nav-username').textContent = userInfo.displayName || userInfo.username;
+            document.getElementById('header-username').textContent = userInfo.displayName || userInfo.username;
+            document.getElementById('nav-avatar-text').textContent = (userInfo.displayName || userInfo.username || 'U')[0].toUpperCase();
+            document.getElementById('header-avatar-text').textContent = (userInfo.displayName || userInfo.username || 'U')[0].toUpperCase();
+            loadUserAvatar();
         }
+
+        if (!isAdminMode) {
+            const canEnter = await checkTeamApprovalStatus();
+            if (!canEnter) return;
+        }
+
+        await loadContest();
+        await loadCategories();
+        await loadChallenges();
+        await loadTeamSolves();
+        await loadAnnouncements();
+        startCountdown();
         
-        const payload = parseJwt(token);
-        if (!payload) {
-            window.location.href = '/login.html';
-        } else {
-            userInfo = payload;
-            // 超级管理员模式
-            if (payload.role === 'super') {
-                isAdminMode = true;
+        window.addEventListener('scroll', handleScroll);
+    }
+
+    // ========== 队伍状态检查 ==========
+    async function checkTeamApprovalStatus() {
+        try {
+            const res = await fetch(`/api/contests/${contestId}/team-status`, { headers: { 'Authorization': 'Bearer ' + token } });
+            if (!res.ok) { showAccessDenied('无法获取队伍状态'); return false; }
+            const data = await res.json();
+            if (!data.canEnter) { showAccessDenied(data.message || '您无权访问该比赛'); return false; }
+            if (data.status === 'banned' || data.status === 'cheating_banned') { showBannedOverlay(data.status, data.message); return false; }
+            if (data.teamName) {
+                myTeamName = data.teamName;
+                document.getElementById('header-team').textContent = myTeamName;
             }
-        }
+            return true;
+        } catch (e) { console.error('Check team status error:', e); showAccessDenied('检查队伍状态失败'); return false; }
+    }
 
-        // 获取比赛ID
-        const urlParams = new URLSearchParams(window.location.search);
-        contestId = urlParams.get('id');
-        if (!contestId) {
-            alert('未指定比赛ID');
-            window.location.href = '/contests.html';
-        }
+    function showAccessDenied(message) {
+        const overlay = document.getElementById('banned-overlay');
+        document.getElementById('banned-reason').textContent = message;
+        overlay.classList.remove('hidden');
+    }
 
-        // 初始化页面
-        async function init() {
-            // 设置用户信息
-            if (userInfo) {
-                document.getElementById('user-display-name').textContent = userInfo.displayName || userInfo.username;
-                document.getElementById('user-uid').textContent = `UID: ${userInfo.sub}`;
-                // 加载用户头像
-                loadUserAvatar();
+    function showBannedOverlay(status, message) {
+        const overlay = document.getElementById('banned-overlay');
+        document.getElementById('banned-reason').textContent = status === 'cheating_banned' ? '原因：因作弊行为被封禁' : (message || '');
+        overlay.classList.remove('hidden');
+    }
+
+    async function checkBannedStatus() {
+        try {
+            const res = await fetch(`/api/contests/${contestId}/team-status`, { headers: { 'Authorization': 'Bearer ' + token } });
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.status === 'banned' || data.status === 'cheating_banned') {
+                showBannedOverlay(data.status, data.message);
             }
+        } catch (e) {}
+    }
 
-            // 检查队伍审核状态（非管理员）
-            if (!isAdminMode) {
-                const canEnter = await checkTeamApprovalStatus();
-                if (!canEnter) return; // 未通过审核，不继续加载
-            }
-
-            await loadContest();
-            await loadCategories();  // 加载类别颜色
-            await loadChallenges();
-            await loadTeamSolves();
-            await loadAnnouncements(); // 加载公告
-            startCountdown();
-        }
-
-        // 检查队伍审核状态（包括封禁、待审核、未报名等）
-        async function checkTeamApprovalStatus() {
-            try {
-                const res = await fetch(`/api/contests/${contestId}/team-status`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (!res.ok) {
-                    showAccessDenied('无法获取队伍状态');
-                    return false;
-                }
+    // ========== 数据加载 ==========
+    async function loadTeamSolves() {
+        if (isAdminMode) return;
+        try {
+            const res = await fetch(`/api/contests/${contestId}/solves`, { headers: { 'Authorization': 'Bearer ' + token } });
+            if (res.ok) {
                 const data = await res.json();
-                
-                // 检查是否可以进入比赛
-                if (!data.canEnter) {
-                    showAccessDenied(data.message || '您无权访问该比赛');
-                    return false;
-                }
-                
-                // 检查是否被封禁
-                if (data.status === 'banned' || data.status === 'cheating_banned') {
-                    showBannedOverlay(data.status, data.message);
-                    return false;
-                }
-                
-                return true;
-            } catch (e) {
-                console.error('Check team status error:', e);
-                showAccessDenied('检查队伍状态失败');
-                return false;
-            }
-        }
-
-        // 显示访问拒绝遮罩
-        function showAccessDenied(message) {
-            const overlay = document.getElementById('banned-overlay');
-            const reasonEl = document.getElementById('banned-reason');
-            const titleEl = overlay.querySelector('h2');
-            if (titleEl) titleEl.textContent = '访问受限';
-            reasonEl.textContent = message;
-            overlay.classList.remove('hidden');
-        }
-
-        // 显示封禁遮罩
-        function showBannedOverlay(status, message) {
-            const overlay = document.getElementById('banned-overlay');
-            const reasonEl = document.getElementById('banned-reason');
-            if (status === 'cheating_banned') {
-                reasonEl.textContent = '原因：因作弊行为被封禁';
-            } else {
-                reasonEl.textContent = message || '';
-            }
-            overlay.classList.remove('hidden');
-        }
-
-        // 检查队伍是否被封禁（定时检查）
-        async function checkBannedStatus() {
-            try {
-                const res = await fetch(`/api/contests/${contestId}/team-status`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (!res.ok) return;
-                const data = await res.json();
-                
-                if (data.status === 'banned' || data.status === 'cheating_banned') {
-                    // 显示封禁遮罩
-                    const overlay = document.getElementById('banned-overlay');
-                    const reasonEl = document.getElementById('banned-reason');
-                    
-                    if (data.status === 'cheating_banned') {
-                        reasonEl.textContent = '原因：因作弊行为被封禁';
-                    } else {
-                        reasonEl.textContent = data.message || '';
-                    }
-                    
-                    overlay.classList.remove('hidden');
-                }
-            } catch (e) {
-                console.error('Check banned status error:', e);
-            }
-        }
-
-        // 加载队伍解题情况
-        async function loadTeamSolves() {
-            if (isAdminMode) return;
-            try {
-                const res = await fetch(`/api/contests/${contestId}/solves`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    teamSolves = data.solves || [];
-                    totalScore = data.totalScore || 0;
-                    const myTeamId = data.teamId;
-                    document.getElementById('stat-score').textContent = totalScore;
-                    document.getElementById('stat-solved').textContent = teamSolves.length;
-                    
-                    // 加载排行榜并计算排名
-                    await loadAndUpdateRank(myTeamId);
-                    
-                    renderChallenges();
-                }
-            } catch (e) {
-                console.error('Load solves error:', e);
-            }
-        }
-
-        // 加载排行榜并更新排名
-        async function loadAndUpdateRank(myTeamId) {
-            try {
-                const res = await fetch(`/api/contests/${contestId}/scoreboard`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (!res.ok) return;
-                const scoreboard = await res.json() || [];
-                
-                // 计算战队排名
-                let teamRank = '--';
-                for (let i = 0; i < scoreboard.length; i++) {
-                    if (scoreboard[i].teamId === myTeamId) {
-                        teamRank = i + 1;
-                        break;
-                    }
-                }
-                document.getElementById('stat-team-rank').textContent = teamRank;
-                
-                // 个人排名：暂时与战队排名相同（后续可扩展为个人解题排名）
-                document.getElementById('stat-user-rank').textContent = teamRank;
-            } catch (e) {
-                console.error('Load scoreboard error:', e);
-            }
-        }
-
-        // 加载比赛信息
-        async function loadContest() {
-            try {
-                const res = await fetch(`/api/contests/${contestId}`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (!res.ok) throw new Error('Failed');
-                contestData = await res.json();
-                
-                // AWD-F 模式跳转到专用页面
-                if (contestData.mode === 'awd-f') {
-                    window.location.href = `/contest-challenges-awdf.html?id=${contestId}`;
-                    return;
-                }
-                
-                document.getElementById('contest-name').textContent = contestData.name;
-                document.getElementById('contest-mode').textContent = contestData.mode === 'jeopardy' ? '解题赛 (Jeopardy)' : 'AWD 攻防赛';
-                document.title = `TG CTF - ${contestData.name}`;
-            } catch (e) {
-                console.error(e);
-                alert('加载比赛信息失败');
-            }
-        }
-
-        // 加载类别列表
-        async function loadCategories() {
-            try {
-                const res = await fetch('/api/categories', {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (res.ok) {
-                    categories = await res.json() || [];
-                    // 按 displayOrder 排序
-                    categories.sort((a, b) => (a.displayOrder || 999) - (b.displayOrder || 999));
-                    // 动态生成分类按钮
-                    renderCategoryButtons();
-                }
-            } catch (e) {
-                console.error('Load categories error:', e);
-            }
-        }
-
-        // 动态渲染分类按钮
-        function renderCategoryButtons() {
-            const bar = document.getElementById('category-bar');
-            // 保留第一个"全部"按钮，移除其他动态按钮
-            const allBtn = bar.querySelector('[data-category="ALL"]');
-            bar.innerHTML = '';
-            bar.appendChild(allBtn);
-            
-            // 根据后端分类数据生成按钮
-            categories.forEach(cat => {
-                const btn = document.createElement('button');
-                btn.className = 'cat-btn';
-                btn.dataset.category = cat.name.toUpperCase();
-                btn.textContent = `${cat.name} (0)`;
-                bar.appendChild(btn);
-            });
-        }
-
-        // 根据类别名称获取发光颜色
-        function getCategoryColor(categoryName) {
-            const cat = categories.find(c => c.name && c.name.toUpperCase() === (categoryName || '').toUpperCase());
-            return cat && cat.glowColor ? cat.glowColor : '#ff6b00';
-        }
-
-        // 加载题目列表
-        async function loadChallenges() {
-            try {
-                const res = await fetch(`/api/contests/${contestId}/challenges`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (!res.ok) throw new Error('Failed');
-                challengesData = await res.json() || [];
-                
-                updateCategoryCounts();
+                teamSolves = data.solves || [];
+                totalScore = data.totalScore || 0;
+                myTeamId = data.teamId;
+                document.getElementById('stat-score').textContent = totalScore;
+                document.getElementById('stat-solved').textContent = teamSolves.length;
+                await loadAndUpdateRank(myTeamId);
                 renderChallenges();
-                
-                // 立即加载一二三血数据
-                loadAllBloodStats();
-            } catch (e) {
-                console.error(e);
             }
-        }
+        } catch (e) { console.error('Load solves error:', e); }
+    }
 
-        // 更新分类计数
-        function updateCategoryCounts() {
-            // 动态统计各分类的题目数量
-            const counts = { ALL: challengesData.length };
-            challengesData.forEach(ch => {
-                const cat = (ch.category || '').toUpperCase();
-                counts[cat] = (counts[cat] || 0) + 1;
-            });
-
-            // 如果当前选中的分类题目数为0，自动切回"全部"
-            if (currentCategory !== 'ALL' && (counts[currentCategory] || 0) === 0) {
-                currentCategory = 'ALL';
-            }
-
-            document.querySelectorAll('.cat-btn').forEach(btn => {
-                const cat = btn.dataset.category;
-                // 更新 active 状态
-                btn.classList.toggle('active', cat === currentCategory);
-                
-                if (cat === 'ALL') {
-                    btn.textContent = `全部 (${counts.ALL})`;
-                    btn.style.display = '';  // "全部"按钮始终显示
-                } else {
-                    const count = counts[cat] || 0;
-                    if (count === 0) {
-                        // 该分类无题目，隐藏按钮
-                        btn.style.display = 'none';
-                    } else {
-                        btn.style.display = '';
-                        // 从 categories 中找到对应分类获取显示名称
-                        const catInfo = categories.find(c => c.name.toUpperCase() === cat);
-                        const displayName = catInfo ? catInfo.name : cat;
-                        btn.textContent = `${displayName} (${count})`;
-                    }
-                }
-            });
-        }
-
-        // 检查题目是否已解出
-        function isSolved(challengeId) {
-            return teamSolves.some(s => s.challengeId === challengeId);
-        }
-
-        // 渲染题目卡片
-        function renderChallenges() {
-            const grid = document.getElementById('challenges-grid');
-            const searchTerm = document.getElementById('search-input').value.toLowerCase();
-            const hideSolved = document.getElementById('hide-solved').checked;
+    async function loadAndUpdateRank(teamId) {
+        try {
+            const res = await fetch(`/api/contests/${contestId}/scoreboard`, { headers: { 'Authorization': 'Bearer ' + token } });
+            if (!res.ok) return;
+            scoreboardData = await res.json() || [];
             
-            let filtered = challengesData.filter(ch => {
-                // 所有用户都只能看到 public 状态的题目（后端已过滤，这里双重保险）
-                if (ch.status !== 'public') return false;
-                if (currentCategory !== 'ALL' && ch.category !== currentCategory) return false;
+            let teamRank = '--';
+            for (let i = 0; i < scoreboardData.length; i++) {
+                if (scoreboardData[i].teamId === teamId) {
+                    teamRank = i + 1;
+                    break;
+                }
+            }
+            document.getElementById('stat-team-rank').textContent = teamRank;
+            document.getElementById('contest-teams').innerHTML = `<span class="icon">👥</span> ${scoreboardData.length} Teams`;
+            renderScoreboard();
+        } catch (e) { console.error('Load scoreboard error:', e); }
+    }
+
+    async function loadContest() {
+        try {
+            const res = await fetch(`/api/contests/${contestId}`, { headers: { 'Authorization': 'Bearer ' + token } });
+            if (!res.ok) throw new Error('Failed');
+            contestData = await res.json();
+            
+            if (contestData.mode === 'awd-f') {
+                window.location.href = `/contest-challenges-awdf.html?id=${contestId}`;
+                return;
+            }
+            
+            document.getElementById('contest-name').textContent = contestData.name;
+            document.title = `TG CTF - ${contestData.name}`;
+            
+            if (contestData.startTime && contestData.endTime) {
+                const start = new Date(contestData.startTime.replace(' ', 'T'));
+                const end = new Date(contestData.endTime.replace(' ', 'T'));
+                const formatDate = (d) => `${d.getMonth()+1}月${d.getDate()}日`;
+                document.getElementById('contest-time').innerHTML = `<span class="icon">📅</span> ${formatDate(start)} - ${formatDate(end)}`;
+            }
+            
+            if (contestData.status === 'running') {
+                document.getElementById('contest-status').textContent = '进行中';
+            } else if (contestData.status === 'ended') {
+                document.getElementById('contest-status').textContent = '已结束';
+                document.getElementById('contest-status').style.background = '#666';
+            } else {
+                document.getElementById('contest-status').textContent = '未开始';
+                document.getElementById('contest-status').style.background = '#3b82f6';
+            }
+        } catch (e) { console.error(e); alert('加载比赛信息失败'); }
+    }
+
+    async function loadCategories() {
+        try {
+            const res = await fetch('/api/categories', { headers: { 'Authorization': 'Bearer ' + token } });
+            if (res.ok) {
+                categories = await res.json() || [];
+                categories.sort((a, b) => (a.displayOrder || 999) - (b.displayOrder || 999));
+            }
+        } catch (e) { console.error('Load categories error:', e); }
+    }
+
+    function getCategoryColor(categoryName) {
+        const cat = categories.find(c => c.name && c.name.toUpperCase() === (categoryName || '').toUpperCase());
+        return cat && cat.glowColor ? cat.glowColor : '#ff6b00';
+    }
+
+    function getCategoryIcon(categoryName) {
+        const icons = { 'WEB': '🌐', 'PWN': '🐛', 'REVERSE': '🔧', 'CRYPTO': '🔐', 'MISC': '🧩', 'BLOCKCHAIN': '⛓️', 'AI': '🤖' };
+        return icons[(categoryName || '').toUpperCase()] || '🚩';
+    }
+
+    async function loadChallenges() {
+        try {
+            const res = await fetch(`/api/contests/${contestId}/challenges`, { headers: { 'Authorization': 'Bearer ' + token } });
+            if (!res.ok) throw new Error('Failed');
+            challengesData = await res.json() || [];
+            document.getElementById('contest-challenges-count').innerHTML = `<span class="icon">🚩</span> ${challengesData.length} Challenges`;
+            renderCategoryNav();
+            renderChallenges();
+            loadAllBloodStats();
+        } catch (e) { console.error(e); }
+    }
+
+    function isSolved(challengeId) {
+        return teamSolves.some(s => s.challengeId === challengeId);
+    }
+
+    // ========== 渲染函数 ==========
+    function renderCategoryNav() {
+        const container = document.getElementById('category-nav-inner');
+        const usedCats = [...new Set(challengesData.map(c => (c.category || '').toUpperCase()))];
+        
+        let html = `<button class="category-nav-btn ${currentCategory === 'ALL' ? 'active' : ''}" data-category="ALL" onclick="scrollToCategory('ALL')"><span class="nav-icon">📋</span> ALL</button>`;
+        
+        categories.forEach(cat => {
+            const catName = cat.name.toUpperCase();
+            if (usedCats.includes(catName)) {
+                const isActive = currentCategory === catName ? 'active' : '';
+                html += `<button class="category-nav-btn ${isActive}" data-category="${catName}" onclick="scrollToCategory('${catName}')"><span class="nav-icon">${getCategoryIcon(catName)}</span> ${cat.name}</button>`;
+            }
+        });
+        container.innerHTML = html;
+    }
+
+    function renderChallenges() {
+        const grid = document.getElementById('challenges-grid');
+        const searchTerm = document.getElementById('search-input').value.toLowerCase();
+        
+        const catGroups = {};
+        challengesData.forEach(ch => {
+            if (ch.status !== 'public') return;
+            const cat = (ch.category || 'MISC').toUpperCase();
+            if (!catGroups[cat]) catGroups[cat] = [];
+            catGroups[cat].push(ch);
+        });
+        
+        const sortedCats = categories.map(c => c.name.toUpperCase()).filter(c => catGroups[c]);
+        Object.keys(catGroups).forEach(c => { if (!sortedCats.includes(c)) sortedCats.push(c); });
+        
+        let html = '';
+        sortedCats.forEach(catName => {
+            let challenges = catGroups[catName] || [];
+            challenges = challenges.filter(ch => {
                 if (searchTerm && !ch.name.toLowerCase().includes(searchTerm)) return false;
-                if (hideSolved && isSolved(ch.id)) return false;
+                if (currentFilter === 'solved' && !isSolved(ch.id)) return false;
+                if (currentFilter === 'unsolved' && isSolved(ch.id)) return false;
                 return true;
             });
-
-            // 按显示顺序排序（顺序号为0的按添加顺序ID排，否则按顺序号升序）
-            filtered.sort((a, b) => {
+            
+            if (challenges.length === 0) return;
+            
+            challenges.sort((a, b) => {
                 const orderA = a.displayOrder || 999999;
                 const orderB = b.displayOrder || 999999;
                 if (orderA !== orderB) return orderA - orderB;
                 return (a.id || 0) - (b.id || 0);
             });
-
-            if (filtered.length === 0) {
-                grid.innerHTML = `<div class="col-span-full text-center text-gray-500 py-20 font-mono">暂无题目</div>`;
-                return;
-            }
-
-            grid.innerHTML = filtered.map(ch => {
-                // 获取类别自定义颜色
-                const catColor = getCategoryColor(ch.category);
-                const solved = isSolved(ch.id);
-                
-                // 已解出：分类标签变灰，否则使用类别颜色
-                const labelStyle = solved 
-                    ? 'color: #4b5563; border-color: #374151; background-color: #37415120;' 
-                    : `color: ${catColor}; border-color: ${catColor}40; background-color: ${catColor}15;`;
-                const cardClass = solved ? 'module-card module-solved group' : 'module-card module-normal group';
-                const cardStyle = `--cat-color: ${catColor};`;
-                // 已解出：分数变灰+删除线
-                const scoreClass = solved ? 'text-xl font-bold font-eng text-gray-600 line-through' : 'text-xl font-bold font-eng text-white';
-                // 已解出：标题变灰
-                const titleClass = solved ? 'card-title text-sm font-bold text-gray-500 mt-1 leading-tight line-clamp-2' : 'card-title text-sm font-bold text-gray-200 mt-1 leading-tight transition-colors line-clamp-2';
-                // SOLVED水印 - 使用类别颜色
-                const solvedWatermark = solved ? `<div class="absolute inset-0 flex items-center justify-center pointer-events-none"><span class="font-black font-eng text-5xl -rotate-12 select-none transition" style="color: ${catColor}20;">SOLVED</span></div>` : '';
-                // 三血条样式
-                const bloodStyle = solved ? {
-                    first: 'text-gray-600', firstDot: 'bg-gray-600',
-                    second: 'text-gray-600', secondDot: 'bg-gray-700',
-                    third: 'text-gray-600', thirdDot: 'bg-gray-800'
-                } : {
-                    first: ch.firstBlood ? 'text-yellow-500' : 'text-gray-700', firstDot: ch.firstBlood ? 'medal-gold' : 'bg-[#333]',
-                    second: ch.secondBlood ? 'text-gray-300' : 'text-gray-700', secondDot: ch.secondBlood ? 'medal-silver' : 'bg-[#333]',
-                    third: ch.thirdBlood ? 'text-orange-700' : 'text-gray-700', thirdDot: ch.thirdBlood ? 'medal-bronze' : 'bg-[#333]'
-                };
-
-                // 底边条样式 - 已解出使用类别颜色，未解出使用默认
-                const statusBarStyle = solved ? `background: ${catColor}; height: 4px;` : '';
-
-                return `
-                <div onclick="openModal(${ch.id})" class="${cardClass}" style="${cardStyle}">
-                    ${solvedWatermark}
-                    <div class="p-4 pb-2 flex-grow flex flex-col">
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="text-[10px] font-mono border px-1.5 py-0.5" style="${labelStyle}">${ch.category}</span>
-                            <span class="${scoreClass}">${ch.score}</span>
-                        </div>
-                        <h3 class="${titleClass}">${ch.name}</h3>
-                        <div class="mt-2 text-[10px] text-gray-600 font-mono flex justify-between">
-                            <span>解出: ${ch.solveCount || 0}</span>
-                            ${solved ? `<span style="color: ${catColor};" class="font-bold">√ 已完成</span>` : ''}
-                        </div>
-                        <div class="blood-bar${solved ? ' border-t-[#222]' : ''}">
-                            <div class="blood-item ${bloodStyle.first}"><span class="medal-dot ${bloodStyle.firstDot}"></span> ${ch.firstBlood || '--'}</div>
-                            <div class="blood-item ${bloodStyle.second}"><span class="medal-dot ${bloodStyle.secondDot}"></span> ${ch.secondBlood || '--'}</div>
-                            <div class="blood-item ${bloodStyle.third}"><span class="medal-dot ${bloodStyle.thirdDot}"></span> ${ch.thirdBlood || '--'}</div>
-                        </div>
+            
+            const catInfo = categories.find(c => c.name.toUpperCase() === catName);
+            const displayName = catInfo ? catInfo.name : catName;
+            const catColor = getCategoryColor(catName);
+            const solvedCount = challenges.filter(c => isSolved(c.id)).length;
+            const totalCount = challenges.length;
+            const progress = totalCount > 0 ? (solvedCount / totalCount * 100).toFixed(0) : 0;
+            const isCollapsed = collapsedCategories.has(catName);
+            
+            html += `
+            <div class="category-row" data-category="${catName}" id="cat-${catName}">
+                <div class="category-header ${isCollapsed ? 'collapsed' : ''}" onclick="toggleCategory('${catName}')">
+                    <div class="category-info">
+                        <div class="category-icon" style="background: ${catColor}20; color: ${catColor};">${getCategoryIcon(catName)}</div>
+                        <span class="category-name">${displayName}</span>
                     </div>
-                    <div class="status-bar" style="${statusBarStyle}"></div>
+                    <div class="category-progress">
+                        <span>${solvedCount}/${totalCount} solved</span>
+                        <div class="progress-bar"><div class="progress-fill" style="width: ${progress}%;"></div></div>
+                        <span class="collapse-icon">▼</span>
+                    </div>
                 </div>
-                `;
-            }).join('');
-        }
+                <div class="category-body ${isCollapsed ? 'collapsed' : ''}">
+                    ${challenges.map(ch => renderChallengeCard(ch)).join('')}
+                </div>
+            </div>`;
+        });
+        
+        grid.innerHTML = html || '<div class="text-center text-gray-500 py-20 font-mono">暂无题目</div>';
+    }
 
-        // 分类筛选
-        document.getElementById('category-bar').addEventListener('click', (e) => {
-            if (e.target.classList.contains('cat-btn')) {
-                document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-                currentCategory = e.target.dataset.category;
-                renderChallenges();
+    function renderChallengeCard(ch) {
+        const catColor = getCategoryColor(ch.category);
+        const solved = isSolved(ch.id);
+        const labelStyle = solved ? 'color: #4b5563; border-color: #374151; background: #37415120;' : `color: ${catColor}; border-color: ${catColor}40; background: ${catColor}15;`;
+        const scoreStyle = solved ? 'color: #4b5563; text-decoration: line-through;' : '';
+        const titleStyle = solved ? 'color: #6b7280;' : '';
+        const solvedWatermark = solved ? `<div class="solved-watermark"><span style="color: ${catColor}20;">SOLVED</span></div>` : '';
+        
+        const bloodDot = (team, medal, solvedCard) => {
+            if (solvedCard) return 'medal-empty';
+            return team ? medal : 'medal-empty';
+        };
+
+        return `
+        <div class="challenge-card ${solved ? 'solved' : ''}" style="--card-color: ${catColor};" onclick="openModal(${ch.id})">
+            ${solvedWatermark}
+            <div class="card-header">
+                <span class="card-category" style="${labelStyle}">${ch.category}</span>
+                <span class="card-score" style="${scoreStyle}">${ch.score}</span>
+            </div>
+            <div class="card-name" style="${titleStyle}">${escapeHtml(ch.name)}</div>
+            <div class="card-solves">
+                <span>解出: ${ch.solveCount || 0}</span>
+                ${solved ? `<span class="solved-badge" style="color: ${catColor};">√ 已完成</span>` : ''}
+            </div>
+            <div class="blood-bar">
+                <div class="blood-item"><span class="medal-dot ${bloodDot(ch.firstBlood, 'medal-gold', solved)}"></span>${ch.firstBlood || '--'}</div>
+                <div class="blood-item"><span class="medal-dot ${bloodDot(ch.secondBlood, 'medal-silver', solved)}"></span>${ch.secondBlood || '--'}</div>
+                <div class="blood-item"><span class="medal-dot ${bloodDot(ch.thirdBlood, 'medal-bronze', solved)}"></span>${ch.thirdBlood || '--'}</div>
+            </div>
+            <div class="status-bar"></div>
+        </div>`;
+    }
+
+    function renderScoreboard() {
+        const list = document.getElementById('scoreboardList');
+        const top10 = scoreboardData.slice(0, 10);
+        if (top10.length === 0) {
+            list.innerHTML = '<div class="scoreboard-item"><span class="sb-rank">--</span><div class="sb-team"><div class="sb-team-name">暂无数据</div></div><span class="sb-score">--</span></div>';
+            return;
+        }
+        list.innerHTML = top10.map((team, idx) => {
+            const rank = idx + 1;
+            const isMe = team.teamId === myTeamId;
+            return `
+            <div class="scoreboard-item ${isMe ? 'highlight' : ''}">
+                <span class="sb-rank ${rank <= 3 ? 'r' + rank : ''}">${rank}</span>
+                <div class="sb-team">
+                    <div class="sb-team-name">${escapeHtml(team.teamName)} ${isMe ? '⭐' : ''}</div>
+                    <div class="sb-team-solves">${team.solveCount || 0} solved</div>
+                </div>
+                <span class="sb-score">${(team.totalScore || 0).toLocaleString()}</span>
+            </div>`;
+        }).join('');
+    }
+
+    function renderFeed() {
+        const feed = document.getElementById('liveFeed');
+        if (announcementsData.length === 0) {
+            feed.innerHTML = '<div class="feed-item"><div class="feed-icon announcement">📢</div><div class="feed-content"><div class="feed-text">暂无战报</div><div class="feed-time">--:--:--</div></div></div>';
+            return;
+        }
+        
+        const typeConfig = {
+            'manual': { icon: '📢', iconClass: 'announcement' },
+            'challenge_open': { icon: '✅', iconClass: 'new-challenge' },
+            'challenge_close': { icon: '❌', iconClass: 'announcement' },
+            'first_blood': { icon: '🥇', iconClass: 'first-blood' },
+            'second_blood': { icon: '🥈', iconClass: 'solve' },
+            'third_blood': { icon: '🥉', iconClass: 'solve' },
+            'cheating': { icon: '⚠️', iconClass: 'warning' }
+        };
+        
+        feed.innerHTML = announcementsData.slice(0, 20).map(ann => {
+            const cfg = typeConfig[ann.type] || { icon: '📣', iconClass: 'announcement' };
+            return `
+            <div class="feed-item">
+                <div class="feed-icon ${cfg.iconClass}">${cfg.icon}</div>
+                <div class="feed-content">
+                    <div class="feed-text">${escapeHtml(ann.title)}</div>
+                    <div class="feed-time">${formatFeedTime(ann.createdAt)}</div>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    // ========== 交互函数 ==========
+    function toggleCategory(name) {
+        if (collapsedCategories.has(name)) collapsedCategories.delete(name);
+        else collapsedCategories.add(name);
+        renderChallenges();
+    }
+
+    function setFilter(filter) {
+        currentFilter = filter;
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.filter === filter);
+        });
+        renderChallenges();
+    }
+
+    function filterChallenges() { renderChallenges(); }
+
+    function scrollToCategory(category) {
+        document.querySelectorAll('.category-nav-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.category === category);
+        });
+        currentCategory = category;
+
+        if (category === 'ALL') {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+            const el = document.getElementById(`cat-${category}`);
+            if (el) {
+                const headerHeight = 60;
+                const navHeight = document.getElementById('categoryNav').offsetHeight;
+                const targetY = el.offsetTop - headerHeight - navHeight - 20;
+                window.scrollTo({ top: targetY, behavior: 'smooth' });
+            }
+        }
+    }
+
+    function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+
+    let ticking = false;
+    function handleScroll() {
+        if (!ticking) {
+            window.requestAnimationFrame(() => {
+                const scrollY = window.scrollY;
+                const backToTopBtn = document.getElementById('backToTop');
+                if (scrollY > 300) backToTopBtn.classList.add('show');
+                else backToTopBtn.classList.remove('show');
+                updateCategoryNavHighlight();
+                ticking = false;
+            });
+            ticking = true;
+        }
+    }
+
+    function updateCategoryNavHighlight() {
+        const categoryRows = document.querySelectorAll('.category-row[data-category]');
+        const headerHeight = 60;
+        const navHeight = document.getElementById('categoryNav')?.offsetHeight || 0;
+        const offset = headerHeight + navHeight + 50;
+        let current = 'ALL';
+
+        categoryRows.forEach(row => {
+            const rect = row.getBoundingClientRect();
+            if (rect.top <= offset && rect.bottom > offset) {
+                current = row.dataset.category;
             }
         });
 
-        // 搜索
-        document.getElementById('search-input').addEventListener('input', renderChallenges);
-        document.getElementById('hide-solved').addEventListener('change', renderChallenges);
+        document.querySelectorAll('.category-nav-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.category === current);
+        });
+    }
 
-        // 倒计时
-        let contestEndedHandled = false;
-        function startCountdown() {
-            function update() {
-                if (!contestData) return;
-                const endTime = new Date(contestData.endTime.replace(' ', 'T'));
-                const now = new Date();
-                let diff = Math.max(0, Math.floor((endTime - now) / 1000));
-                
-                const hours = Math.floor(diff / 3600);
-                const minutes = Math.floor((diff % 3600) / 60);
-                const seconds = diff % 60;
+    // ========== 倒计时 ==========
+    let contestEndedHandled = false;
+    function startCountdown() {
+        function update() {
+            if (!contestData) return;
+            const endTime = new Date(contestData.endTime.replace(' ', 'T'));
+            const now = new Date();
+            let diff = Math.max(0, Math.floor((endTime - now) / 1000));
+            
+            const hours = Math.floor(diff / 3600);
+            const minutes = Math.floor((diff % 3600) / 60);
+            const seconds = diff % 60;
 
-                document.getElementById('cd-hours').textContent = String(hours).padStart(2, '0');
-                document.getElementById('cd-minutes').textContent = String(minutes).padStart(2, '0');
-                document.getElementById('cd-seconds').textContent = String(seconds).padStart(2, '0');
-                
-                // 倒计时结束时自动处理比赛结束
-                if (diff === 0 && contestData.status === 'running' && !isAdminMode && !contestEndedHandled) {
-                    contestEndedHandled = true;
-                    handleContestEnded();
-                }
+            document.getElementById('hours').textContent = String(hours).padStart(2, '0');
+            document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
+            document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
+            
+            if (diff === 0 && contestData.status === 'running' && !isAdminMode && !contestEndedHandled) {
+                contestEndedHandled = true;
+                handleContestEnded();
             }
-            update();
-            setInterval(update, 1000);
+        }
+        update();
+        setInterval(update, 1000);
+    }
+    
+    function handleContestEnded() {
+        contestData.status = 'ended';
+        if (document.getElementById('modal-overlay').classList.contains('show')) {
+            closeModal();
+            showToast('比赛已结束', 'warning');
+        }
+    }
+
+    // ========== 弹窗功能 ==========
+    function openModal(challengeId) {
+        if (contestData && contestData.status === 'ended' && !isAdminMode) {
+            showToast('比赛已结束', 'warning');
+            return;
         }
         
-        // 比赛结束处理
-        function handleContestEnded() {
-            contestData.status = 'ended';
-            // 关闭当前打开的弹窗
-            if (!document.getElementById('modal-overlay').classList.contains('hidden')) {
-                closeModal();
-                showTip('比赛已结束', 'warning');
-            }
-        }
+        currentChallengeId = challengeId;
+        const ch = challengesData.find(c => c.id === challengeId);
+        if (!ch) return;
 
-        // 打开题目详情弹窗
-        function openModal(challengeId) {
-            // 检查比赛状态 - 普通用户在比赛结束后不能打开题目
-            if (contestData && contestData.status === 'ended' && !isAdminMode) {
-                showTip('比赛已结束', 'warning');
-                return;
-            }
-            
-            currentChallengeId = challengeId;
-            const ch = challengesData.find(c => c.id === challengeId);
-            if (!ch) return;
+        const catColor = getCategoryColor(ch.category);
+        const modalCategory = document.getElementById('modal-category');
+        modalCategory.textContent = ch.category;
+        modalCategory.style.color = catColor;
+        modalCategory.style.borderColor = `${catColor}40`;
+        modalCategory.style.background = `${catColor}10`;
+        modalCategory.style.border = `1px solid ${catColor}40`;
+        
+        document.getElementById('modal-score').textContent = `${ch.score} PTS`;
+        document.getElementById('modal-title').textContent = ch.name;
+        document.getElementById('modal-description').innerHTML = ch.description || '暂无描述';
 
-            // 获取类别颜色
-            const catColor = getCategoryColor(ch.category);
-            const modalCategory = document.getElementById('modal-category');
-            modalCategory.textContent = ch.category;
-            modalCategory.style.color = catColor;
-            modalCategory.style.borderColor = `${catColor}40`;
-            modalCategory.style.background = `${catColor}10`;
-            
-            document.getElementById('modal-score').textContent = `${ch.score} PTS`;
-            document.getElementById('modal-title').textContent = ch.name;
-            document.getElementById('modal-description').innerHTML = `<p class="mb-6">${ch.description || '暂无描述'}</p>`;
-
-            // 附件
-            const attachmentSection = document.getElementById('attachment-section');
-            if (ch.attachmentUrl) {
-                attachmentSection.classList.remove('hidden');
-                const isLocal = ch.attachmentType === 'local';
-                const href = ch.attachmentUrl;
-                const targetAttr = isLocal ? '' : 'target="_blank"';
-                const downloadAttr = isLocal ? 'download' : '';
-                const actionText = isLocal ? '点击下载' : '打开链接';
-                document.getElementById('attachment-list').innerHTML = `
-                    <a href="${href}" ${targetAttr} ${downloadAttr} class="attachment-card group">
-                        <div class="file-icon">🗂</div>
-                        <div>
-                            <div class="text-sm text-gray-300 font-bold group-hover:text-white">附件下载</div>
-                            <div class="text-xs text-gray-600 font-mono">${actionText}</div>
-                        </div>
-                        <div class="text-gray-600 group-hover:text-[#ff6b00] ml-2 text-lg">⇩</div>
-                    </a>
-                `;
-            } else {
-                attachmentSection.classList.add('hidden');
-            }
-
-            // 加载已发布的提示
-            loadChallengeHints(challengeId);
-
-            // 动态容器部署区域 - 先重置状态
-            const deploySection = document.getElementById('deploy-section');
-            const btnDeploy = document.getElementById('btn-deploy');
-            const instancePanel = document.getElementById('instance-panel');
-            
-            // 重置所有状态
-            deploySection.style.display = 'none';
-            btnDeploy.style.display = 'none';
-            instancePanel.classList.remove('active');
-            if (instanceTTLInterval) {
-                clearInterval(instanceTTLInterval);
-                instanceTTLInterval = null;
-            }
-            currentInstance = null;
-            
-            // 动态容器类型的题目
-            if (ch.type && (ch.type.includes('dynamic') || ch.type.includes('container'))) {
-                // 先显示部署区域和按钮（默认状态）
-                deploySection.style.display = 'block';
-                btnDeploy.innerHTML = '<span>🚀 部署作战环境 (DEPLOY INSTANCE)</span>';
-                btnDeploy.disabled = false;
-                btnDeploy.style.display = 'flex';
-                
-                // 后台检查实例，如果有则切换显示
-                checkExistingInstance(challengeId);
-            }
-
-            // 解题榜
-            loadChallengeStats(challengeId);
-
-            // 检查是否已解出，更新提交按钮状态
-            const solved = isSolved(challengeId);
-            const submitBtn = document.querySelector('.btn-submit-new');
-            const flagInput = document.getElementById('flag-input');
-            const flagSection = document.querySelector('.flex.gap-4');
-            const choiceSection = document.getElementById('choice-answer-section');
-            
-            // 选择题处理
-            if (ch.isChoice && ch.choices) {
-                // 隐藏 Flag 输入，显示选择题
-                flagSection.classList.add('hidden');
-                choiceSection.classList.remove('hidden');
-                
-                // 渲染选项
-                renderChoiceOptions(ch.choices, solved);
-                
-                // 获取剩余次数
-                loadChoiceAttempts(challengeId, ch.maxAttempts || 3);
-                
-                const choiceSubmitBtn = choiceSection.querySelector('.btn-submit-new');
-                if (solved) {
-                    choiceSubmitBtn.textContent = '已解出 ✓';
-                    choiceSubmitBtn.disabled = true;
-                    choiceSubmitBtn.style.background = '#22c55e';
-                    // 禁用所有复选框
-                    choiceSection.querySelectorAll('input[type=checkbox]').forEach(cb => cb.disabled = true);
-                } else {
-                    choiceSubmitBtn.textContent = '提交答案 // SUBMIT';
-                    choiceSubmitBtn.disabled = false;
-                    choiceSubmitBtn.style.background = '';
-                }
-            } else {
-                // Flag 题目
-                flagSection.classList.remove('hidden');
-                choiceSection.classList.add('hidden');
-                
-                if (solved) {
-                    submitBtn.textContent = '已解出 ✓';
-                    submitBtn.disabled = true;
-                    submitBtn.style.background = '#22c55e';
-                    flagInput.disabled = true;
-                    flagInput.placeholder = '已解出此题';
-                } else {
-                    submitBtn.textContent = '提交 // SUBMIT';
-                    submitBtn.disabled = false;
-                    submitBtn.style.background = '';
-                    flagInput.disabled = false;
-                    flagInput.placeholder = 'TG{flag_here...}';
-                    flagInput.value = '';
-                }
-            }
-
-            document.getElementById('modal-overlay').classList.remove('hidden');
-        }
-
-        function closeModal() {
-            document.getElementById('modal-overlay').classList.add('hidden');
-            currentChallengeId = null;
-        }
-
-        // 部署容器实例
-        let currentInstance = null;
-        let instanceTTLInterval = null;
-
-        // 检查是否已有运行中的实例
-        async function checkExistingInstance(challengeId) {
-            try {
-                const res = await fetch(`/api/contests/${contestId}/challenges/${challengeId}/instance`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data && data.ports && data.ttl > 0) {
-                        currentInstance = data;
-                        showInstance(data.ports, data.ttl, data.isOwner, data.creatorName);
-                        return true;
-                    }
-                }
-            } catch (e) {
-                console.log('No existing instance');
-            }
-            return false;
-        }
-        async function deployInstance(forceDestroy = false) {
-            const ch = challengesData.find(c => c.id === currentChallengeId);
-            if (!ch) return;
-
-            const btnDeploy = document.getElementById('btn-deploy');
-            btnDeploy.innerHTML = '<span>🚀 部署中请稍候...</span>';
-            btnDeploy.disabled = true;
-
-            try {
-                const url = `/api/contests/${contestId}/challenges/${currentChallengeId}/instance` + (forceDestroy ? '?force=true' : '');
-                const res = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                const data = await res.json();
-                
-                if (!res.ok) {
-                    // 处理特殊错误类型
-                    if (data.error === 'NEED_DESTROY_OWN') {
-                        // 需要确认销毁旧容器
-                        btnDeploy.innerHTML = '<span>🚀 部署作战环境 (DEPLOY INSTANCE)</span>';
-                        btnDeploy.disabled = false;
-                        showConfirm('确认销毁旧容器', 
-                            `您已有运行中的容器 [${data.oldChallengeName}]，启动新容器将自动销毁旧容器。\n\n是否继续？`, 
-                            () => deployInstance(true));
-                        return;
-                    } else if (data.error === 'INSTANCE_BY_TEAMMATE' || data.error === 'LIMIT_REACHED' || data.error === 'INSTANCE_EXISTS') {
-                        // 队友已启动或达到限制
-                        btnDeploy.innerHTML = '<span>🚀 部署作战环境 (DEPLOY INSTANCE)</span>';
-                        btnDeploy.disabled = false;
-                        showTip(data.message, 'warning');
-                        return;
-                    }
-                    throw new Error(data.message || '部署失败');
-                }
-
-                // 部署成功，显示进度条动画
-                currentInstance = data;
-                showDeployProgress(() => {
-                    showInstance(data.ports, data.ttl, true, ''); // 自己创建的，isOwner=true
-                });
-            } catch (e) {
-                showTip('部署失败: ' + e.message, 'error');
-                btnDeploy.innerHTML = '<span>🚀 部署作战环境 (DEPLOY INSTANCE)</span>';
-                btnDeploy.disabled = false;
-            }
-        }
-
-        // 显示部署进度条动画（5秒）
-        function showDeployProgress(onComplete) {
-            const btnDeploy = document.getElementById('btn-deploy');
-            const progressPanel = document.getElementById('deploy-progress-panel');
-            const progressBar = document.getElementById('deploy-progress-bar');
-            const progressText = document.getElementById('deploy-progress-text');
-            
-            // 隐藏按钮，显示进度条
-            btnDeploy.style.display = 'none';
-            progressPanel.style.display = 'block';
-            progressBar.style.width = '0%';
-            progressText.textContent = '0%';
-            
-            let progress = 0;
-            const duration = 5000; // 5秒
-            const interval = 50;   // 每50ms更新一次
-            const step = 100 / (duration / interval);
-            
-            const timer = setInterval(() => {
-                progress += step;
-                if (progress >= 100) {
-                    progress = 100;
-                    clearInterval(timer);
-                    progressBar.style.width = '100%';
-                    progressText.textContent = '100%';
-                    // 稍微延迟后显示结果
-                    setTimeout(() => {
-                        progressPanel.style.display = 'none';
-                        onComplete();
-                    }, 300);
-                } else {
-                    progressBar.style.width = progress + '%';
-                    progressText.textContent = Math.floor(progress) + '%';
-                }
-            }, interval);
-        }
-
-        function showInstance(ports, ttlSeconds, isOwner = true, creatorName = '') {
-            document.getElementById('btn-deploy').style.display = 'none';
-            const instancePanel = document.getElementById('instance-panel');
-            instancePanel.classList.add('active');
-
-            // 显示创建者信息和控制销毁按钮
-            const creatorInfo = document.getElementById('instance-creator-info');
-            const destroyBtn = document.getElementById('btn-destroy');
-            if (!isOwner && creatorName) {
-                creatorInfo.textContent = `(由 ${creatorName} 启动)`;
-                creatorInfo.style.display = 'inline';
-                destroyBtn.style.display = 'none';
-            } else {
-                creatorInfo.style.display = 'none';
-                destroyBtn.style.display = 'inline';
-            }
-
-            // 填充地址 - 使用当前主机名 + 端口
-            const addressesDiv = document.getElementById('instance-addresses');
-            const host = window.location.hostname; // 当前网站主机
-            
-            // 检查端口是否为空
-            if (!ports || Object.keys(ports).length === 0) {
-                addressesDiv.innerHTML = `
-                    <div class="text-yellow-500 text-sm">⚠️ 容器已启动，但未配置端口映射</div>
-                    <div class="text-gray-500 text-xs mt-1">请联系管理员检查题目配置</div>
-                `;
-            } else {
-                const addresses = Object.entries(ports).map(([containerPort, hostPort]) => 
-                    `${host}:${hostPort}`
-                );
-
-                addressesDiv.innerHTML = addresses.map(addr => `
-                    <div class="instance-row group">
-                        <span class="addr-text">${addr}</span>
-                        <span class="copy-icon group-hover:text-[#ff6b00]" data-copy="${addr}" title="复制" style="cursor:pointer">📋</span>
-                        <a href="http://${addr}" target="_blank" class="text-[#3b82f6] hover:text-white" title="用网页打开">🌐</a>
+        // 附件
+        const attachmentSection = document.getElementById('attachment-section');
+        if (ch.attachmentUrl) {
+            attachmentSection.classList.remove('hidden');
+            const isLocal = ch.attachmentType === 'local';
+            const href = ch.attachmentUrl;
+            const targetAttr = isLocal ? '' : 'target="_blank"';
+            const downloadAttr = isLocal ? 'download' : '';
+            const actionText = isLocal ? '点击下载' : '打开链接';
+            document.getElementById('attachment-list').innerHTML = `
+                <a href="${href}" ${targetAttr} ${downloadAttr} class="attachment-card group">
+                    <div class="file-icon">🗂</div>
+                    <div>
+                        <div class="text-sm text-gray-300 font-bold group-hover:text-white">附件下载</div>
+                        <div class="text-xs text-gray-600 font-mono">${actionText}</div>
                     </div>
-                `).join('');
-
-                // 绑定复制事件
-                addressesDiv.querySelectorAll('.copy-icon').forEach(btn => {
-                    btn.onclick = function() {
-                        copyToClipboard(this.dataset.copy);
-                    };
-                });
-            }
-
-            // 启动倒计时
-            startInstanceTTL(ttlSeconds);
+                    <div class="text-gray-600 group-hover:text-[#ff6b00] ml-2 text-lg">⇩</div>
+                </a>`;
+        } else {
+            attachmentSection.classList.add('hidden');
         }
 
-        function startInstanceTTL(seconds) {
-            let remaining = seconds;
-            updateInstanceTTL(remaining);
+        loadChallengeHints(challengeId);
 
-            if (instanceTTLInterval) clearInterval(instanceTTLInterval);
-            instanceTTLInterval = setInterval(() => {
-                remaining--;
-                if (remaining <= 0) {
-                    clearInterval(instanceTTLInterval);
-                    // 实例过期，重置界面
-                    resetInstanceUI();
-                    alert('实例已过期');
-                    return;
-                }
-                updateInstanceTTL(remaining);
-            }, 1000);
-        }
-
-        function updateInstanceTTL(seconds) {
-            const ttlEl = document.getElementById('instance-ttl');
-            const mins = Math.floor(seconds / 60);
-            const secs = seconds % 60;
-            ttlEl.textContent = `${mins}:${String(secs).padStart(2, '0')}`;
-        }
-
-        function copyToClipboard(text) {
-            // 先尝试现代 API
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(text).then(() => {
-                    showCopyTip('已复制: ' + text);
-                }).catch(() => {
-                    fallbackCopy(text);
-                });
-            } else {
-                fallbackCopy(text);
-            }
-        }
-
-        function fallbackCopy(text) {
-            const ta = document.createElement('textarea');
-            ta.value = text;
-            ta.style.position = 'fixed';
-            ta.style.left = '-9999px';
-            document.body.appendChild(ta);
-            ta.focus();
-            ta.select();
-            try {
-                document.execCommand('copy');
-                showCopyTip('已复制: ' + text);
-            } catch (e) {
-                alert('复制失败，请手动复制: ' + text);
-            }
-            document.body.removeChild(ta);
-        }
-
-        function showCopyTip(msg) {
-            // 简单提示
-            const tip = document.createElement('div');
-            tip.textContent = msg;
-            tip.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;padding:8px 16px;border-radius:4px;z-index:9999;font-size:14px;';
-            document.body.appendChild(tip);
-            setTimeout(() => tip.remove(), 1500);
-        }
-
-        // 通用提示函数
-        function showTip(msg, type = 'info') {
-            const colors = {
-                'success': '#22c55e',
-                'error': '#ef4444',
-                'warning': '#f59e0b',
-                'info': '#3b82f6'
-            };
-            const tip = document.createElement('div');
-            tip.textContent = msg;
-            tip.style.cssText = `position:fixed;top:20px;left:50%;transform:translateX(-50%);background:${colors[type] || colors.info};color:#fff;padding:12px 20px;border-radius:4px;z-index:9999;font-size:14px;max-width:80%;text-align:center;`;
-            document.body.appendChild(tip);
-            setTimeout(() => tip.remove(), 3000);
-        }
-
-        function extendInstance() {
-            fetch(`/api/contests/${contestId}/challenges/${currentChallengeId}/instance/extend`, {
-                method: 'POST',
-                headers: { 'Authorization': 'Bearer ' + token }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.ttl) {
-                    startInstanceTTL(data.ttl);
-                    alert('已延长30分钟');
-                } else {
-                    alert(data.message || '延长失败');
-                }
-            })
-            .catch(e => alert('延长失败: ' + e.message));
-        }
-
-        function destroyInstance() {
-            showConfirm('确认销毁', '确定要销毁当前容器实例吗？此操作不可撤销。', doDestroyInstance);
-        }
-
-        function doDestroyInstance() {
-            fetch(`/api/contests/${contestId}/challenges/${currentChallengeId}/instance`, {
-                method: 'DELETE',
-                headers: { 'Authorization': 'Bearer ' + token }
-            })
-            .then(res => res.json().then(data => ({ok: res.ok, data})))
-            .then(({ok, data}) => {
-                if (!ok) {
-                    if (data.error === 'NOT_OWNER') {
-                        showTip(data.message, 'warning');
-                    } else {
-                        showTip(data.message || '销毁失败', 'error');
-                    }
-                    return;
-                }
-                resetInstanceUI();
-                showCopyTip('容器已销毁');
-            })
-            .catch(e => showTip('销毁失败: ' + e.message, 'error'));
-        }
-
-        // 自定义确认弹窗
-        let confirmCallback = null;
-        function showConfirm(title, msg, onConfirm) {
-            document.getElementById('confirm-title').textContent = title;
-            document.getElementById('confirm-msg').textContent = msg;
-            confirmCallback = onConfirm;
-            document.getElementById('confirm-overlay').classList.remove('hidden');
-        }
-        function hideConfirm() {
-            document.getElementById('confirm-overlay').classList.add('hidden');
-            confirmCallback = null;
-        }
-        document.getElementById('confirm-ok-btn').onclick = function() {
-            const cb = confirmCallback;
-            hideConfirm();
-            if (cb) cb();
-        };
-
-        function resetInstanceUI() {
-            if (instanceTTLInterval) {
-                clearInterval(instanceTTLInterval);
-                instanceTTLInterval = null;
-            }
-            currentInstance = null;
-
-            const instancePanel = document.getElementById('instance-panel');
-            instancePanel.classList.remove('active');
-            
-            const btnDeploy = document.getElementById('btn-deploy');
+        // 容器部署区域
+        const deploySection = document.getElementById('deploy-section');
+        const btnDeploy = document.getElementById('btn-deploy');
+        const instancePanel = document.getElementById('instance-panel');
+        
+        deploySection.style.display = 'none';
+        btnDeploy.style.display = 'none';
+        instancePanel.classList.remove('active');
+        if (instanceTTLInterval) { clearInterval(instanceTTLInterval); instanceTTLInterval = null; }
+        currentInstance = null;
+        
+        if (ch.type && (ch.type.includes('dynamic') || ch.type.includes('container'))) {
+            deploySection.style.display = 'block';
             btnDeploy.innerHTML = '<span>🚀 部署作战环境 (DEPLOY INSTANCE)</span>';
             btnDeploy.disabled = false;
             btnDeploy.style.display = 'flex';
+            checkExistingInstance(challengeId);
         }
 
-        // 加载题目已发布的提示
-        async function loadChallengeHints(challengeId) {
-            const hintsSection = document.getElementById('hints-section');
-            const hintsList = document.getElementById('hints-list');
+        loadChallengeStats(challengeId);
+
+        // Flag/选择题
+        const solved = isSolved(challengeId);
+        const submitBtn = document.querySelector('.flag-submit');
+        const flagInput = document.getElementById('flag-input');
+        const flagSection = document.getElementById('flag-section');
+        const choiceSection = document.getElementById('choice-answer-section');
+        
+        if (ch.isChoice && ch.choices) {
+            flagSection.classList.add('hidden');
+            choiceSection.classList.remove('hidden');
+            renderChoiceOptions(ch.choices, solved);
+            loadChoiceAttempts(challengeId, ch.maxAttempts || 3);
+            const choiceSubmitBtn = choiceSection.querySelector('.flag-submit');
+            if (solved) {
+                choiceSubmitBtn.textContent = '已解出 ✓';
+                choiceSubmitBtn.disabled = true;
+                choiceSubmitBtn.style.background = '#22c55e';
+                choiceSection.querySelectorAll('input[type=checkbox]').forEach(cb => cb.disabled = true);
+            } else {
+                choiceSubmitBtn.textContent = '提交答案 // SUBMIT';
+                choiceSubmitBtn.disabled = false;
+                choiceSubmitBtn.style.background = '';
+            }
+        } else {
+            flagSection.classList.remove('hidden');
+            choiceSection.classList.add('hidden');
+            if (solved) {
+                submitBtn.textContent = '已解出 ✓';
+                submitBtn.disabled = true;
+                submitBtn.style.background = '#22c55e';
+                flagInput.disabled = true;
+                flagInput.placeholder = '已解出此题';
+            } else {
+                submitBtn.textContent = 'SUBMIT';
+                submitBtn.disabled = false;
+                submitBtn.style.background = '';
+                flagInput.disabled = false;
+                flagInput.placeholder = 'TG{flag_here...}';
+                flagInput.value = '';
+            }
+        }
+
+        document.getElementById('modal-overlay').classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        document.getElementById('modal-overlay').classList.remove('show');
+        document.body.style.overflow = '';
+        currentChallengeId = null;
+    }
+
+    // ========== 容器部署 ==========
+    let currentInstance = null;
+    let instanceTTLInterval = null;
+
+    async function checkExistingInstance(challengeId) {
+        try {
+            const res = await fetch(`/api/contests/${contestId}/challenges/${challengeId}/instance`, { headers: { 'Authorization': 'Bearer ' + token } });
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.ports && data.ttl > 0) {
+                    currentInstance = data;
+                    showInstance(data.ports, data.ttl, data.isOwner, data.creatorName);
+                    return true;
+                }
+            }
+        } catch (e) {}
+        return false;
+    }
+
+    async function deployInstance(forceDestroy = false) {
+        const ch = challengesData.find(c => c.id === currentChallengeId);
+        if (!ch) return;
+
+        const btnDeploy = document.getElementById('btn-deploy');
+        btnDeploy.innerHTML = '<span>🚀 部署中请稍候...</span>';
+        btnDeploy.disabled = true;
+
+        try {
+            const url = `/api/contests/${contestId}/challenges/${currentChallengeId}/instance` + (forceDestroy ? '?force=true' : '');
+            const res = await fetch(url, { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
+            const data = await res.json();
             
-            // 默认隐藏
-            hintsSection.classList.add('hidden');
-            hintsList.innerHTML = '';
+            if (!res.ok) {
+                if (data.error === 'NEED_DESTROY_OWN') {
+                    btnDeploy.innerHTML = '<span>🚀 部署作战环境 (DEPLOY INSTANCE)</span>';
+                    btnDeploy.disabled = false;
+                    showConfirm('确认销毁旧容器', `您已有运行中的容器 [${data.oldChallengeName}]，启动新容器将自动销毁旧容器。\n\n是否继续？`, () => deployInstance(true));
+                    return;
+                } else if (data.error === 'INSTANCE_BY_TEAMMATE' || data.error === 'LIMIT_REACHED' || data.error === 'INSTANCE_EXISTS') {
+                    btnDeploy.innerHTML = '<span>🚀 部署作战环境 (DEPLOY INSTANCE)</span>';
+                    btnDeploy.disabled = false;
+                    showToast(data.message, 'warning');
+                    return;
+                }
+                throw new Error(data.message || '部署失败');
+            }
+
+            currentInstance = data;
+            showDeployProgress(() => { showInstance(data.ports, data.ttl, true, ''); });
+        } catch (e) {
+            showToast('部署失败: ' + e.message, 'error');
+            btnDeploy.innerHTML = '<span>🚀 部署作战环境 (DEPLOY INSTANCE)</span>';
+            btnDeploy.disabled = false;
+        }
+    }
+
+    function showDeployProgress(onComplete) {
+        const btnDeploy = document.getElementById('btn-deploy');
+        const progressPanel = document.getElementById('deploy-progress-panel');
+        const progressBar = document.getElementById('deploy-progress-bar');
+        const progressText = document.getElementById('deploy-progress-text');
+        
+        btnDeploy.style.display = 'none';
+        progressPanel.style.display = 'block';
+        progressBar.style.width = '0%';
+        progressText.textContent = '0%';
+        
+        let progress = 0;
+        const duration = 5000;
+        const interval = 50;
+        const step = 100 / (duration / interval);
+        
+        const timer = setInterval(() => {
+            progress += step;
+            if (progress >= 100) {
+                progress = 100;
+                clearInterval(timer);
+                progressBar.style.width = '100%';
+                progressText.textContent = '100%';
+                setTimeout(() => { progressPanel.style.display = 'none'; onComplete(); }, 300);
+            } else {
+                progressBar.style.width = progress + '%';
+                progressText.textContent = Math.floor(progress) + '%';
+            }
+        }, interval);
+    }
+
+    function showInstance(ports, ttlSeconds, isOwner = true, creatorName = '') {
+        document.getElementById('btn-deploy').style.display = 'none';
+        const instancePanel = document.getElementById('instance-panel');
+        instancePanel.classList.add('active');
+
+        const creatorInfo = document.getElementById('instance-creator-info');
+        const destroyBtn = document.getElementById('btn-destroy');
+        if (!isOwner && creatorName) {
+            creatorInfo.textContent = `(由 ${creatorName} 启动)`;
+            creatorInfo.style.display = 'inline';
+            destroyBtn.style.display = 'none';
+        } else {
+            creatorInfo.style.display = 'none';
+            destroyBtn.style.display = 'inline';
+        }
+
+        const addressesDiv = document.getElementById('instance-addresses');
+        const host = window.location.hostname;
+        
+        if (!ports || Object.keys(ports).length === 0) {
+            addressesDiv.innerHTML = `<div class="text-yellow-500 text-sm">⚠️ 容器已启动，但未配置端口映射</div><div class="text-gray-500 text-xs mt-1">请联系管理员检查题目配置</div>`;
+        } else {
+            const addresses = Object.entries(ports).map(([containerPort, hostPort]) => `${host}:${hostPort}`);
+            addressesDiv.innerHTML = addresses.map(addr => `
+                <div class="instance-row group">
+                    <span class="addr-text">${addr}</span>
+                    <span class="copy-icon group-hover:text-[#ff6b00]" data-copy="${addr}" title="复制" style="cursor:pointer">📋</span>
+                    <a href="http://${addr}" target="_blank" class="text-[#3b82f6] hover:text-white" title="用网页打开">🌐</a>
+                </div>`).join('');
+            addressesDiv.querySelectorAll('.copy-icon').forEach(btn => { btn.onclick = function() { copyToClipboard(this.dataset.copy); }; });
+        }
+        startInstanceTTL(ttlSeconds);
+    }
+
+    function startInstanceTTL(seconds) {
+        let remaining = seconds;
+        updateInstanceTTL(remaining);
+        if (instanceTTLInterval) clearInterval(instanceTTLInterval);
+        instanceTTLInterval = setInterval(() => {
+            remaining--;
+            if (remaining <= 0) { clearInterval(instanceTTLInterval); resetInstanceUI(); alert('实例已过期'); return; }
+            updateInstanceTTL(remaining);
+        }, 1000);
+    }
+
+    function updateInstanceTTL(seconds) {
+        const ttlEl = document.getElementById('instance-ttl');
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        ttlEl.textContent = `${mins}:${String(secs).padStart(2, '0')}`;
+    }
+
+    function copyToClipboard(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(() => showToast('已复制: ' + text, 'success')).catch(() => fallbackCopy(text));
+        } else { fallbackCopy(text); }
+    }
+
+    function fallbackCopy(text) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        try { document.execCommand('copy'); showToast('已复制: ' + text, 'success'); }
+        catch (e) { alert('复制失败，请手动复制: ' + text); }
+        document.body.removeChild(ta);
+    }
+
+    function extendInstance() {
+        fetch(`/api/contests/${contestId}/challenges/${currentChallengeId}/instance/extend`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } })
+        .then(res => res.json())
+        .then(data => { if (data.ttl) { startInstanceTTL(data.ttl); alert('已延长30分钟'); } else { alert(data.message || '延长失败'); } })
+        .catch(e => alert('延长失败: ' + e.message));
+    }
+
+    function destroyInstance() { showConfirm('确认销毁', '确定要销毁当前容器实例吗？此操作不可撤销。', doDestroyInstance); }
+
+    function doDestroyInstance() {
+        fetch(`/api/contests/${contestId}/challenges/${currentChallengeId}/instance`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } })
+        .then(res => res.json().then(data => ({ok: res.ok, data})))
+        .then(({ok, data}) => {
+            if (!ok) { showToast(data.message || '销毁失败', data.error === 'NOT_OWNER' ? 'warning' : 'error'); return; }
+            resetInstanceUI();
+            showToast('容器已销毁', 'success');
+        })
+        .catch(e => showToast('销毁失败: ' + e.message, 'error'));
+    }
+
+    function resetInstanceUI() {
+        if (instanceTTLInterval) { clearInterval(instanceTTLInterval); instanceTTLInterval = null; }
+        currentInstance = null;
+        document.getElementById('instance-panel').classList.remove('active');
+        const btnDeploy = document.getElementById('btn-deploy');
+        btnDeploy.innerHTML = '<span>🚀 部署作战环境 (DEPLOY INSTANCE)</span>';
+        btnDeploy.disabled = false;
+        btnDeploy.style.display = 'flex';
+    }
+
+    // ========== 确认弹窗 ==========
+    let confirmCallback = null;
+    function showConfirm(title, msg, onConfirm) {
+        document.getElementById('confirm-title').textContent = title;
+        document.getElementById('confirm-msg').textContent = msg;
+        confirmCallback = onConfirm;
+        document.getElementById('confirm-overlay').classList.remove('hidden');
+    }
+    function hideConfirm() { document.getElementById('confirm-overlay').classList.add('hidden'); confirmCallback = null; }
+    document.getElementById('confirm-ok-btn').onclick = function() { const cb = confirmCallback; hideConfirm(); if (cb) cb(); };
+
+    // ========== 提示加载 ==========
+    async function loadChallengeHints(challengeId) {
+        const hintsSection = document.getElementById('hints-section');
+        const hintsList = document.getElementById('hints-list');
+        hintsSection.classList.add('hidden');
+        hintsList.innerHTML = '';
+        
+        try {
+            const res = await fetch(`/api/contests/${contestId}/challenges/${challengeId}/hints`, { headers: { 'Authorization': 'Bearer ' + token } });
+            if (!res.ok) return;
+            const hints = await res.json() || [];
             
-            try {
-                const res = await fetch(`/api/contests/${contestId}/challenges/${challengeId}/hints`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (!res.ok) return;
-                
-                const hints = await res.json() || [];
-                
-                if (hints.length > 0) {
-                    hintsSection.classList.remove('hidden');
-                    hintsList.innerHTML = hints.map((hint, idx) => `
-                        <div class="bg-[#1a1a1a] border border-[#333] p-3 mb-2 last:mb-0">
-                            <div class="flex items-start gap-2">
-                                <span class="text-yellow-500 text-sm">💡</span>
-                                <div class="flex-1">
-                                    <p class="text-gray-300 text-sm">${escapeHtml(hint.content)}</p>
-                                    <p class="text-gray-600 text-[10px] mt-1 font-mono">提示 ${idx + 1} · ${formatHintTime(hint.releasedAt)}</p>
-                                </div>
+            if (hints.length > 0) {
+                hintsSection.classList.remove('hidden');
+                hintsList.innerHTML = hints.map((hint, idx) => `
+                    <div class="bg-[#1a1a1a] border border-[#333] p-3 mb-2 last:mb-0">
+                        <div class="flex items-start gap-2">
+                            <span class="text-yellow-500 text-sm">💡</span>
+                            <div class="flex-1">
+                                <p class="text-gray-300 text-sm">${escapeHtml(hint.content)}</p>
+                                <p class="text-gray-600 text-[10px] mt-1 font-mono">提示 ${idx + 1} · ${formatHintTime(hint.releasedAt)}</p>
                             </div>
                         </div>
-                    `).join('');
-                }
-            } catch (e) {
-                console.error('加载提示失败', e);
+                    </div>`).join('');
             }
-        }
+        } catch (e) {}
+    }
 
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
+    function formatHintTime(isoString) {
+        if (!isoString) return '';
+        const d = new Date(isoString);
+        return d.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    }
 
-        function formatHintTime(isoString) {
-            if (!isoString) return '';
-            const d = new Date(isoString);
-            return d.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-        }
+    // ========== 解题榜 ==========
+    async function loadChallengeStats(challengeId) {
+        const solversList = document.getElementById('solvers-list');
+        solversList.innerHTML = '<div class="solver-item"><span class="solver-name">加载中...</span></div>';
 
-        // 加载题目统计（解题榜）
-        async function loadChallengeStats(challengeId) {
-            const solversList = document.getElementById('solvers-list');
-            solversList.innerHTML = `<tr><td class="p-4 text-gray-500 text-center">加载中...</td></tr>`;
+        try {
+            const res = await fetch(`/api/contests/${contestId}/challenges/${challengeId}/stats`, { headers: { 'Authorization': 'Bearer ' + token } });
+            if (!res.ok) throw new Error('Failed');
+            const data = await res.json();
 
-            try {
-                const res = await fetch(`/api/contests/${contestId}/challenges/${challengeId}/stats`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (!res.ok) throw new Error('Failed');
-                const data = await res.json();
-
-                // 更新题目卡片数据
-                const ch = challengesData.find(c => c.id === challengeId);
-                if (ch) {
-                    ch.solveCount = data.solveCount || 0;
-                    if (data.firstBlood) ch.firstBlood = data.firstBlood.teamName;
-                    if (data.secondBlood) ch.secondBlood = data.secondBlood.teamName;
-                    if (data.thirdBlood) ch.thirdBlood = data.thirdBlood.teamName;
-                }
-
-                // 渲染解题榜 - 显示所有解题者
-                const solvers = data.solvers || [];
-                if (solvers.length > 0) {
-                    let html = '';
-                    solvers.forEach((solver, index) => {
-                        let rowClass = '';
-                        let icon = '';
-                        let textClass = 'text-gray-400';
-                        let medalDot = '';
-                        
-                        if (index === 0) {
-                            rowClass = 'bg-yellow-500/10';
-                            icon = '🥇 ';
-                            textClass = 'text-yellow-500';
-                            medalDot = '<span class="medal-dot medal-gold mr-2"></span>';
-                        } else if (index === 1) {
-                            rowClass = 'bg-gray-500/5';
-                            icon = '🥈 ';
-                            textClass = 'text-gray-300';
-                            medalDot = '<span class="medal-dot medal-silver mr-2"></span>';
-                        } else if (index === 2) {
-                            rowClass = 'bg-orange-500/5';
-                            icon = '🥉 ';
-                            textClass = 'text-orange-700';
-                            medalDot = '<span class="medal-dot medal-bronze mr-2"></span>';
-                        }
-                        
-                        html += `<tr class="${rowClass}">
-                            <td class="p-3">
-                                ${medalDot}<span class="${textClass} text-sm font-medium">${icon}${solver.teamName}</span>
-                            </td>
-                            <td class="text-gray-500 text-right pr-4 text-xs">${solver.solvedAt}</td>
-                        </tr>`;
-                    });
-                    solversList.innerHTML = html;
-                } else {
-                    solversList.innerHTML = `<tr><td class="p-4 text-gray-500 text-center">暂无解题记录</td></tr>`;
-                }
-            } catch (e) {
-                solversList.innerHTML = `<tr><td class="p-4 text-gray-500 text-center">暂无解题记录</td></tr>`;
-            }
-        }
-
-        // 显示自定义弹窗提示
-        function showToast(message, type = 'info') {
-            const colors = {
-                success: '#22c55e',
-                error: '#ef4444',
-                info: '#3b82f6',
-                warning: '#f59e0b'
-            };
-            const tip = document.createElement('div');
-            tip.textContent = message;
-            tip.style.cssText = `position:fixed;top:20px;left:50%;transform:translateX(-50%);background:${colors[type] || colors.info};color:#fff;padding:12px 24px;border-radius:4px;z-index:9999;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,0.3);`;
-            document.body.appendChild(tip);
-            setTimeout(() => tip.remove(), 3000);
-        }
-
-        // 提交 Flag
-        let flagCooldownTimer = null;
-        let flagCooldownSeconds = 0;
-
-        async function submitFlag() {
-            const flag = document.getElementById('flag-input').value.trim();
-            if (!flag) {
-                showToast('请输入 Flag', 'warning');
-                return;
+            const ch = challengesData.find(c => c.id === challengeId);
+            if (ch) {
+                ch.solveCount = data.solveCount || 0;
+                if (data.firstBlood) ch.firstBlood = data.firstBlood.teamName;
+                if (data.secondBlood) ch.secondBlood = data.secondBlood.teamName;
+                if (data.thirdBlood) ch.thirdBlood = data.thirdBlood.teamName;
             }
 
-            // 检查是否在冷却中
-            if (flagCooldownSeconds > 0) {
-                showToast(`请等待 ${flagCooldownSeconds} 秒后再提交`, 'warning');
-                return;
+            const solvers = data.solvers || [];
+            if (solvers.length > 0) {
+                solversList.innerHTML = solvers.map((solver, idx) => {
+                    let rankClass = idx < 3 ? 'r' + (idx + 1) : '';
+                    let icon = idx === 0 ? '🥇 ' : idx === 1 ? '🥈 ' : idx === 2 ? '🥉 ' : '';
+                    return `<div class="solver-item"><span class="solver-rank ${rankClass}">#${idx + 1}</span><span class="solver-name">${icon}${escapeHtml(solver.teamName)}</span><span class="solver-time">${solver.solvedAt}</span></div>`;
+                }).join('');
+            } else {
+                solversList.innerHTML = '<div class="solver-item"><span class="solver-name">暂无解题记录</span></div>';
             }
+        } catch (e) {
+            solversList.innerHTML = '<div class="solver-item"><span class="solver-name">暂无解题记录</span></div>';
+        }
+    }
 
-            if (isAdminMode) {
-                // 超级管理员模式：仅验证 flag 正确性，不记录
-                const ch = challengesData.find(c => c.id === currentChallengeId);
-                if (ch && flag === ch.flag) {
-                    showToast('✓ Flag 正确！（管理员模式，不计入分数）', 'success');
-                } else {
-                    showToast('✗ Flag 错误', 'error');
-                }
-                return;
-            }
+    // ========== Toast ==========
+    function showToast(message, type = 'info') {
+        const toast = document.getElementById('toast');
+        toast.className = `toast ${type}`;
+        toast.querySelector('.toast-icon').textContent = type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ';
+        toast.querySelector('h4').textContent = type === 'success' ? 'Success!' : type === 'error' ? 'Error!' : 'Info';
+        toast.querySelector('p').textContent = message;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    }
 
-            // 普通用户提交
-            const submitBtn = document.querySelector('.btn-submit-new');
-            submitBtn.textContent = '提交中...';
-            submitBtn.disabled = true;
+    // ========== Flag提交 ==========
+    let flagCooldownTimer = null;
+    let flagCooldownSeconds = 0;
 
-            try {
-                const res = await fetch(`/api/contests/${contestId}/challenges/${currentChallengeId}/submit`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': 'Bearer ' + token,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ flag: flag })
-                });
-                const data = await res.json();
+    async function submitFlag() {
+        const flag = document.getElementById('flag-input').value.trim();
+        if (!flag) { showToast('请输入 Flag', 'warning'); return; }
+        if (flagCooldownSeconds > 0) { showToast(`请等待 ${flagCooldownSeconds} 秒后再提交`, 'warning'); return; }
 
-                if (data.correct) {
-                    // 正确
-                    let msg = data.message || '回答正确！';
-                    if (data.score) msg += ` +${data.score}分`;
-                    showToast(msg, 'success');
+        if (isAdminMode) {
+            const ch = challengesData.find(c => c.id === currentChallengeId);
+            if (ch && flag === ch.flag) { showToast('✓ Flag 正确！（管理员模式，不计入分数）', 'success'); }
+            else { showToast('✗ Flag 错误', 'error'); }
+            return;
+        }
 
-                    // 更新界面
-                    submitBtn.textContent = '已解出 ✓';
-                    submitBtn.style.background = '#22c55e';
-                    document.getElementById('flag-input').disabled = true;
+        const submitBtn = document.querySelector('.flag-submit');
+        submitBtn.textContent = '提交中...';
+        submitBtn.disabled = true;
 
-                    // 重新加载解题状态
-                    await loadTeamSolves();
-                    loadChallengeStats(currentChallengeId);
-                } else if (data.error === 'TOO_FAST') {
-                    // 提交太频繁，启动冷却倒计时
-                    startFlagCooldown(data.retryAfter || 10);
-                    submitBtn.disabled = false;
-                } else {
-                    // 错误，启动冷却倒计时
-                    showToast(data.message || 'Flag错误', 'error');
-                    startFlagCooldown(10);
-                }
-            } catch (e) {
-                showToast('提交失败: ' + e.message, 'error');
-                submitBtn.textContent = '提交 // SUBMIT';
+        try {
+            const res = await fetch(`/api/contests/${contestId}/challenges/${currentChallengeId}/submit`, {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ flag: flag })
+            });
+            const data = await res.json();
+
+            if (data.correct) {
+                let msg = data.message || '回答正确！';
+                if (data.score) msg += ` +${data.score}分`;
+                showToast(msg, 'success');
+                submitBtn.textContent = '已解出 ✓';
+                submitBtn.style.background = '#22c55e';
+                document.getElementById('flag-input').disabled = true;
+                await loadTeamSolves();
+                loadChallengeStats(currentChallengeId);
+            } else if (data.error === 'TOO_FAST') {
+                startFlagCooldown(data.retryAfter || 10);
                 submitBtn.disabled = false;
+            } else {
+                showToast(data.message || 'Flag错误', 'error');
+                startFlagCooldown(10);
             }
+        } catch (e) {
+            showToast('提交失败: ' + e.message, 'error');
+            submitBtn.textContent = 'SUBMIT';
+            submitBtn.disabled = false;
         }
+    }
 
-        // 启动 flag 提交冷却倒计时
-        function startFlagCooldown(seconds) {
-            const submitBtn = document.querySelector('.btn-submit-new');
-            flagCooldownSeconds = seconds;
-            
-            if (flagCooldownTimer) clearInterval(flagCooldownTimer);
-            
-            updateFlagCooldownUI();
-            
-            flagCooldownTimer = setInterval(() => {
-                flagCooldownSeconds--;
-                if (flagCooldownSeconds <= 0) {
-                    clearInterval(flagCooldownTimer);
-                    flagCooldownTimer = null;
-                    flagCooldownSeconds = 0;
-                    submitBtn.textContent = '提交 // SUBMIT';
-                    submitBtn.disabled = false;
-                } else {
-                    updateFlagCooldownUI();
+    function startFlagCooldown(seconds) {
+        const submitBtn = document.querySelector('.flag-submit');
+        flagCooldownSeconds = seconds;
+        if (flagCooldownTimer) clearInterval(flagCooldownTimer);
+        updateFlagCooldownUI();
+        flagCooldownTimer = setInterval(() => {
+            flagCooldownSeconds--;
+            if (flagCooldownSeconds <= 0) {
+                clearInterval(flagCooldownTimer);
+                flagCooldownTimer = null;
+                flagCooldownSeconds = 0;
+                submitBtn.textContent = 'SUBMIT';
+                submitBtn.disabled = false;
+            } else { updateFlagCooldownUI(); }
+        }, 1000);
+    }
+
+    function updateFlagCooldownUI() {
+        const submitBtn = document.querySelector('.flag-submit');
+        submitBtn.textContent = `请等待 ${flagCooldownSeconds}s`;
+        submitBtn.disabled = true;
+    }
+
+    // ========== 选择题 ==========
+    let currentChoiceAttempts = 0;
+    let currentMaxAttempts = 3;
+
+    function renderChoiceOptions(choicesJson, disabled = false) {
+        const container = document.getElementById('choice-options-list');
+        container.innerHTML = '';
+        try {
+            const choices = typeof choicesJson === 'string' ? JSON.parse(choicesJson) : choicesJson;
+            choices.forEach((text, idx) => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-3 p-3 bg-[#1a1a1a] border border-[#333] hover:border-[#ff6b00]/50 transition cursor-pointer';
+                div.innerHTML = `<input type="checkbox" id="choice-${idx}" data-index="${idx}" class="w-5 h-5 accent-[#ff6b00] cursor-pointer" ${disabled ? 'disabled' : ''}><label for="choice-${idx}" class="flex-1 text-sm text-gray-300 cursor-pointer">${escapeHtml(text)}</label>`;
+                div.onclick = (e) => { if (e.target.tagName !== 'INPUT' && !disabled) { div.querySelector('input').checked = !div.querySelector('input').checked; } };
+                container.appendChild(div);
+            });
+        } catch (e) { container.innerHTML = '<div class="text-red-500 text-sm">选项加载失败</div>'; }
+    }
+
+    async function loadChoiceAttempts(challengeId, maxAttempts) {
+        currentMaxAttempts = maxAttempts;
+        const infoEl = document.getElementById('choice-attempts-info');
+        try {
+            const res = await fetch(`/api/contests/${contestId}/challenges/${challengeId}/choice-attempts`, { headers: { 'Authorization': 'Bearer ' + token } });
+            if (res.ok) {
+                const data = await res.json();
+                currentChoiceAttempts = data.attempts || 0;
+                const remaining = maxAttempts - currentChoiceAttempts;
+                infoEl.textContent = `剩余次数: ${remaining}`;
+                infoEl.className = remaining <= 1 ? 'text-xs text-red-500 font-mono' : 'text-xs text-yellow-500 font-mono';
+                if (remaining <= 0) {
+                    const choiceSection = document.getElementById('choice-answer-section');
+                    const submitBtn = choiceSection.querySelector('.flag-submit');
+                    submitBtn.textContent = '答题次数已耗尽';
+                    submitBtn.disabled = true;
+                    submitBtn.style.background = '#666';
+                    choiceSection.querySelectorAll('input[type=checkbox]').forEach(cb => cb.disabled = true);
                 }
-            }, 1000);
-        }
-
-        function updateFlagCooldownUI() {
-            const submitBtn = document.querySelector('.btn-submit-new');
-            submitBtn.textContent = `请等待 ${flagCooldownSeconds}s`;
-            submitBtn.disabled = true;
-        }
-
-        // ========== 选择题功能 ==========
-        let currentChoiceAttempts = 0;
-        let currentMaxAttempts = 3;
-
-        // 渲染选项
-        function renderChoiceOptions(choicesJson, disabled = false) {
-            const container = document.getElementById('choice-options-list');
-            container.innerHTML = '';
-            try {
-                const choices = typeof choicesJson === 'string' ? JSON.parse(choicesJson) : choicesJson;
-                choices.forEach((text, idx) => {
-                    const div = document.createElement('div');
-                    div.className = 'flex items-center gap-3 p-3 bg-[#1a1a1a] border border-[#333] hover:border-[#ff6b00]/50 transition cursor-pointer';
-                    div.innerHTML = `
-                        <input type="checkbox" id="choice-${idx}" data-index="${idx}" class="w-5 h-5 accent-[#ff6b00] cursor-pointer" ${disabled ? 'disabled' : ''}>
-                        <label for="choice-${idx}" class="flex-1 text-sm text-gray-300 cursor-pointer">${escapeHtml(text)}</label>
-                    `;
-                    div.onclick = (e) => {
-                        if (e.target.tagName !== 'INPUT' && !disabled) {
-                            const cb = div.querySelector('input');
-                            cb.checked = !cb.checked;
-                        }
-                    };
-                    container.appendChild(div);
-                });
-            } catch (e) {
-                console.error('Parse choices error:', e);
-                container.innerHTML = '<div class="text-red-500 text-sm">选项加载失败</div>';
             }
-        }
+        } catch (e) { infoEl.textContent = `剩余次数: ${maxAttempts}`; }
+    }
 
-        // 加载剩余答题次数
-        async function loadChoiceAttempts(challengeId, maxAttempts) {
-            currentMaxAttempts = maxAttempts;
-            const infoEl = document.getElementById('choice-attempts-info');
-            try {
-                const res = await fetch(`/api/contests/${contestId}/challenges/${challengeId}/choice-attempts`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    currentChoiceAttempts = data.attempts || 0;
-                    const remaining = maxAttempts - currentChoiceAttempts;
-                    infoEl.textContent = `剩余次数: ${remaining}`;
-                    infoEl.className = remaining <= 1 ? 'text-xs text-red-500 font-mono' : 'text-xs text-yellow-500 font-mono';
-                    
-                    // 如果次数耗尽，禁用提交
-                    if (remaining <= 0) {
-                        const choiceSection = document.getElementById('choice-answer-section');
-                        const submitBtn = choiceSection.querySelector('.btn-submit-new');
+    async function submitChoice() {
+        const choiceSection = document.getElementById('choice-answer-section');
+        const submitBtn = choiceSection.querySelector('.flag-submit');
+        const checkboxes = choiceSection.querySelectorAll('input[type=checkbox]:checked');
+        
+        if (checkboxes.length === 0) { showToast('请至少选择一个选项', 'warning'); return; }
+        
+        const selectedIndices = [];
+        checkboxes.forEach(cb => selectedIndices.push(cb.dataset.index));
+        const answer = selectedIndices.join(',');
+        
+        submitBtn.textContent = '提交中...';
+        submitBtn.disabled = true;
+        
+        try {
+            const res = await fetch(`/api/contests/${contestId}/challenges/${currentChallengeId}/submit`, {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ flag: answer })
+            });
+            const data = await res.json();
+            
+            if (data.correct) {
+                let msg = data.message || '回答正确！';
+                if (data.score) msg += ` +${data.score}分`;
+                showToast(msg, 'success');
+                submitBtn.textContent = '已解出 ✓';
+                submitBtn.style.background = '#22c55e';
+                choiceSection.querySelectorAll('input[type=checkbox]').forEach(cb => cb.disabled = true);
+                await loadTeamSolves();
+                loadChallengeStats(currentChallengeId);
+            } else {
+                showToast(data.message || '答案错误', 'error');
+                if (data.remainingAttempts !== undefined) {
+                    const infoEl = document.getElementById('choice-attempts-info');
+                    infoEl.textContent = `剩余次数: ${data.remainingAttempts}`;
+                    infoEl.className = data.remainingAttempts <= 1 ? 'text-xs text-red-500 font-mono' : 'text-xs text-yellow-500 font-mono';
+                    if (data.remainingAttempts <= 0) {
                         submitBtn.textContent = '答题次数已耗尽';
-                        submitBtn.disabled = true;
                         submitBtn.style.background = '#666';
                         choiceSection.querySelectorAll('input[type=checkbox]').forEach(cb => cb.disabled = true);
+                        return;
                     }
                 }
-            } catch (e) {
-                infoEl.textContent = `剩余次数: ${maxAttempts}`;
-            }
-        }
-
-        // 提交选择题答案
-        async function submitChoice() {
-            const choiceSection = document.getElementById('choice-answer-section');
-            const submitBtn = choiceSection.querySelector('.btn-submit-new');
-            const checkboxes = choiceSection.querySelectorAll('input[type=checkbox]:checked');
-            
-            if (checkboxes.length === 0) {
-                showToast('请至少选择一个选项', 'warning');
-                return;
-            }
-            
-            // 收集选中的索引
-            const selectedIndices = [];
-            checkboxes.forEach(cb => selectedIndices.push(cb.dataset.index));
-            const answer = selectedIndices.join(',');
-            
-            submitBtn.textContent = '提交中...';
-            submitBtn.disabled = true;
-            
-            try {
-                const res = await fetch(`/api/contests/${contestId}/challenges/${currentChallengeId}/submit`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': 'Bearer ' + token,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ flag: answer })
-                });
-                const data = await res.json();
-                
-                if (data.correct) {
-                    // 正确
-                    let msg = data.message || '回答正确！';
-                    if (data.score) msg += ` +${data.score}分`;
-                    showToast(msg, 'success');
-                    
-                    submitBtn.textContent = '已解出 ✓';
-                    submitBtn.style.background = '#22c55e';
-                    choiceSection.querySelectorAll('input[type=checkbox]').forEach(cb => cb.disabled = true);
-                    
-                    await loadTeamSolves();
-                    loadChallengeStats(currentChallengeId);
-                } else {
-                    // 错误
-                    showToast(data.message || '答案错误', 'error');
-                    
-                    // 更新剩余次数
-                    if (data.remainingAttempts !== undefined) {
-                        const infoEl = document.getElementById('choice-attempts-info');
-                        infoEl.textContent = `剩余次数: ${data.remainingAttempts}`;
-                        infoEl.className = data.remainingAttempts <= 1 ? 'text-xs text-red-500 font-mono' : 'text-xs text-yellow-500 font-mono';
-                        
-                        if (data.remainingAttempts <= 0) {
-                            submitBtn.textContent = '答题次数已耗尽';
-                            submitBtn.style.background = '#666';
-                            choiceSection.querySelectorAll('input[type=checkbox]').forEach(cb => cb.disabled = true);
-                            return;
-                        }
-                    }
-                    
-                    submitBtn.textContent = '提交答案 // SUBMIT';
-                    submitBtn.disabled = false;
-                }
-            } catch (e) {
-                showToast('提交失败: ' + e.message, 'error');
                 submitBtn.textContent = '提交答案 // SUBMIT';
                 submitBtn.disabled = false;
             }
+        } catch (e) {
+            showToast('提交失败: ' + e.message, 'error');
+            submitBtn.textContent = '提交答案 // SUBMIT';
+            submitBtn.disabled = false;
         }
+    }
 
-        // HTML转义
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+    // ========== 公告 ==========
+    async function loadAnnouncements() {
+        try {
+            const res = await fetch(`/api/contests/${contestId}/announcements`, { headers: { 'Authorization': 'Bearer ' + token } });
+            if (!res.ok) return;
+            announcementsData = await res.json() || [];
+            renderFeed();
+        } catch (e) {}
+    }
+
+    // ========== 血量数据 ==========
+    async function loadAllBloodStats() {
+        if (challengesData.length === 0) return;
+        try {
+            const res = await fetch(`/api/contests/${contestId}/challenges/blood`, { headers: { 'Authorization': 'Bearer ' + token } });
+            if (!res.ok) return;
+            const bloodData = await res.json() || [];
+            const bloodMap = {};
+            bloodData.forEach(b => { bloodMap[b.challengeId] = b; });
+            challengesData.forEach(ch => {
+                const blood = bloodMap[ch.id];
+                if (blood) {
+                    ch.solveCount = blood.solveCount || 0;
+                    ch.firstBlood = blood.firstBlood || null;
+                    ch.secondBlood = blood.secondBlood || null;
+                    ch.thirdBlood = blood.thirdBlood || null;
+                }
+            });
+            renderChallenges();
+        } catch (e) {}
+    }
+
+    // ========== ESC关闭弹窗 ==========
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+    document.getElementById('modal-overlay').addEventListener('click', (e) => { if (e.target === document.getElementById('modal-overlay')) closeModal(); });
+
+    // ========== 跳转排行榜 ==========
+    function goToLeaderboard() { window.location.href = `/contest-leaderboard.html?id=${contestId}`; }
+
+    // ========== WebSocket ==========
+    let challengeWs = null;
+
+    function initChallengeWebSocket() {
+        if (!contestId || !token) return;
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${wsProtocol}//${window.location.host}/api/contests/${contestId}/monitor/ws?token=${token}`;
+        challengeWs = new WebSocket(wsUrl);
+        challengeWs.onopen = () => { console.log('[WS] Connected'); };
+        challengeWs.onmessage = (event) => { try { handleWebSocketUpdate(JSON.parse(event.data)); } catch (e) {} };
+        challengeWs.onclose = () => { console.log('[WS] Closed, reconnecting...'); setTimeout(initChallengeWebSocket, 3000); };
+        challengeWs.onerror = (e) => { console.error('[WS] Error:', e); };
+    }
+
+    function handleWebSocketUpdate(data) {
+        if (data.solves && Array.isArray(data.solves) && data.solves.length > 0) { loadAllBloodStats(); }
+        if (currentChallengeId && data.solves) {
+            const currentSolves = data.solves.filter(s => s.challengeId === currentChallengeId);
+            if (currentSolves.length > 0) loadChallengeStats(currentChallengeId);
         }
+    }
 
-        // ESC 关闭弹窗
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeModal();
-        });
-
-        // ========== 公告功能 ==========
-        let announcementsData = [];
-
-        async function loadAnnouncements() {
-            try {
-                const res = await fetch(`/api/contests/${contestId}/announcements`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (!res.ok) return;
-                announcementsData = await res.json() || [];
-                renderAnnouncements();
-            } catch (e) {
-                console.error('加载公告失败:', e);
+    // ========== 头像加载 ==========
+    async function loadUserAvatar() {
+        try {
+            const res = await fetch('/api/profile', { headers: { 'Authorization': 'Bearer ' + token } });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.avatar) {
+                    document.getElementById('nav-avatar-img').src = data.avatar;
+                    document.getElementById('nav-avatar-img').style.display = 'block';
+                    document.getElementById('nav-avatar-text').style.display = 'none';
+                    document.getElementById('header-avatar-img').src = data.avatar;
+                    document.getElementById('header-avatar-img').style.display = 'block';
+                    document.getElementById('header-avatar-text').style.display = 'none';
+                }
+                if (data.teamName) {
+                    myTeamName = data.teamName;
+                    document.getElementById('header-team').textContent = myTeamName;
+                }
             }
-        }
+        } catch (e) {}
+    }
 
-        function renderAnnouncements() {
-            const container = document.getElementById('event-log');
-            if (!container) return;
-
-            if (announcementsData.length === 0) {
-                container.innerHTML = `
-                    <div class="event-item">
-                        <div class="flex justify-between items-center"><span class="tag-event tag-sys">系统</span><span class="text-gray-600 font-mono">--:--:--</span></div>
-                        <p class="text-gray-400">暂无公告</p>
-                    </div>
-                `;
-                return;
-            }
-
-            const typeConfig = {
-                'manual': { tag: '公告', tagClass: 'tag-sys', icon: '📢' },
-                'challenge_open': { tag: '新题', tagClass: 'tag-new', icon: '✅' },
-                'challenge_close': { tag: '下架', tagClass: 'tag-sys', icon: '❌' },
-                'first_blood': { tag: '一血', tagClass: 'tag-blood', icon: '🥇' },
-                'second_blood': { tag: '二血', tagClass: 'tag-blood', icon: '🥈' },
-                'third_blood': { tag: '三血', tagClass: 'tag-blood', icon: '🥉' },
-                'cheating': { tag: '警告', tagClass: 'tag-hint', icon: '⚠️' }
-            };
-
-            container.innerHTML = announcementsData.map(ann => {
-                const cfg = typeConfig[ann.type] || { tag: '通知', tagClass: 'tag-sys', icon: '📣' };
-                const time = ann.createdAt ? ann.createdAt.split(' ')[1] || ann.createdAt : '--:--:--';
-                return `
-                    <div class="event-item">
-                        <div class="flex justify-between items-center">
-                            <span class="tag-event ${cfg.tagClass}">${cfg.icon} ${cfg.tag}</span>
-                            <span class="text-gray-600 font-mono text-[10px]">${time}</span>
-                        </div>
-                        <p class="text-gray-300 text-[11px] leading-relaxed">${escapeHtml(ann.title)}</p>
-                        ${ann.content ? `<p class="text-gray-500 text-[10px] mt-1">${escapeHtml(ann.content)}</p>` : ''}
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // 加载所有题目的一二三血数据（使用批量接口，不记录首次查看）
-        async function loadAllBloodStats() {
-            if (challengesData.length === 0) return;
-            try {
-                const res = await fetch(`/api/contests/${contestId}/challenges/blood`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (!res.ok) return;
-                const bloodData = await res.json() || [];
-                // 将血量数据映射到题目
-                const bloodMap = {};
-                bloodData.forEach(b => { bloodMap[b.challengeId] = b; });
-                challengesData.forEach(ch => {
-                    const blood = bloodMap[ch.id];
-                    if (blood) {
-                        ch.solveCount = blood.solveCount || 0;
-                        ch.firstBlood = blood.firstBlood || null;
-                        ch.secondBlood = blood.secondBlood || null;
-                        ch.thirdBlood = blood.thirdBlood || null;
-                    }
-                });
+    // ========== 定时任务 ==========
+    setInterval(loadAnnouncements, 5000);
+    setInterval(loadAllBloodStats, 10000);
+    if (!isAdminMode) { setInterval(checkBannedStatus, 3000); }
+    setInterval(async () => {
+        try {
+            const res = await fetch(`/api/contests/${contestId}/challenges`, { headers: { 'Authorization': 'Bearer ' + token } });
+            if (!res.ok) return;
+            const newChallenges = await res.json() || [];
+            const oldIds = new Set(challengesData.map(c => c.id));
+            const newIds = new Set(newChallenges.map(c => c.id));
+            const hasNew = newChallenges.some(c => !oldIds.has(c.id));
+            const hasRemoved = challengesData.some(c => !newIds.has(c.id));
+            if (hasNew || hasRemoved || newChallenges.length !== challengesData.length) {
+                const oldBloodData = {};
+                challengesData.forEach(ch => { oldBloodData[ch.id] = { firstBlood: ch.firstBlood, secondBlood: ch.secondBlood, thirdBlood: ch.thirdBlood, solveCount: ch.solveCount }; });
+                challengesData = newChallenges;
+                challengesData.forEach(ch => { if (oldBloodData[ch.id]) Object.assign(ch, oldBloodData[ch.id]); });
+                document.getElementById('contest-challenges-count').innerHTML = `<span class="icon">🚩</span> ${challengesData.length} Challenges`;
+                renderCategoryNav();
                 renderChallenges();
-            } catch (e) {
-                console.error('loadAllBloodStats error:', e);
-            }
-        }
-
-        // 定时刷新公告 (5秒)
-        setInterval(loadAnnouncements, 5000);
-
-        // 定时刷新题目一二三血 (10秒)
-        setInterval(loadAllBloodStats, 10000);
-
-        // 定时检查封禁状态 (3秒) - 实时监控
-        if (!isAdminMode) {
-            setInterval(checkBannedStatus, 3000);
-        }
-
-        // 定时刷新题目列表 (5秒) - 自动检测新开放的题目
-        setInterval(async () => {
-            try {
-                const res = await fetch(`/api/contests/${contestId}/challenges`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (!res.ok) return;
-                const newChallenges = await res.json() || [];
-                // 检查是否有新题目
-                const oldIds = new Set(challengesData.map(c => c.id));
-                const newIds = new Set(newChallenges.map(c => c.id));
-                const hasNewChallenge = newChallenges.some(c => !oldIds.has(c.id));
-                const hasRemovedChallenge = challengesData.some(c => !newIds.has(c.id));
-                if (hasNewChallenge || hasRemovedChallenge || newChallenges.length !== challengesData.length) {
-                    // 保留旧题目的一二三血数据
-                    const oldBloodData = {};
-                    challengesData.forEach(ch => {
-                        oldBloodData[ch.id] = { firstBlood: ch.firstBlood, secondBlood: ch.secondBlood, thirdBlood: ch.thirdBlood, solveCount: ch.solveCount };
-                    });
-                    challengesData = newChallenges;
-                    challengesData.forEach(ch => {
-                        if (oldBloodData[ch.id]) {
-                            Object.assign(ch, oldBloodData[ch.id]);
-                        }
-                    });
-                    updateCategoryCounts();
-                    renderChallenges();
-                    loadAllBloodStats();
-                }
-            } catch (e) {}
-        }, 5000);
-
-        // 跳转到排行榜
-        function goToLeaderboard() {
-            window.location.href = `/contest-leaderboard.html?id=${contestId}`;
-        }
-
-        // ========== WebSocket 实时更新 ==========
-        let challengeWs = null;
-
-        function initChallengeWebSocket() {
-            if (!contestId || !token) return;
-            
-            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${wsProtocol}//${window.location.host}/api/contests/${contestId}/monitor/ws?token=${token}`;
-            
-            challengeWs = new WebSocket(wsUrl);
-            
-            challengeWs.onopen = () => {
-                console.log('[WS] Challenge WebSocket connected');
-            };
-            
-            challengeWs.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    handleWebSocketUpdate(data);
-                } catch (e) {
-                    console.error('[WS] Parse error:', e);
-                }
-            };
-            
-            challengeWs.onclose = () => {
-                console.log('[WS] Challenge WebSocket closed, reconnecting in 3s...');
-                setTimeout(initChallengeWebSocket, 3000);
-            };
-            
-            challengeWs.onerror = (e) => {
-                console.error('[WS] WebSocket error:', e);
-            };
-        }
-
-        function handleWebSocketUpdate(data) {
-            // 收到解题更新，重新加载所有题目的分数和一二三血数据
-            if (data.solves && Array.isArray(data.solves) && data.solves.length > 0) {
                 loadAllBloodStats();
             }
+        } catch (e) {}
+    }, 5000);
 
-            // 如果弹窗打开，实时更新解题榜和分数
-            if (currentChallengeId) {
-                updateModalFromWebSocket(data);
-            }
-        }
-
-        function updateModalFromWebSocket(data) {
-            if (!data.solves) return;
-            
-            // 筛选当前题目的解题记录
-            const currentSolves = data.solves.filter(s => s.challengeId === currentChallengeId);
-            if (currentSolves.length === 0) return;
-
-            // 有新解题记录，重新加载题目统计（获取正确的当前分数和解题榜）
-            loadChallengeStats(currentChallengeId);
-        }
-
-        // 初始化
-        init();
-        // 初始化 WebSocket
-        setTimeout(initChallengeWebSocket, 1000);
-
-        // 加载用户头像
-        async function loadUserAvatar() {
-            try {
-                const res = await fetch('/api/profile', {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.avatar) {
-                        const avatarImg = document.getElementById('user-avatar-img');
-                        const avatarText = document.getElementById('user-avatar');
-                        avatarImg.src = data.avatar;
-                        avatarImg.classList.remove('hidden');
-                        avatarText.classList.add('hidden');
-                    } else {
-                        document.getElementById('user-avatar').textContent = (data.displayName || data.username || 'U')[0].toUpperCase();
-                    }
-                }
-            } catch (e) {
-                console.error('Load avatar error:', e);
-            }
-        }
-    </script>
-
+    // ========== 初始化 ==========
+    init();
+    setTimeout(initChallengeWebSocket, 1000);
+</script>
 </body>
 </html>

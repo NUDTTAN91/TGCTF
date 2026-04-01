@@ -337,13 +337,13 @@ func HandleGetRecentSolves(c *gin.Context, db *sql.DB) {
 			WITH ranked_solves AS (
 				SELECT 
 					ts.team_id, t.name as team_name, 
-					ts.challenge_id, cc.id as contest_challenge_id, q.title as challenge_name,
+					ts.challenge_id, cc.id as contest_challenge_id, COALESCE(q.title, cc.inline_title, '') as challenge_name,
 					ts.solve_order, ts.solved_at,
 					ROW_NUMBER() OVER (PARTITION BY ts.challenge_id ORDER BY ts.solved_at ASC) as blood_rank
 				FROM team_solves ts
 				JOIN teams t ON ts.team_id = t.id
 				JOIN contest_challenges cc ON ts.challenge_id = cc.id
-				JOIN question_bank q ON cc.question_id = q.id
+				LEFT JOIN question_bank q ON cc.question_id = q.id
 				WHERE ts.contest_id = $1
 			)
 			SELECT team_id, team_name, contest_challenge_id, challenge_name, solve_order, solved_at, blood_rank
@@ -671,14 +671,14 @@ func HandleGetMonitorData(c *gin.Context, db *sql.DB, jwtSecret []byte) {
 			WITH ranked_solves AS (
 				SELECT 
 					ts.team_id, t.name as team_name, 
-					ts.challenge_id, q.title as challenge_name,
+					ts.challenge_id, COALESCE(q.title, cc.inline_title, '') as challenge_name,
 					ts.solve_order, ts.solved_at,
 					cfv.first_viewed_at,
 					ROW_NUMBER() OVER (PARTITION BY ts.challenge_id ORDER BY ts.solved_at ASC) as blood_rank
 				FROM team_solves ts
 				JOIN teams t ON ts.team_id = t.id
 				JOIN contest_challenges cc ON ts.challenge_id = cc.id
-				JOIN question_bank q ON cc.question_id = q.id
+				LEFT JOIN question_bank q ON cc.question_id = q.id
 				LEFT JOIN challenge_first_views cfv ON cfv.contest_id = ts.contest_id 
 					AND cfv.challenge_id = ts.challenge_id AND cfv.team_id = ts.team_id
 				WHERE ts.contest_id = $1
@@ -1036,14 +1036,14 @@ func GetMonitorDataForBroadcast(db *sql.DB, contestID string) map[string]interfa
 			WITH ranked_solves AS (
 				SELECT 
 					ts.team_id, t.name as team_name, 
-					ts.challenge_id, q.title as challenge_name,
+					ts.challenge_id, COALESCE(q.title, cc.inline_title, '') as challenge_name,
 					ts.solve_order, ts.solved_at,
 					cfv.first_viewed_at,
 					ROW_NUMBER() OVER (PARTITION BY ts.challenge_id ORDER BY ts.solved_at ASC) as blood_rank
 				FROM team_solves ts
 				JOIN teams t ON ts.team_id = t.id
 				JOIN contest_challenges cc ON ts.challenge_id = cc.id
-				JOIN question_bank q ON cc.question_id = q.id
+				LEFT JOIN question_bank q ON cc.question_id = q.id
 				LEFT JOIN challenge_first_views cfv ON cfv.contest_id = ts.contest_id 
 					AND cfv.challenge_id = ts.challenge_id AND cfv.team_id = ts.team_id
 				WHERE ts.contest_id = $1

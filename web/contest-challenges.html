@@ -1552,8 +1552,10 @@
         // 合并公告和解题记录
         let feedItems = [];
         
-        // 添加公告
+        // 添加公告（过滤掉血量公告，因为解题记录已包含血量信息）
+        const bloodTypes = new Set(['first_blood', 'second_blood', 'third_blood']);
         announcementsData.forEach(ann => {
+            if (bloodTypes.has(ann.type)) return;
             feedItems.push({
                 type: ann.type || 'manual',
                 title: ann.title,
@@ -1569,9 +1571,10 @@
             else if (solve.bloodRank === 2) type = 'second_blood';
             else if (solve.bloodRank === 3) type = 'third_blood';
             
+            const bloodLabel = solve.bloodRank === 1 ? '一血：' : solve.bloodRank === 2 ? '二血：' : solve.bloodRank === 3 ? '三血：' : '';
             feedItems.push({
                 type: type,
-                title: `${solve.teamName} 解出了 ${solve.challengeName}`,
+                title: `${bloodLabel}${solve.teamName} 解出了 ${solve.challengeName}`,
                 createdAt: solve.solvedAt,
                 isAnnouncement: false,
                 score: solve.score,

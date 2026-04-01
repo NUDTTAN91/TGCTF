@@ -460,7 +460,7 @@ func HandleSubmitFlag(c *gin.Context, db *sql.DB) {
 			if contestMode == "awd-f" {
 				db.QueryRow(`SELECT q.title FROM question_bank_awdf q JOIN contest_challenges_awdf cc ON q.id = cc.question_id WHERE cc.id = $1`, challengeID).Scan(&challengeName)
 			} else {
-				db.QueryRow(`SELECT q.title FROM question_bank q JOIN contest_challenges cc ON q.id = cc.question_id WHERE cc.id = $1`, challengeID).Scan(&challengeName)
+				db.QueryRow(`SELECT COALESCE(q.title, cc.inline_title, '') FROM contest_challenges cc LEFT JOIN question_bank q ON q.id = cc.question_id WHERE cc.id = $1`, challengeID).Scan(&challengeName)
 			}
 			var teamName string
 			db.QueryRow(`SELECT name FROM teams WHERE id = $1`, teamID.Int64).Scan(&teamName)

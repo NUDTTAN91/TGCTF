@@ -1148,6 +1148,7 @@
     let myTeamName = '';
     let scoreboardData = [];
     let announcementsData = [];
+    let recentSolvesData = [];
     let collapsedCategories = new Set();
     let currentFilter = 'all';
 
@@ -1184,8 +1185,8 @@
         else relativeTime = Math.floor(diff / 86400) + '天前';
         
         const date = new Date(ts);
-        const timeStr = `${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}:${String(date.getSeconds()).padStart(2,'0')}`;
-        return `${relativeTime} | ${timeStr}`;
+        const dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}:${String(date.getSeconds()).padStart(2,'0')}`;
+        return `${relativeTime} | ${dateStr}`;
     }
 
     // ========== 权限检查 ==========
@@ -1245,9 +1246,22 @@
         await loadChallenges();
         await loadTeamSolves();
         await loadAnnouncements();
+        await loadRecentSolves();
+        await loadScoreboard();
         startCountdown();
         
         window.addEventListener('scroll', handleScroll);
+    }
+
+    // ========== 加载排行榜（独立函数） ==========
+    async function loadScoreboard() {
+        try {
+            const res = await fetch(`/api/contests/${contestId}/scoreboard`, { headers: { 'Authorization': 'Bearer ' + token } });
+            if (!res.ok) return;
+            scoreboardData = await res.json() || [];
+            document.getElementById('contest-teams').innerHTML = `<span class="icon">👥</span> ${scoreboardData.length} Teams`;
+            renderScoreboard();
+        } catch (e) { console.error('Load scoreboard error:', e); }
     }
 
     // ========== 队伍状态检查 ==========
@@ -1534,7 +1548,45 @@
 
     function renderFeed() {
         const feed = document.getElementById('liveFeed');
-        if (announcementsData.length === 0) {
+        
+        // 合并公告和解题记录
+        let feedItems = [];
+        
+        // 添加公告
+        announcementsData.forEach(ann => {
+            feedItems.push({
+                type: ann.type || 'manual',
+                title: ann.title,
+                createdAt: ann.createdAt,
+                isAnnouncement: true
+            });
+        });
+        
+        // 添加解题记录
+        recentSolvesData.forEach(solve => {
+            let type = 'solve';
+            if (solve.bloodRank === 1) type = 'first_blood';
+            else if (solve.bloodRank === 2) type = 'second_blood';
+            else if (solve.bloodRank === 3) type = 'third_blood';
+            
+            feedItems.push({
+                type: type,
+                title: `${solve.teamName} 解出了 ${solve.challengeName}`,
+                createdAt: solve.solvedAt,
+                isAnnouncement: false,
+                score: solve.score,
+                bloodRank: solve.bloodRank
+            });
+        });
+        
+        // 按时间排序（最新在前）
+        feedItems.sort((a, b) => {
+            const timeA = new Date(a.createdAt?.replace(' ', 'T') || 0).getTime();
+            const timeB = new Date(b.createdAt?.replace(' ', 'T') || 0).getTime();
+            return timeB - timeA;
+        });
+        
+        if (feedItems.length === 0) {
             feed.innerHTML = '<div class="feed-item"><div class="feed-icon announcement">📢</div><div class="feed-content"><div class="feed-text">暂无战报</div><div class="feed-time">--:--:--</div></div></div>';
             return;
         }
@@ -1546,17 +1598,18 @@
             'first_blood': { icon: '🥇', iconClass: 'first-blood' },
             'second_blood': { icon: '🥈', iconClass: 'solve' },
             'third_blood': { icon: '🥉', iconClass: 'solve' },
+            'solve': { icon: '🚩', iconClass: 'solve' },
             'cheating': { icon: '⚠️', iconClass: 'warning' }
         };
         
-        feed.innerHTML = announcementsData.slice(0, 20).map(ann => {
-            const cfg = typeConfig[ann.type] || { icon: '📣', iconClass: 'announcement' };
+        feed.innerHTML = feedItems.slice(0, 30).map(item => {
+            const cfg = typeConfig[item.type] || { icon: '📣', iconClass: 'announcement' };
             return `
             <div class="feed-item">
                 <div class="feed-icon ${cfg.iconClass}">${cfg.icon}</div>
                 <div class="feed-content">
-                    <div class="feed-text">${escapeHtml(ann.title)}</div>
-                    <div class="feed-time">${formatFeedTime(ann.createdAt)}</div>
+                    <div class="feed-text">${escapeHtml(item.title)}</div>
+                    <div class="feed-time">${formatFeedTime(item.createdAt)}</div>
                 </div>
             </div>`;
         }).join('');
@@ -2245,6 +2298,17 @@
         } catch (e) {}
     }
 
+    // ========== 最近解题记录 ==========
+    async function loadRecentSolves() {
+        try {
+            const res = await fetch(`/api/contests/${contestId}/solves/recent?limit=30`, { headers: { 'Authorization': 'Bearer ' + token } });
+            if (!res.ok) return;
+            const data = await res.json();
+            recentSolvesData = data.solves || [];
+            renderFeed();
+        } catch (e) {}
+    }
+
     // ========== 血量数据 ==========
     async function loadAllBloodStats() {
         if (challengesData.length === 0) return;
@@ -2320,6 +2384,8 @@
 
     // ========== 定时任务 ==========
     setInterval(loadAnnouncements, 5000);
+    setInterval(loadRecentSolves, 5000);
+    setInterval(loadScoreboard, 10000);
     setInterval(loadAllBloodStats, 10000);
     if (!isAdminMode) { setInterval(checkBannedStatus, 3000); }
     setInterval(async () => {

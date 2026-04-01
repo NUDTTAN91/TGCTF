@@ -9,9 +9,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"tgctf/server/monitor"
 )
 
 // Announcement 公告结构
@@ -108,6 +110,12 @@ func HandleCreateAnnouncement(c *gin.Context, db *sql.DB) {
 		return
 	}
 
+	createdAt := time.Now().Format("2006-01-02 15:04:05")
+	go monitor.BroadcastMonitorUpdate(contestID, map[string]interface{}{
+		"type":   "announcement_create",
+		"announcement": map[string]interface{}{"id": id, "type": "manual", "title": req.Title, "content": req.Content, "isPinned": req.IsPinned, "createdAt": createdAt},
+	})
+
 	c.JSON(http.StatusCreated, gin.H{"id": id, "message": "CREATED"})
 }
 
@@ -148,11 +156,28 @@ func HandleUpdateAnnouncement(c *gin.Context, db *sql.DB) {
 		db.Exec(`UPDATE contest_announcements SET is_pinned = $1 WHERE id = $2`, *req.IsPinned, announcementID)
 	}
 
+	// WebSocket 广播公告更新
+	contestID := ""
+	db.QueryRow(`SELECT contest_id FROM contest_announcements WHERE id = $1`, announcementID).Scan(&contestID)
+	if contestID != "" {
+		go func() {
+			var a Announcement
+			var cat time.Time
+			db.QueryRow(`SELECT id, contest_id, type, title, COALESCE(content,''), is_pinned, created_at FROM contest_announcements WHERE id = $1`, announcementID).Scan(&a.ID, &a.ContestID, &a.Type, &a.Title, &a.Content, &a.IsPinned, &cat)
+			a.CreatedAt = cat.Format("2006-01-02 15:04:05")
+			monitor.BroadcastMonitorUpdate(contestID, map[string]interface{}{
+				"type":         "announcement_update",
+				"announcement": a,
+			})
+		}()
+	}
+
 	c.JSON(http.StatusOK, gin.H{"message": "UPDATED"})
 }
 
 // HandleDeleteAnnouncement 删除公告
 func HandleDeleteAnnouncement(c *gin.Context, db *sql.DB) {
+	contestID := c.Param("id")
 	announcementID := c.Param("announcementId")
 
 	result, err := db.Exec(`DELETE FROM contest_announcements WHERE id = $1`, announcementID)
@@ -168,6 +193,12 @@ func HandleDeleteAnnouncement(c *gin.Context, db *sql.DB) {
 		return
 	}
 
+	// WebSocket 广播公告删除
+	go monitor.BroadcastMonitorUpdate(contestID, map[string]interface{}{
+		"type":           "announcement_delete",
+		"announcementId": announcementID,
+	})
+
 	c.JSON(http.StatusOK, gin.H{"message": "DELETED"})
 }
 
@@ -181,6 +212,12 @@ func CreateAutoAnnouncement(db *sql.DB, contestID int64, annType, title, content
 		contestID, annType, title, content)
 	if err != nil {
 		log.Printf("create auto announcement error: %v", err)
+	} else {
+		createdAt := time.Now().Format("2006-01-02 15:04:05")
+		go monitor.BroadcastMonitorUpdate(strconv.FormatInt(contestID, 10), map[string]interface{}{
+			"type":         "announcement_create",
+			"announcement": map[string]interface{}{"type": annType, "title": title, "content": content, "isPinned": false, "createdAt": createdAt},
+		})
 	}
 	return err
 }

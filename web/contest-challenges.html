@@ -2356,10 +2356,49 @@
     }
 
     function handleWebSocketUpdate(data) {
-        if (data.solves && Array.isArray(data.solves) && data.solves.length > 0) { loadAllBloodStats(); }
-        if (currentChallengeId && data.solves) {
-            const currentSolves = data.solves.filter(s => s.challengeId === currentChallengeId);
-            if (currentSolves.length > 0) loadChallengeStats(currentChallengeId);
+        if (data.type === 'update') {
+            // 实时更新排行榜
+            if (data.rankings && Array.isArray(data.rankings)) {
+                scoreboardData = data.rankings;
+                document.getElementById('contest-teams').innerHTML = `<span class="icon">👥</span> ${scoreboardData.length} Teams`;
+                if (myTeamId) {
+                    for (let i = 0; i < scoreboardData.length; i++) {
+                        if (scoreboardData[i].teamId === myTeamId) {
+                            document.getElementById('stat-team-rank').textContent = i + 1;
+                            break;
+                        }
+                    }
+                }
+                renderScoreboard();
+            }
+            // 实时更新解题战报
+            if (data.solves && Array.isArray(data.solves)) {
+                recentSolvesData = data.solves;
+                renderFeed();
+                loadAllBloodStats();
+            }
+            // 更新当前打开的题目详情
+            if (currentChallengeId && data.solves) {
+                const currentSolves = data.solves.filter(s => s.challengeId === currentChallengeId);
+                if (currentSolves.length > 0) loadChallengeStats(currentChallengeId);
+            }
+        } else if (data.type === 'event' && data.event) {
+            loadAnnouncements();
+        } else if (data.type === 'announcement_create' && data.announcement) {
+            // 公告实时推送：直接插入内存并渲染
+            announcementsData.unshift(data.announcement);
+            renderFeed();
+        } else if (data.type === 'announcement_delete' && data.announcementId) {
+            // 公告删除推送：直接从内存移除并渲染
+            const delId = Number(data.announcementId);
+            announcementsData = announcementsData.filter(a => a.id !== delId);
+            renderFeed();
+        } else if (data.type === 'announcement_update' && data.announcement) {
+            // 公告更新推送：替换内存中的对应公告并渲染
+            const updId = data.announcement.id;
+            const idx = announcementsData.findIndex(a => a.id === updId);
+            if (idx >= 0) { announcementsData[idx] = data.announcement; }
+            renderFeed();
         }
     }
 
@@ -2386,9 +2425,6 @@
     }
 
     // ========== 定时任务 ==========
-    setInterval(loadAnnouncements, 5000);
-    setInterval(loadRecentSolves, 5000);
-    setInterval(loadScoreboard, 10000);
     setInterval(loadAllBloodStats, 10000);
     if (!isAdminMode) { setInterval(checkBannedStatus, 3000); }
     setInterval(async () => {

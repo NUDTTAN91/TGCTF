@@ -159,13 +159,70 @@
         .comp-meta {
             display: flex;
             flex-wrap: wrap;
-            gap: 20px;
+            gap: 14px;
             font-size: 12px;
             color: var(--text-dim);
             font-family: 'JetBrains Mono', monospace;
         }
-        .comp-meta span { display: flex; align-items: center; gap: 8px; }
-        .comp-meta .icon { color: var(--accent); }
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--border-dim);
+            padding: 14px 20px;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+            min-width: 170px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        .stat-card:hover {
+            border-color: var(--accent-dim);
+            box-shadow: 0 0 20px rgba(255,107,0,0.08);
+        }
+        .stat-card::after {
+            content: '';
+            position: absolute; top: 0; left: 10px; right: 0; height: 2px;
+            background: linear-gradient(90deg, var(--accent), transparent 70%);
+        }
+        .stat-card .stat-top {
+            display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+        }
+        .stat-card .stat-label {
+            font-size: 11px; color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase;
+        }
+        .stat-card .stat-value {
+            font-size: 24px; font-weight: 800; color: var(--accent);
+            text-shadow: 0 0 10px var(--accent-glow), 0 0 30px var(--accent-dim);
+            font-family: 'Courier New', monospace;
+            line-height: 1;
+        }
+        .stat-card .stat-value .stat-unit {
+            font-size: 12px; font-weight: 400; color: var(--text-dim);
+            text-shadow: none; margin-left: 4px;
+        }
+        .stat-card.time-card { min-width: 300px; }
+        .stat-card.time-card .stat-value {
+            font-size: 14px; color: var(--text-main);
+            text-shadow: none;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            line-height: 1.6;
+        }
+        .stat-card.time-card .time-range {
+            color: var(--accent);
+            text-shadow: 0 0 6px var(--accent-dim);
+        }
+        .stat-live-dot {
+            display: inline-block;
+            width: 6px; height: 6px;
+            background: #0f0;
+            border-radius: 50%;
+            margin-left: 6px;
+            animation: stat-pulse-dot 2s ease-in-out infinite;
+        }
+        @keyframes stat-pulse-dot {
+            0%, 100% { opacity: 0.4; box-shadow: 0 0 0 0 rgba(0,255,0,0); }
+            50% { opacity: 1; box-shadow: 0 0 6px 2px rgba(0,255,0,0.4); }
+        }
 
         /* 倒计时 */
         .timer-section { text-align: center; }
@@ -859,9 +916,32 @@
             <div class="comp-status" id="contest-status">进行中</div>
             <h1 class="comp-title" id="contest-name">比赛名称</h1>
             <div class="comp-meta">
-                <span id="contest-time"><span class="icon">📅</span> 加载中...</span>
-                <span id="contest-teams"><span class="icon">👥</span> -- Teams</span>
-                <span id="contest-challenges-count"><span class="icon">🚩</span> -- Challenges</span>
+                <div class="stat-card time-card" id="contest-time">
+                    <div class="stat-top">
+                        <span>📅</span>
+                        <span class="stat-label">赛程</span>
+                    </div>
+                    <div class="stat-value">加载中...</div>
+                </div>
+                <div class="stat-card" id="contest-teams">
+                    <div class="stat-top">
+                        <span>👥</span>
+                        <span class="stat-label">参赛队伍</span>
+                        <span class="stat-live-dot"></span>
+                    </div>
+                    <div class="stat-value">
+                        <span class="stat-num">--</span><span class="stat-unit">Teams</span>
+                    </div>
+                </div>
+                <div class="stat-card" id="contest-challenges-count">
+                    <div class="stat-top">
+                        <span>🚩</span>
+                        <span class="stat-label">题目数</span>
+                    </div>
+                    <div class="stat-value">
+                        <span class="stat-num">--</span><span class="stat-unit">Challenges</span>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1249,8 +1329,28 @@
         await loadRecentSolves();
         await loadScoreboard();
         startCountdown();
+        animateStatCounters();
         
         window.addEventListener('scroll', handleScroll);
+    }
+
+    // ========== 数字滚动动画 ==========
+    function animateStatCounters() {
+        document.querySelectorAll('.stat-card .stat-num').forEach(el => {
+            const target = parseInt(el.textContent);
+            if (isNaN(target) || target <= 0) return;
+            const duration = 1200;
+            const start = performance.now();
+            el.textContent = '0';
+            function tick(now) {
+                const elapsed = now - start;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+                el.textContent = Math.round(eased * target);
+                if (progress < 1) requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
+        });
     }
 
     // ========== 加载排行榜（独立函数） ==========
@@ -1259,7 +1359,7 @@
             const res = await fetch(`/api/contests/${contestId}/scoreboard`, { headers: { 'Authorization': 'Bearer ' + token } });
             if (!res.ok) return;
             scoreboardData = await res.json() || [];
-            document.getElementById('contest-teams').innerHTML = `<span class="icon">👥</span> ${scoreboardData.length} Teams`;
+            document.getElementById('contest-teams').querySelector('.stat-num').textContent = scoreboardData.length;
             renderScoreboard();
         } catch (e) { console.error('Load scoreboard error:', e); }
     }
@@ -1335,7 +1435,7 @@
                 }
             }
             document.getElementById('stat-team-rank').textContent = teamRank;
-            document.getElementById('contest-teams').innerHTML = `<span class="icon">👥</span> ${scoreboardData.length} Teams`;
+            document.getElementById('contest-teams').querySelector('.stat-num').textContent = scoreboardData.length;
             renderScoreboard();
         } catch (e) { console.error('Load scoreboard error:', e); }
     }
@@ -1358,7 +1458,7 @@
                 const start = new Date(contestData.startTime.replace(' ', 'T'));
                 const end = new Date(contestData.endTime.replace(' ', 'T'));
                 const formatDate = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
-                document.getElementById('contest-time').innerHTML = `<span class="icon">📅</span> ${formatDate(start)} - ${formatDate(end)}`;
+                document.getElementById('contest-time').querySelector('.stat-value').innerHTML = `<span class="time-range">${formatDate(start)}</span> — <span class="time-range">${formatDate(end)}</span>`;
             }
             
             if (contestData.status === 'running') {
@@ -1398,7 +1498,7 @@
             const res = await fetch(`/api/contests/${contestId}/challenges`, { headers: { 'Authorization': 'Bearer ' + token } });
             if (!res.ok) throw new Error('Failed');
             challengesData = await res.json() || [];
-            document.getElementById('contest-challenges-count').innerHTML = `<span class="icon">🚩</span> ${challengesData.length} Challenges`;
+            document.getElementById('contest-challenges-count').querySelector('.stat-num').textContent = challengesData.length;
             renderCategoryNav();
             renderChallenges();
             loadAllBloodStats();
@@ -2360,7 +2460,7 @@
             // 实时更新排行榜
             if (data.rankings && Array.isArray(data.rankings)) {
                 scoreboardData = data.rankings;
-                document.getElementById('contest-teams').innerHTML = `<span class="icon">👥</span> ${scoreboardData.length} Teams`;
+                document.getElementById('contest-teams').querySelector('.stat-num').textContent = scoreboardData.length;
                 if (myTeamId) {
                     for (let i = 0; i < scoreboardData.length; i++) {
                         if (scoreboardData[i].teamId === myTeamId) {
@@ -2441,7 +2541,7 @@
                 challengesData.forEach(ch => { oldBloodData[ch.id] = { firstBlood: ch.firstBlood, secondBlood: ch.secondBlood, thirdBlood: ch.thirdBlood, solveCount: ch.solveCount }; });
                 challengesData = newChallenges;
                 challengesData.forEach(ch => { if (oldBloodData[ch.id]) Object.assign(ch, oldBloodData[ch.id]); });
-                document.getElementById('contest-challenges-count').innerHTML = `<span class="icon">🚩</span> ${challengesData.length} Challenges`;
+                document.getElementById('contest-challenges-count').querySelector('.stat-num').textContent = challengesData.length;
                 renderCategoryNav();
                 renderChallenges();
                 loadAllBloodStats();

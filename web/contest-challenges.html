@@ -1357,7 +1357,7 @@
             if (contestData.startTime && contestData.endTime) {
                 const start = new Date(contestData.startTime.replace(' ', 'T'));
                 const end = new Date(contestData.endTime.replace(' ', 'T'));
-                const formatDate = (d) => `${d.getMonth()+1}月${d.getDate()}日`;
+                const formatDate = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
                 document.getElementById('contest-time').innerHTML = `<span class="icon">📅</span> ${formatDate(start)} - ${formatDate(end)}`;
             }
             

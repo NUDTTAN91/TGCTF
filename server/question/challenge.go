@@ -94,14 +94,15 @@ func HandleListChallenges(c *gin.Context, db *sql.DB) {
 	}
 
 	rows, err := db.Query(`
-		SELECT cc.id, cc.contest_id, q.title, cat.name as category, q.type, COALESCE(q.description,''), 
-		       cc.initial_score, cc.min_score, cc.difficulty, COALESCE(q.flag,''), cc.status, COALESCE(q.attachment_url,''),
-		       COALESCE(q.docker_image,''), COALESCE(q.ports,''), cc.created_at, cc.updated_at
+		SELECT cc.id, cc.contest_id, COALESCE(q.title, cc.inline_title, ''), COALESCE(cat.name, icat.name, '') as category, COALESCE(q.type, cc.inline_type, ''), COALESCE(q.description, cc.inline_description, ''), 
+		       cc.initial_score, cc.min_score, cc.difficulty, COALESCE(q.flag, cc.inline_flag, ''), cc.status, COALESCE(q.attachment_url, cc.inline_attachment_url, ''),
+		       COALESCE(q.docker_image, cc.inline_docker_image, ''), COALESCE(q.ports, cc.inline_ports, ''), cc.created_at, cc.updated_at
 		FROM contest_challenges cc
-		JOIN question_bank q ON cc.question_id = q.id
+		LEFT JOIN question_bank q ON cc.question_id = q.id
 		LEFT JOIN categories cat ON q.category_id = cat.id
+		LEFT JOIN categories icat ON cc.inline_category_id = icat.id
 		WHERE cc.contest_id = $1
-		ORDER BY cat.name, cc.id`, contestID)
+		ORDER BY COALESCE(cat.name, icat.name, ''), cc.id`, contestID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "查询失败"})
 		return

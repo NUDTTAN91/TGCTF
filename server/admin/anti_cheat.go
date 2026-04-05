@@ -88,11 +88,11 @@ func HandleGetSuspiciousRecords(c *gin.Context, db *sql.DB) {
 	// 1. 检测同IP不同队伍提交正确答案（高风险）
 	sameIPQuery := `
 		SELECT s.ip_address, s.challenge_id, cc.contest_id, 
-		       q.title as challenge_name, c.name as contest_name,
+		       COALESCE(q.title, cc.inline_title, '') as challenge_name, c.name as contest_name,
 		       COUNT(DISTINCT s.team_id) as team_count
 		FROM submissions s
 		JOIN contest_challenges cc ON s.challenge_id = cc.id
-		JOIN question_bank q ON cc.question_id = q.id
+		LEFT JOIN question_bank q ON cc.question_id = q.id
 		JOIN contests c ON cc.contest_id = c.id
 		WHERE s.is_correct = true AND s.ip_address IS NOT NULL AND s.ip_address != ''
 	`
@@ -100,7 +100,7 @@ func HandleGetSuspiciousRecords(c *gin.Context, db *sql.DB) {
 		sameIPQuery += " AND cc.contest_id = " + contestID
 	}
 	sameIPQuery += `
-		GROUP BY s.ip_address, s.challenge_id, cc.contest_id, q.title, c.name
+		GROUP BY s.ip_address, s.challenge_id, cc.contest_id, q.title, cc.inline_title, c.name
 		HAVING COUNT(DISTINCT s.team_id) > 1
 		ORDER BY team_count DESC
 		LIMIT 50
@@ -137,11 +137,11 @@ func HandleGetSuspiciousRecords(c *gin.Context, db *sql.DB) {
 	// 2. 检测不同队伍提交相同错误flag（高风险）
 	sameWrongFlagQuery := `
 		SELECT s.flag, s.challenge_id, cc.contest_id,
-		       q.title as challenge_name, c.name as contest_name,
+		       COALESCE(q.title, cc.inline_title, '') as challenge_name, c.name as contest_name,
 		       COUNT(DISTINCT s.team_id) as team_count
 		FROM submissions s
 		JOIN contest_challenges cc ON s.challenge_id = cc.id
-		JOIN question_bank q ON cc.question_id = q.id
+		LEFT JOIN question_bank q ON cc.question_id = q.id
 		JOIN contests c ON cc.contest_id = c.id
 		WHERE s.is_correct = false AND s.is_cheating = false
 		  AND LENGTH(s.flag) > 10
@@ -150,7 +150,7 @@ func HandleGetSuspiciousRecords(c *gin.Context, db *sql.DB) {
 		sameWrongFlagQuery += " AND cc.contest_id = " + contestID
 	}
 	sameWrongFlagQuery += `
-		GROUP BY s.flag, s.challenge_id, cc.contest_id, q.title, c.name
+		GROUP BY s.flag, s.challenge_id, cc.contest_id, q.title, cc.inline_title, c.name
 		HAVING COUNT(DISTINCT s.team_id) > 1
 		ORDER BY team_count DESC
 		LIMIT 50
@@ -708,9 +708,9 @@ func CheckAndBroadcastSameIPDiffTeam(db *sql.DB, ip string, challengeID, contest
 	// 获取题目和比赛信息
 	var challengeName, contestName string
 	db.QueryRow(`
-		SELECT q.title, c.name
+		SELECT COALESCE(q.title, cc.inline_title, ''), c.name
 		FROM contest_challenges cc
-		JOIN question_bank q ON cc.question_id = q.id
+		LEFT JOIN question_bank q ON cc.question_id = q.id
 		JOIN contests c ON cc.contest_id = c.id
 		WHERE cc.id = $1
 	`, challengeID).Scan(&challengeName, &contestName)
@@ -746,9 +746,9 @@ func CheckAndBroadcastSameWrongFlag(db *sql.DB, flag string, challengeID, contes
 	// 获取题目和比赛信息
 	var challengeName, contestName string
 	db.QueryRow(`
-		SELECT q.title, c.name
+		SELECT COALESCE(q.title, cc.inline_title, ''), c.name
 		FROM contest_challenges cc
-		JOIN question_bank q ON cc.question_id = q.id
+		LEFT JOIN question_bank q ON cc.question_id = q.id
 		JOIN contests c ON cc.contest_id = c.id
 		WHERE cc.id = $1
 	`, challengeID).Scan(&challengeName, &contestName)

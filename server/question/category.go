@@ -256,9 +256,12 @@ func HandleDeleteCategory(c *gin.Context, db *sql.DB) {
 		return
 	}
 
-	// 检查是否有题目使用此类别
+	// 检查是否有题目使用此类别（含临时题目）
 	var count int
 	db.QueryRow("SELECT COUNT(*) FROM question_bank WHERE category_id = $1", id).Scan(&count)
+	var inlineCount int
+	db.QueryRow("SELECT COUNT(*) FROM contest_challenges WHERE inline_category_id = $1", id).Scan(&inlineCount)
+	count += inlineCount
 	if count > 0 {
 		c.JSON(http.StatusConflict, gin.H{"error": "CATEGORY_IN_USE", "count": count})
 		return

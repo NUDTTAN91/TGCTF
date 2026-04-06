@@ -646,6 +646,13 @@ func main() {
 			adminAPI.GET("/contests-for-permission", func(c *gin.Context) {
 				admin.HandleGetAllContestsForPermission(c, db)
 			})
+			adminAPI.GET("/organizations-for-permission", func(c *gin.Context) {
+				admin.HandleGetOrganizationsForPermission(c, db)
+			})
+			// 按权限名称撤销（级联）
+			adminAPI.POST("/admins/:id/revoke-permission", func(c *gin.Context) {
+				admin.HandleRevokePermissionByName(c, db)
+			})
 
 			// ========== 系统日志 ==========
 			adminAPI.GET("/logs", func(c *gin.Context) {
@@ -778,6 +785,29 @@ func main() {
 			// 普通管理员可访问的组织列表
 			adminCommonAPI.GET("/organizations", func(c *gin.Context) {
 				admin.HandleListOrganizations(c, db)
+			})
+			
+			// ========== 普通管理员组织权限管理 ==========
+			adminCommonAPI.GET("/my-organizations", func(c *gin.Context) {
+				admin.HandleGetMyOrganizations(c, db)
+			})
+			adminCommonAPI.GET("/organizations/:id/users", func(c *gin.Context) {
+				admin.HandleAdminCommonOrgUsers(c, db)
+			})
+			adminCommonAPI.PUT("/organizations/:id/users/:userId", func(c *gin.Context) {
+				admin.HandleAdminCommonEditOrgUser(c, db)
+			})
+			adminCommonAPI.PUT("/organizations/:id/users/:userId/status", func(c *gin.Context) {
+				admin.HandleAdminCommonBanOrgUser(c, db)
+			})
+			adminCommonAPI.GET("/organizations/:id/teams", func(c *gin.Context) {
+				admin.HandleAdminCommonOrgTeams(c, db)
+			})
+			adminCommonAPI.PUT("/organizations/:id/teams/:teamId", func(c *gin.Context) {
+				admin.HandleAdminCommonEditOrgTeam(c, db)
+			})
+			adminCommonAPI.PUT("/organizations/:id/teams/:teamId/status", func(c *gin.Context) {
+				admin.HandleAdminCommonBanOrgTeam(c, db)
 			})
 		}
 	}

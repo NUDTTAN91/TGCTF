@@ -27,11 +27,10 @@
         .sidebar-item.active .icon { color: var(--accent); }
 
         .admin-card { background: var(--bg-panel); border: 1px solid var(--border-color); position: relative; }
-        .stat-card::after { content: ''; position: absolute; top: 0; right: 0; width: 0; height: 0; border-top: 20px solid var(--border-color); border-left: 20px solid transparent; }
 
-        .btn-action { border: 1px solid var(--border-color); color: var(--text-dim); padding: 0.25rem 0.5rem; font-size: 0.75rem; transition: all 0.2s; white-space: nowrap; cursor: pointer;}
+        .btn-action { border: 1px solid var(--border-color); color: var(--text-dim); padding: 0.25rem 0.5rem; font-size: 0.75rem; transition: all 0.2s; white-space: nowrap; cursor: pointer; background: transparent; }
         .btn-action:hover { border-color: var(--accent); color: var(--accent); background: rgba(255,107,0,0.05); }
-        .btn-danger-ghost { color: #888; border: 1px solid transparent; padding: 0.25rem 0.5rem; font-size: 0.75rem; transition: 0.2s; margin-left: 0.5rem; cursor: pointer; }
+        .btn-danger-ghost { color: #888; border: 1px solid transparent; padding: 0.25rem 0.5rem; font-size: 0.75rem; transition: 0.2s; margin-left: 0.5rem; cursor: pointer; background: transparent; }
         .btn-danger-ghost:hover { color: var(--danger); border-color: var(--danger); background: rgba(239,68,68,0.1); }
 
         .tactical-table thead th { background: #151515; color: #666; font-family: 'JetBrains Mono', monospace; font-weight: normal; text-transform: uppercase; letter-spacing: 0.05em; padding: 1rem; border-bottom: 1px solid #333; text-align: left; font-size: 0.75rem; }
@@ -40,16 +39,19 @@
         .tactical-table td { padding: 1rem; vertical-align: middle; }
 
         .team-logo { width: 40px; height: 40px; background: #111; border: 1px solid #444; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-family: 'Chakra Petch', sans-serif; font-size: 1.2rem; }
-        .member-stack { display: flex; }
-        .member-avatar { width: 24px; height: 24px; border-radius: 50%; background: #333; border: 2px solid #1e1e1e; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: #aaa; margin-left: -8px; }
-        .member-avatar:first-child { margin-left: 0; }
 
         .status-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 6px; }
         .dot-green { background: var(--success); box-shadow: 0 0 5px var(--success); }
-        .dot-gray { background: #555; }
         .dot-red { background: var(--danger); box-shadow: 0 0 5px var(--danger); }
+        .dot-gray { background: #555; }
+
+        .tab-btn { padding: 0.5rem 1rem; font-size: 0.75rem; border-bottom: 2px solid transparent; color: #888; cursor: pointer; transition: all 0.2s; background: transparent; border-top: none; border-left: none; border-right: none; }
+        .tab-btn:hover { color: white; }
+        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
 
         .badge-admin { background: var(--accent); color: black; font-size: 0.6rem; padding: 0.1rem 0.3rem; border-radius: 2px; margin-left: 0.5rem; }
+
+        .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 40vh; }
 
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #111; }
@@ -84,7 +86,7 @@
         <div class="p-4 border-t border-[#333]">
             <div class="flex items-center gap-3">
                 <div class="w-8 h-8 bg-[#333] rounded-full flex items-center justify-center text-[#ff6b00] font-bold">A</div>
-                <div><p class="text-xs text-white font-bold">超级管理员</p><p class="text-[10px] text-green-500">● 连接稳定</p></div>
+                <div><p class="text-xs text-white font-bold">管理员</p><p class="text-[10px] text-green-500">● 在线</p></div>
             </div>
         </div>
     </aside>
@@ -101,52 +103,55 @@
             </div>
         </header>
 
-        <main class="flex-1 flex flex-col pt-8 px-8 relative overflow-hidden">
-            
-            <div class="grid grid-cols-3 gap-6 mb-8">
-                <div class="admin-card stat-card p-5 flex items-center justify-between"><div class="text-lg text-gray-400 font-mono font-bold uppercase">战队总数</div><div id="stat-total" class="text-2xl font-eng font-bold text-white">--</div></div>
-                <div class="admin-card stat-card p-5 flex items-center justify-between"><div class="text-lg text-gray-400 font-mono font-bold uppercase">正常状态</div><div id="stat-active" class="text-2xl font-eng font-bold text-green-500">--</div></div>
-                <div class="admin-card stat-card p-5 border-l-2 border-l-red-500 flex items-center justify-between"><div class="text-lg text-gray-400 font-mono font-bold uppercase">已禁赛 (DQ)</div><div id="stat-banned" class="text-2xl font-eng font-bold text-red-500">--</div></div>
+        <main class="flex-1 flex flex-col pt-6 px-8 relative overflow-hidden">
+
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold text-white font-eng tracking-wide">TEAM_MANAGEMENT</h2>
             </div>
 
-            <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 bg-[#1a1a1a] p-4 border border-[#333]">
-                <div class="flex items-center gap-4 w-full md:w-auto">
-                    <h2 class="text-lg font-bold text-white font-eng tracking-wide">TEAM_ROSTER</h2>
-                    <div class="h-6 w-px bg-[#333]"></div>
-                    <div class="relative">
-                        <input type="text" id="search-input" placeholder="搜索战队名称 / ID..." class="bg-[#111] border border-[#333] text-xs text-white px-4 py-2 w-64 focus:border-[#ff6b00] outline-none font-mono placeholder-gray-600">
-                        <button class="absolute right-2 top-1.5 text-gray-500 hover:text-white">🔍</button>
-                    </div>
-                </div>
-                <div class="flex gap-3">
-                    <select id="status-filter" class="bg-[#111] border border-[#333] text-xs text-gray-400 px-3 py-2 outline-none hover:border-[#555] cursor-pointer">
-                        <option value="">所有状态</option><option value="active">正常参赛</option><option value="banned">已禁赛 (DQ)</option>
-                    </select>
-                    <button onclick="openCreateModal()" class="btn-action font-mono bg-[#333] text-white border-transparent">+ 创建战队</button>
+            <!-- 组织 Tab 栏 -->
+            <div id="org-tabs" class="flex border-b border-[#333] mb-6 overflow-x-auto" style="min-height: 38px;">
+                <div class="text-gray-500 text-xs font-mono py-2 px-4">加载中...</div>
+            </div>
+
+            <!-- 搜索栏 -->
+            <div id="search-bar" class="hidden mb-4">
+                <div class="relative" style="max-width: 320px;">
+                    <input type="text" id="search-input" placeholder="搜索队伍名称 / ID..." class="bg-[#111] border border-[#333] text-xs text-white px-4 py-2 w-full focus:border-[#ff6b00] outline-none font-mono placeholder-gray-600">
                 </div>
             </div>
 
-            <div class="admin-card overflow-hidden flex-1 flex flex-col min-h-0">
+            <!-- 队伍表格 -->
+            <div id="team-table-wrap" class="admin-card overflow-hidden flex-1 flex flex-col min-h-0 hidden">
                 <div class="flex-1 overflow-y-auto">
-                <table class="w-full tactical-table">
-                    <thead>
-                        <tr>
-                            <th class="w-16 text-left pl-6">ID</th>
-                            <th>战队信息 (Team)</th>
-                            <th>成员 (Members)</th>
-                            <th>队长 (Captain)</th>
-                            <th>创建时间</th>
-                            <th>状态</th>
-                            <th class="text-left">操作 (Actions)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="teams-tbody">
-                        <tr><td colspan="7" class="text-center py-12 text-gray-500 font-mono">加载中...</td></tr>
-                    </tbody>
-                </table>
+                    <table class="w-full tactical-table">
+                        <thead id="teams-thead">
+                            <tr>
+                                <th class="w-16 text-left pl-6">ID</th>
+                                <th>队伍名</th>
+                                <th>描述</th>
+                                <th>队长</th>
+                                <th>成员数</th>
+                                <th>状态</th>
+                                <th class="text-left">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teams-tbody">
+                            <tr><td colspan="7" class="text-center py-12 text-gray-500 font-mono">请选择组织</td></tr>
+                        </tbody>
+                    </table>
                 </div>
                 <div class="p-4 border-t border-[#333] flex justify-between items-center bg-[#151515]">
                     <div id="pagination-info" class="text-xs text-gray-500 font-mono">显示 0 支队伍</div>
+                </div>
+            </div>
+
+            <!-- 空状态 -->
+            <div id="empty-state" class="hidden">
+                <div class="empty-state">
+                    <div style="font-size: 64px; opacity: 0.2; margin-bottom: 16px;">◈</div>
+                    <div style="font-size: 18px; font-weight: bold; color: white; margin-bottom: 8px;">暂无队伍管理权限</div>
+                    <div style="font-size: 13px; color: #888;">您尚未被分配任何组织的队伍管理权限，请联系超级管理员。</div>
                 </div>
             </div>
 
@@ -157,484 +162,292 @@
                         <span class="text-gray-500">天格后台管理系统</span>
                     </div>
                     <span class="text-white font-mono">Copyright © 2021-present tan91. All Rights Reserved.</span>
-                    <a href="https://github.com/NUDTTAN91" target="_blank" class="text-[#ff6b00] hover:text-white transition-colors"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg></a>
-                    <a href="https://blog.csdn.net/ZXW_NUDT" target="_blank" class="text-[#ff6b00] hover:text-white transition-colors"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></a>
                 </div>
             </footer>
 
         </main>
     </div>
 
-    <!-- 创建/编辑队伍模态框 -->
-    <div id="modal-overlay" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center">
+    <!-- 编辑队伍模态框 -->
+    <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center">
         <div class="bg-[#1e1e1e] border border-[#444] w-full max-w-md mx-4">
             <div class="p-4 border-b border-[#333] flex justify-between items-center">
-                <h3 id="modal-title" class="font-bold text-white">创建战队</h3>
-                <button onclick="closeModal()" class="text-gray-500 hover:text-white text-xl">&times;</button>
+                <h3 class="font-bold text-white">编辑队伍</h3>
+                <button onclick="closeEditModal()" class="text-gray-500 hover:text-white text-xl">&times;</button>
             </div>
             <div class="p-6 space-y-4">
                 <div>
-                    <label class="block text-xs text-gray-400 mb-1 font-mono">战队名称 <span class="text-red-500">*</span></label>
-                    <input type="text" id="input-name" class="w-full bg-[#111] border border-[#333] text-white px-3 py-2 text-sm focus:border-[#ff6b00] outline-none font-mono" placeholder="Team Name">
+                    <label class="block text-xs text-gray-400 mb-1 font-mono">队伍名称</label>
+                    <input type="text" id="edit-name" class="w-full bg-[#111] border border-[#333] text-white px-3 py-2 text-sm focus:border-[#ff6b00] outline-none font-mono" placeholder="Team Name">
                 </div>
                 <div>
-                    <label class="block text-xs text-gray-400 mb-1 font-mono">战队简介</label>
-                    <textarea id="input-description" class="w-full bg-[#111] border border-[#333] text-white px-3 py-2 text-sm focus:border-[#ff6b00] outline-none h-24 resize-none" placeholder="战队简介..."></textarea>
-                </div>
-                <div id="captain-field" class="hidden">
-                    <label class="block text-xs text-gray-400 mb-1 font-mono">队长</label>
-                    <select id="input-captain" class="w-full bg-[#111] border border-[#333] text-white px-3 py-2 text-sm focus:border-[#ff6b00] outline-none">
-                        <option value="">-- 无队长 --</option>
-                    </select>
+                    <label class="block text-xs text-gray-400 mb-1 font-mono">队伍描述</label>
+                    <textarea id="edit-description" class="w-full bg-[#111] border border-[#333] text-white px-3 py-2 text-sm focus:border-[#ff6b00] outline-none h-24 resize-none" placeholder="队伍描述..."></textarea>
                 </div>
             </div>
             <div class="p-4 border-t border-[#333] flex justify-end gap-3">
-                <button onclick="closeModal()" class="px-4 py-2 text-xs text-gray-400 border border-[#333] hover:border-gray-500 font-mono">取消</button>
-                <button id="modal-submit-btn" onclick="submitTeam()" class="px-4 py-2 text-xs bg-[#ff6b00] text-black font-bold hover:bg-[#ff8533] font-mono">确认</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 成员管理模态框 -->
-    <div id="member-modal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center">
-        <div class="bg-[#1e1e1e] border border-[#444] w-full max-w-lg mx-4">
-            <div class="p-4 border-b border-[#333] flex justify-between items-center">
-                <h3 id="member-modal-title" class="font-bold text-white">成员管理</h3>
-                <button onclick="closeMemberModal()" class="text-gray-500 hover:text-white text-xl">&times;</button>
-            </div>
-            <div class="p-6">
-                <div class="mb-4">
-                    <h4 class="text-sm text-gray-400 mb-2 font-mono">当前成员</h4>
-                    <div id="member-list" class="space-y-2 max-h-48 overflow-y-auto">
-                        <div class="text-gray-500 text-sm">加载中...</div>
-                    </div>
-                </div>
-                <div class="border-t border-[#333] pt-4">
-                    <h4 class="text-sm text-gray-400 mb-2 font-mono">添加成员</h4>
-                    <div class="flex gap-2">
-                        <select id="add-member-select" class="flex-1 bg-[#111] border border-[#333] text-white px-3 py-2 text-sm focus:border-[#ff6b00] outline-none">
-                            <option value="">选择用户...</option>
-                        </select>
-                        <button onclick="addMember()" class="px-4 py-2 text-xs bg-[#ff6b00] text-black font-bold hover:bg-[#ff8533] font-mono">添加</button>
-                    </div>
-                </div>
-            </div>
-            <div class="p-4 border-t border-[#333] flex justify-end">
-                <button onclick="closeMemberModal()" class="px-4 py-2 text-xs text-gray-400 border border-[#333] hover:border-gray-500 font-mono">关闭</button>
+                <button onclick="closeEditModal()" class="px-4 py-2 text-xs text-gray-400 border border-[#333] hover:border-gray-500 font-mono">取消</button>
+                <button onclick="submitEdit()" class="px-4 py-2 text-xs bg-[#ff6b00] text-black font-bold hover:bg-[#ff8533] font-mono">保存</button>
             </div>
         </div>
     </div>
 
     <script>
-        function parseJwt(token) {
-            try {
-                const base64Url = token.split('.')[1];
-                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
-                return JSON.parse(jsonPayload);
-            } catch (e) { return null; }
+        const API = '/api/admin-common';
+        function getToken() { return localStorage.getItem('tg_token'); }
+
+        let allOrgs = [];         // 有 team.view 权限的组织
+        let currentOrgId = null;
+        let currentPerms = [];
+        let currentTeams = [];
+        let editingTeamId = null;
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
         }
 
-        const token = localStorage.getItem('tg_token');
-        if (!token) {
-            window.location.href = '/login.html';
-        } else {
-            const payload = parseJwt(token);
-            if (!payload || payload.role !== 'super') {
-                // 权限检查由 portal-auth.js 处理
-                return;
+        function getUrlOrgId() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('org') ? parseInt(params.get('org')) : null;
+        }
+
+        async function init() {
+            try {
+                const res = await fetch(`${API}/my-organizations`, {
+                    headers: { 'Authorization': 'Bearer ' + getToken() }
+                });
+                if (!res.ok) throw new Error('加载失败');
+                const data = await res.json();
+                const orgs = data.organizations || [];
+
+                // 过滤出有 team.view 权限的组织
+                allOrgs = orgs.filter(o => (o.permissions || []).includes('team.view'));
+
+                if (allOrgs.length === 0) {
+                    document.getElementById('org-tabs').innerHTML = '';
+                    document.getElementById('empty-state').classList.remove('hidden');
+                    return;
+                }
+
+                renderTabs();
+                document.getElementById('search-bar').classList.remove('hidden');
+                document.getElementById('team-table-wrap').classList.remove('hidden');
+
+                const urlOrgId = getUrlOrgId();
+                const targetOrg = urlOrgId ? allOrgs.find(o => o.id === urlOrgId) : null;
+                selectOrg(targetOrg ? targetOrg.id : allOrgs[0].id);
+            } catch (e) {
+                console.error(e);
+                document.getElementById('org-tabs').innerHTML = '<div class="text-red-500 text-xs font-mono py-2 px-4">加载失败</div>';
             }
         }
 
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            localStorage.removeItem('tg_token');
-            window.location.href = '/login.html';
-        });
+        function renderTabs() {
+            const container = document.getElementById('org-tabs');
+            container.innerHTML = allOrgs.map(o =>
+                `<button class="tab-btn font-mono" data-org-id="${o.id}" onclick="selectOrg(${o.id})">${escapeHtml(o.name)}</button>`
+            ).join('');
+        }
 
-        let allTeams = [];
-        let editingTeamId = null;
-        let currentMemberTeamId = null;
+        function selectOrg(orgId) {
+            currentOrgId = orgId;
+            document.querySelectorAll('#org-tabs .tab-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.orgId) === orgId);
+            });
+            const org = allOrgs.find(o => o.id === orgId);
+            currentPerms = org ? (org.permissions || []) : [];
+            loadTeams(orgId);
+        }
 
-        // 加载队伍列表
-        async function loadTeams() {
+        async function loadTeams(orgId) {
+            const tbody = document.getElementById('teams-tbody');
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-12 text-gray-500 font-mono">加载中...</td></tr>';
+
             try {
-                const res = await fetch('/api/admin/teams', {
-                    headers: { 'Authorization': 'Bearer ' + token }
+                const res = await fetch(`${API}/organizations/${orgId}/teams`, {
+                    headers: { 'Authorization': 'Bearer ' + getToken() }
                 });
-                if (!res.ok) throw new Error('Failed');
+                if (!res.ok) throw new Error('加载失败');
                 const data = await res.json();
-                allTeams = data.teams || [];
-                updateStats(data.stats);
+                currentTeams = data.teams || [];
+                if (data.permissions) currentPerms = data.permissions;
+
+                updateTableHeader();
                 renderTeams();
             } catch (e) {
                 console.error(e);
-                document.getElementById('teams-tbody').innerHTML = '<tr><td colspan="7" class="text-center py-12 text-red-500 font-mono">加载失败</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-12 text-red-500 font-mono">加载失败</td></tr>';
             }
         }
 
-        function updateStats(stats) {
-            document.getElementById('stat-total').textContent = stats.total || 0;
-            document.getElementById('stat-active').textContent = stats.activeCount || 0;
-            document.getElementById('stat-banned').textContent = stats.bannedCount || 0;
+        function updateTableHeader() {
+            const hasActions = currentPerms.includes('team.edit') || currentPerms.includes('team.ban');
+            const thead = document.getElementById('teams-thead');
+            thead.innerHTML = `<tr>
+                <th class="w-16 text-left pl-6">ID</th>
+                <th>队伍名</th>
+                <th>描述</th>
+                <th>队长</th>
+                <th>成员数</th>
+                <th>状态</th>
+                ${hasActions ? '<th class="text-left">操作</th>' : ''}
+            </tr>`;
         }
 
         function renderTeams() {
             const tbody = document.getElementById('teams-tbody');
             const searchTerm = document.getElementById('search-input').value.toLowerCase();
-            const statusFilter = document.getElementById('status-filter').value;
+            const hasEdit = currentPerms.includes('team.edit');
+            const hasBan = currentPerms.includes('team.ban');
+            const hasActions = hasEdit || hasBan;
+            const colSpan = hasActions ? 7 : 6;
 
-            let filtered = allTeams.filter(t => {
-                const matchSearch = !searchTerm || t.name.toLowerCase().includes(searchTerm) || String(t.id).includes(searchTerm);
-                const matchStatus = !statusFilter || t.status === statusFilter;
-                return matchSearch && matchStatus;
+            let filtered = currentTeams.filter(t => {
+                if (!searchTerm) return true;
+                return (t.name || '').toLowerCase().includes(searchTerm)
+                    || String(t.id).includes(searchTerm);
             });
 
             if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-12 text-gray-500 font-mono">暂无队伍数据</td></tr>';
+                tbody.innerHTML = `<tr><td colspan="${colSpan}" class="text-center py-12 text-gray-500 font-mono">暂无队伍数据</td></tr>`;
                 document.getElementById('pagination-info').textContent = '显示 0 支队伍';
                 return;
             }
 
-            tbody.innerHTML = filtered.map((t, idx) => renderTeamRow(t)).join('');
+            tbody.innerHTML = filtered.map(t => renderTeamRow(t, hasEdit, hasBan, hasActions)).join('');
             document.getElementById('pagination-info').textContent = `显示 ${filtered.length} 支队伍`;
         }
 
-        function renderTeamRow(t) {
+        function renderTeamRow(t, hasEdit, hasBan, hasActions) {
             const isBanned = t.status === 'banned';
             const isAdminTeam = t.isAdminTeam;
-            const rowClass = isBanned ? 'bg-red-900 bg-opacity-5' : (isAdminTeam ? 'bg-[#ff6b00] bg-opacity-[0.03]' : '');
-            const logoClass = isBanned ? 'border-red-500 text-red-500' : (isAdminTeam ? 'border-[#ff6b00] text-[#ff6b00]' : 'border-gray-600 text-gray-400');
             const nameClass = isBanned ? 'text-gray-400 line-through' : 'text-white';
             const idClass = isBanned ? 'text-red-500' : (isAdminTeam ? 'text-[#ff6b00]' : 'text-gray-500');
+            const logoClass = isBanned ? 'border-red-500 text-red-500' : (isAdminTeam ? 'border-[#ff6b00] text-[#ff6b00]' : 'border-gray-600 text-gray-400');
             const statusDot = isBanned ? 'dot-red' : 'dot-green';
             const statusText = isBanned ? '已禁赛' : '正常';
             const statusColor = isBanned ? 'text-red-500' : 'text-green-500';
-
             const adminBadge = isAdminTeam ? '<span class="badge-admin">ADMIN</span>' : '';
-            const captainName = t.captainName || '-';
-            const description = t.description || '';
-            const createdAt = t.createdAt || '-';
 
-            // 操作按钮（管理员队伍不可编辑删除）
-            let actions = '';
-            if (isAdminTeam) {
-                actions = '<span class="text-xs text-[#ff6b00] font-mono">系统超级管理员队伍</span>';
-            } else if (isBanned) {
-                actions = `<button onclick="toggleBan(${t.id}, false)" class="btn-action">解禁</button><button onclick="deleteTeam(${t.id})" class="btn-danger-ghost text-red-500 border-red-900">解散</button>`;
-            } else {
-                actions = `<button onclick="openMemberModal(${t.id})" class="btn-action">成员管理</button><button onclick="openEditModal(${t.id})" class="btn-action ml-1">编辑</button><button onclick="toggleBan(${t.id}, true)" class="btn-danger-ghost">禁赛</button><button onclick="deleteTeam(${t.id})" class="btn-danger-ghost text-red-500 border-red-900">解散</button>`;
+            let actionsHtml = '';
+            if (hasActions) {
+                let btns = '';
+                if (isAdminTeam) {
+                    btns = '<span class="text-xs text-[#ff6b00] font-mono">系统队伍</span>';
+                } else {
+                    if (hasEdit && !isBanned) {
+                        btns += `<button onclick="openEditModal(${t.id})" class="btn-action">编辑</button>`;
+                    }
+                    if (hasBan) {
+                        if (isBanned) {
+                            btns += `<button onclick="toggleTeamStatus(${t.id}, 'active')" class="btn-action text-green-400 border-green-800 hover:border-green-500 hover:text-green-500">启用</button>`;
+                        } else {
+                            btns += `<button onclick="toggleTeamStatus(${t.id}, 'banned')" class="btn-danger-ghost">禁赛</button>`;
+                        }
+                    }
+                }
+                actionsHtml = `<td class="text-left">${btns}</td>`;
             }
 
             return `
-            <tr class="${rowClass}">
-                <td class="text-left pl-6 font-mono ${idClass} text-xs">${t.id}</td>
+            <tr class="${isBanned ? 'bg-red-900 bg-opacity-5' : (isAdminTeam ? 'bg-[#ff6b00] bg-opacity-[0.03]' : '')}">
+                <td class="pl-6"><span class="font-mono ${idClass} text-xs">${t.id}</span></td>
                 <td>
                     <div class="flex items-center gap-3">
-                        <div class="team-logo ${logoClass}">${t.name.charAt(0).toUpperCase()}</div>
-                        <div>
-                            <div class="text-sm font-bold ${nameClass}">${escapeHtml(t.name)}${adminBadge}</div>
-                            <div class="text-[10px] text-gray-500 font-mono max-w-[200px] truncate">${description || '暂无简介'}</div>
-                        </div>
+                        <div class="team-logo ${logoClass}">${(t.name || '?').charAt(0).toUpperCase()}</div>
+                        <span class="text-sm font-bold ${nameClass}">${escapeHtml(t.name)}${adminBadge}</span>
                     </div>
                 </td>
-                <td><span class="text-sm font-mono text-gray-400">${t.memberCount} 人</span></td>
-                <td class="text-xs text-gray-400">${captainName}</td>
-                <td class="text-xs text-gray-500 font-mono">${createdAt}</td>
+                <td class="text-xs text-gray-500 font-mono" style="max-width:200px;"><span class="truncate block">${escapeHtml(t.description) || '暂无简介'}</span></td>
+                <td class="text-xs text-gray-400">${escapeHtml(t.captainName) || '-'}</td>
+                <td><span class="text-sm font-mono text-gray-400">${t.memberCount || 0} 人</span></td>
                 <td><div class="flex items-center text-xs ${statusColor}"><span class="status-dot ${statusDot}"></span>${statusText}</div></td>
-                <td class="text-left">${actions}</td>
+                ${actionsHtml}
             </tr>`;
         }
 
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+        // 编辑队伍
+        function openEditModal(teamId) {
+            editingTeamId = teamId;
+            const t = currentTeams.find(x => x.id === teamId);
+            if (!t) return;
+            document.getElementById('edit-name').value = t.name || '';
+            document.getElementById('edit-description').value = t.description || '';
+            document.getElementById('edit-modal').classList.remove('hidden');
+            document.getElementById('edit-modal').classList.add('flex');
         }
 
-        // 创建队伍模态框
-        function openCreateModal() {
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.add('hidden');
+            document.getElementById('edit-modal').classList.remove('flex');
             editingTeamId = null;
-            document.getElementById('modal-title').textContent = '创建战队';
-            document.getElementById('input-name').value = '';
-            document.getElementById('input-name').disabled = false;
-            document.getElementById('input-description').value = '';
-            document.getElementById('captain-field').classList.add('hidden');
-            document.getElementById('modal-overlay').classList.remove('hidden');
-            document.getElementById('modal-overlay').classList.add('flex');
         }
 
-        // 编辑队伍模态框
-        async function openEditModal(id) {
-            editingTeamId = id;
-            try {
-                const res = await fetch(`/api/admin/teams/${id}`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (!res.ok) throw new Error('Failed');
-                const t = await res.json();
-                document.getElementById('modal-title').textContent = '编辑战队';
-                document.getElementById('input-name').value = t.name;
-                document.getElementById('input-name').disabled = false;
-                document.getElementById('input-description').value = t.description || '';
-                
-                // 加载队伍成员并填充队长下拉框
-                const membersRes = await fetch(`/api/admin/teams/${id}/members`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (membersRes.ok) {
-                    const membersData = await membersRes.json();
-                    const members = membersData.members || [];
-                    const select = document.getElementById('input-captain');
-                    select.innerHTML = '<option value="">-- 无队长 --</option>' + 
-                        members.map(m => `<option value="${m.id}" ${t.captainId === m.id ? 'selected' : ''}>${escapeHtml(m.displayName)} (@${escapeHtml(m.username)})</option>`).join('');
-                    document.getElementById('captain-field').classList.remove('hidden');
-                }
-                
-                document.getElementById('modal-overlay').classList.remove('hidden');
-                document.getElementById('modal-overlay').classList.add('flex');
-            } catch (e) {
-                console.error(e);
-                alert('加载队伍信息失败');
-            }
-        }
-
-        function closeModal() {
-            document.getElementById('modal-overlay').classList.add('hidden');
-            document.getElementById('modal-overlay').classList.remove('flex');
-        }
-
-        async function submitTeam() {
-            const name = document.getElementById('input-name').value.trim();
-            const description = document.getElementById('input-description').value.trim();
-
-            if (!name) {
-                alert('请填写战队名称');
-                return;
-            }
+        async function submitEdit() {
+            const name = document.getElementById('edit-name').value.trim();
+            const description = document.getElementById('edit-description').value.trim();
+            if (!name) { alert('请填写队伍名称'); return; }
 
             try {
-                if (editingTeamId) {
-                    // 更新队伍
-                    const captainIdStr = document.getElementById('input-captain').value;
-                    const captainId = captainIdStr ? parseInt(captainIdStr) : null;
-                    const res = await fetch(`/api/admin/teams/${editingTeamId}`, {
-                        method: 'PUT',
-                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name, description, captainId })
-                    });
-                    if (!res.ok) {
-                        const err = await res.json();
-                        if (err.error === 'TEAM_NAME_EXISTS') {
-                            alert('队伍名称已存在');
-                            return;
-                        }
-                        throw new Error('Failed');
-                    }
-                } else {
-                    // 创建队伍
-                    const res = await fetch('/api/admin/teams', {
-                        method: 'POST',
-                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name, description })
-                    });
-                    if (!res.ok) {
-                        const err = await res.json();
-                        if (err.error === 'TEAM_NAME_EXISTS') {
-                            alert('队伍名称已存在');
-                            return;
-                        }
-                        throw new Error('Failed');
-                    }
-                }
-                closeModal();
-                loadTeams();
-            } catch (e) {
-                console.error(e);
-                alert('操作失败');
-            }
-        }
-
-        // 禁赛/解禁
-        async function toggleBan(id, ban) {
-            const action = ban ? '禁赛' : '解禁';
-            if (!confirm(`确定要${action}这个队伍吗？`)) return;
-            try {
-                const res = await fetch(`/api/admin/teams/${id}`, {
+                const res = await fetch(`${API}/organizations/${currentOrgId}/teams/${editingTeamId}`, {
                     method: 'PUT',
-                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status: ban ? 'banned' : 'active' })
+                    headers: { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, description })
                 });
-                if (!res.ok) throw new Error('Failed');
-                loadTeams();
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    alert(err.message || '保存失败');
+                    return;
+                }
+                closeEditModal();
+                loadTeams(currentOrgId);
+            } catch (e) {
+                console.error(e);
+                alert('保存失败');
+            }
+        }
+
+        // 禁赛/启用
+        async function toggleTeamStatus(teamId, status) {
+            const action = status === 'banned' ? '禁赛' : '启用';
+            if (!confirm(`确定要${action}该队伍吗？`)) return;
+            try {
+                const res = await fetch(`${API}/organizations/${currentOrgId}/teams/${teamId}/status`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    alert(err.message || `${action}失败`);
+                    return;
+                }
+                loadTeams(currentOrgId);
             } catch (e) {
                 console.error(e);
                 alert(`${action}失败`);
             }
         }
 
-        // 解散队伍
-        async function deleteTeam(id) {
-            if (!confirm('确定要解散这个队伍吗？此操作不可撤销！成员将被移出队伍。')) return;
-            try {
-                const res = await fetch(`/api/admin/teams/${id}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (!res.ok) throw new Error('Failed');
-                loadTeams();
-            } catch (e) {
-                console.error(e);
-                alert('解散失败');
-            }
-        }
-
-        // ========== 成员管理 ==========
-        async function openMemberModal(teamId) {
-            currentMemberTeamId = teamId;
-            const team = allTeams.find(t => t.id === teamId);
-            document.getElementById('member-modal-title').textContent = `成员管理 - ${team ? team.name : ''}`;
-            document.getElementById('member-modal').classList.remove('hidden');
-            document.getElementById('member-modal').classList.add('flex');
-            await loadMembers();
-            await loadAvailableUsers();
-        }
-
-        function closeMemberModal() {
-            document.getElementById('member-modal').classList.add('hidden');
-            document.getElementById('member-modal').classList.remove('flex');
-            currentMemberTeamId = null;
-        }
-
-        async function loadMembers() {
-            const listEl = document.getElementById('member-list');
-            try {
-                const res = await fetch(`/api/admin/teams/${currentMemberTeamId}/members`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (!res.ok) throw new Error('Failed');
-                const data = await res.json();
-                const members = data.members || [];
-                
-                if (members.length === 0) {
-                    listEl.innerHTML = '<div class="text-gray-500 text-sm">暂无成员</div>';
-                    return;
-                }
-
-                listEl.innerHTML = members.map(m => `
-                    <div class="flex items-center justify-between bg-[#111] p-2 rounded">
-                        <div class="flex items-center gap-2">
-                            <div class="w-8 h-8 bg-[#333] rounded-full flex items-center justify-center text-xs font-bold ${m.isCaptain ? 'text-[#ff6b00]' : 'text-gray-400'}">${m.displayName.charAt(0).toUpperCase()}</div>
-                            <div>
-                                <div class="text-sm text-white">${escapeHtml(m.displayName)} ${m.isCaptain ? '<span class="text-[10px] text-[#ff6b00]">[队长]</span>' : ''}</div>
-                                <div class="text-[10px] text-gray-500">@${escapeHtml(m.username)}</div>
-                            </div>
-                        </div>
-                        <div class="flex gap-1">
-                            ${!m.isCaptain ? `<button onclick="setCaptain(${m.id})" class="text-xs text-gray-400 hover:text-[#ff6b00] px-2 py-1 border border-transparent hover:border-[#ff6b00]">设为队长</button>` : ''}
-                            ${!m.isCaptain ? `<button onclick="removeMember(${m.id})" class="text-xs text-gray-400 hover:text-red-500 px-2 py-1 border border-transparent hover:border-red-500">移除</button>` : ''}
-                        </div>
-                    </div>
-                `).join('');
-            } catch (e) {
-                console.error(e);
-                listEl.innerHTML = '<div class="text-red-500 text-sm">加载失败</div>';
-            }
-        }
-
-        async function loadAvailableUsers() {
-            const selectEl = document.getElementById('add-member-select');
-            try {
-                const res = await fetch('/api/admin/users-without-team', {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (!res.ok) throw new Error('Failed');
-                const data = await res.json();
-                const users = data.users || [];
-                
-                selectEl.innerHTML = '<option value="">选择用户...</option>' + 
-                    users.map(u => `<option value="${u.id}">${escapeHtml(u.displayName)} (@${escapeHtml(u.username)})</option>`).join('');
-            } catch (e) {
-                console.error(e);
-                selectEl.innerHTML = '<option value="">加载失败</option>';
-            }
-        }
-
-        async function addMember() {
-            const userId = document.getElementById('add-member-select').value;
-            if (!userId) {
-                alert('请选择用户');
-                return;
-            }
-            try {
-                const res = await fetch(`/api/admin/teams/${currentMemberTeamId}/members`, {
-                    method: 'POST',
-                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: parseInt(userId) })
-                });
-                if (!res.ok) {
-                    const err = await res.json();
-                    if (err.error === 'USER_IN_OTHER_TEAM') {
-                        alert('该用户已在其他队伍');
-                        return;
-                    }
-                    throw new Error('Failed');
-                }
-                await loadMembers();
-                await loadAvailableUsers();
-                loadTeams();
-            } catch (e) {
-                console.error(e);
-                alert('添加失败');
-            }
-        }
-
-        async function removeMember(userId) {
-            if (!confirm('确定要移除该成员吗？')) return;
-            try {
-                const res = await fetch(`/api/admin/teams/${currentMemberTeamId}/members/${userId}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (!res.ok) throw new Error('Failed');
-                await loadMembers();
-                await loadAvailableUsers();
-                loadTeams();
-            } catch (e) {
-                console.error(e);
-                alert('移除失败');
-            }
-        }
-
-        async function setCaptain(userId) {
-            if (!confirm('确定要将该成员设为队长吗？')) return;
-            try {
-                const res = await fetch(`/api/admin/teams/${currentMemberTeamId}/captain/${userId}`, {
-                    method: 'POST',
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (!res.ok) throw new Error('Failed');
-                await loadMembers();
-                loadTeams();
-            } catch (e) {
-                console.error(e);
-                alert('设置队长失败');
-            }
-        }
-
-        // 筛选事件
+        // 搜索
         document.getElementById('search-input').addEventListener('input', renderTeams);
-        document.getElementById('status-filter').addEventListener('change', renderTeams);
 
         // 模态框点击背景关闭
-        document.getElementById('modal-overlay').addEventListener('click', function(e) {
-            if (e.target === this) closeModal();
-        });
-        document.getElementById('member-modal').addEventListener('click', function(e) {
-            if (e.target === this) closeMemberModal();
+        document.getElementById('edit-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeEditModal();
         });
 
-        // 页面加载
-        loadTeams();
+        // 登出
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('tg_token');
+            localStorage.removeItem('tg_user');
+            window.location.href = '/login.html';
+        });
+
+        // 初始化
+        init();
     </script>
 
 </body>

@@ -37,9 +37,9 @@
         'admin.html': 'none', // 首页不需要特殊权限
         'admin-contests.html': 'contest.menu.view', // 比赛管理需要比赛权限
         'admin-admins.html': 'super_only', // 仅超管
-        'admin-users.html': 'super_only',
-        'admin-teams.html': 'super_only',
-        'admin-organizations.html': 'super_only',
+        'admin-users.html': 'none',          // 组织用户管理，页面内根据API返回决定内容
+        'admin-teams.html': 'none',          // 组织队伍管理，页面内根据API返回决定内容
+        'admin-organizations.html': 'none',  // 组织管理，页面内根据API返回决定内容
         'admin-data-import.html': 'super_only',
         'admin-docker.html': 'super_only',
         'admin-anti-cheat.html': 'super_only',

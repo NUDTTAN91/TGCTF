@@ -128,6 +128,31 @@
         .perm-checkbox.disabled:hover { background: transparent; }
         .perm-arrow { color: #444; margin: 0 2px; }
         .coming-soon { font-size: 10px; color: #666; margin-left: 8px; }
+
+        /* 组织权限样式 */
+        .org-perm-card { background: #111; border: 1px solid #333; margin-bottom: 8px; transition: all 0.2s; padding: 0; }
+        .perm-menu-children .org-perm-card { margin: 4px 8px; }
+        .perm-menu-children .org-perm-card:first-child { margin-top: 8px; }
+        .perm-menu-children .org-perm-card:last-child { margin-bottom: 8px; }
+        .org-perm-card:hover { border-color: #444; }
+        .org-perm-card.active { border-color: #ff6b00; border-color: rgba(255,107,0,0.4); }
+        .org-perm-header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; }
+        .org-perm-header input[type="checkbox"] { accent-color: #ff6b00; flex-shrink: 0; }
+        .org-perm-header .org-name { font-size: 13px; font-weight: bold; color: #e0e0e0; }
+        .org-perm-header .org-meta { font-size: 10px; color: #666; margin-left: auto; }
+        .org-perm-body { display: none; padding: 0 14px 12px 36px; animation: orgSlideDown 0.2s ease; }
+        .org-perm-body.expanded { display: block; }
+        @keyframes orgSlideDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+        .org-perm-group { margin-bottom: 8px; }
+        .org-perm-group-title { font-size: 10px; color: #555; font-weight: bold; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .org-perm-checks { display: flex; flex-wrap: wrap; gap: 6px; }
+        .org-perm-check { display: flex; align-items: center; gap: 5px; padding: 4px 10px; background: #1a1a1a; border: 1px solid #2a2a2a; cursor: pointer; transition: all 0.2s; font-size: 11px; color: #999; }
+        .org-perm-check:hover { border-color: #444; color: #ccc; }
+        .org-perm-check.checked { border-color: rgba(255,107,0,0.3); color: #ff6b00; background: rgba(255,107,0,0.05); }
+        .org-perm-check.disabled { opacity: 0.3; cursor: not-allowed; }
+        .org-perm-check.disabled:hover { border-color: #2a2a2a; color: #999; }
+        .org-perm-check input[type="checkbox"] { accent-color: #ff6b00; }
+        .org-perm-loading { text-align: center; padding: 20px; color: #555; font-size: 12px; }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden selection:bg-[#ff6b00] selection:text-black">
@@ -320,12 +345,15 @@
                         </div>
                     </div>
                     
-                    <!-- 组织管理 -->
-                    <div class="perm-menu-item">
-                        <div class="perm-menu-header disabled">
+                    <!-- 组织管理 - 可展开，展示组织权限卡片 -->
+                    <div class="perm-menu-item" id="menu-organizations">
+                        <div class="perm-menu-header clickable" onclick="togglePermMenu('organizations')">
                             <span class="icon">🏢</span>
-                            <span class="text-sm text-gray-400">组织管理</span>
-                            <span class="coming-soon">即将推出</span>
+                            <span class="text-sm text-white">组织管理</span>
+                            <span class="arrow">▶</span>
+                        </div>
+                        <div class="perm-menu-children" id="menu-organizations-children">
+                            <!-- 组织权限卡片由JS动态渲染 -->
                         </div>
                     </div>
                     
@@ -377,9 +405,11 @@
                         </div>
                     </div>
                 </div>
+
+
             </div>
             <div class="p-4 border-t border-[#333] flex justify-between items-center">
-                <div class="text-xs text-gray-500">💡 点击菜单展开，勾选具体权限后点击「保存所有权限」</div>
+                <div class="text-xs text-gray-500">💡 比赛权限点击「保存所有权限」生效；组织权限勾选后即时生效</div>
                 <button onclick="hidePermissionModal()" class="btn-outline">关闭</button>
             </div>
         </div>
@@ -390,6 +420,7 @@
         let currentAdminId = null;
         let currentPermissions = [];
         let allContests = [];
+        let allOrganizations = [];
 
         function parseJwt(t) {
             try {
@@ -462,6 +493,19 @@
                 allContests = data.contests || [];
             } catch (e) {
                 console.error('加载比赛列表失败:', e);
+            }
+        }
+
+        // 加载组织列表（用于权限分配）
+        async function loadOrganizations() {
+            try {
+                const res = await fetch('/api/admin/organizations-for-permission', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                allOrganizations = data.organizations || [];
+            } catch (e) {
+                console.error('加载组织列表失败:', e);
             }
         }
 
@@ -579,6 +623,9 @@
             } catch (e) {
                 console.error('获取权限失败:', e);
             }
+
+            // 加载组织权限
+            renderOrgPermissions(currentAdminId, allOrganizations, currentPermissions);
         }
 
         function hidePermissionModal() {
@@ -770,9 +817,246 @@
             }
         }
 
+        // ========== 组织权限管理 ==========
+
+        // 解析权限列表，构建 orgId -> Set<subPerm> 映射
+        function parseOrgPerms(permissions) {
+            const orgPerms = {};
+            permissions.forEach(p => {
+                const match = p.permission.match(/^org\.(\d+)\.(.+)$/);
+                if (match) {
+                    const orgId = match[1];
+                    if (!orgPerms[orgId]) orgPerms[orgId] = new Set();
+                    orgPerms[orgId].add(match[2]);
+                }
+            });
+            return orgPerms;
+        }
+
+        // 渲染组织权限面板
+        function renderOrgPermissions(adminId, orgs, permissions) {
+            const container = document.getElementById('menu-organizations-children');
+            if (!orgs || orgs.length === 0) {
+                container.innerHTML = '<div class="org-perm-loading">暂无组织</div>';
+                return;
+            }
+
+            const orgPerms = parseOrgPerms(permissions);
+
+            container.innerHTML = orgs.map(org => {
+                const perms = orgPerms[org.id] || new Set();
+                const hasView = perms.has('view');
+                const hasUserView = perms.has('user.view');
+                const hasUserEdit = perms.has('user.edit');
+                const hasUserBan = perms.has('user.ban');
+                const hasTeamView = perms.has('team.view');
+                const hasTeamEdit = perms.has('team.edit');
+                const hasTeamBan = perms.has('team.ban');
+                const permCount = perms.size;
+
+                return `
+                    <div class="org-perm-card ${hasView ? 'active' : ''}" id="org-card-${org.id}">
+                        <div class="org-perm-header" onclick="event.target.tagName !== 'INPUT' && toggleOrgView(${adminId}, ${org.id}, !document.getElementById('org-view-${org.id}').checked)">
+                            <input type="checkbox" id="org-view-${org.id}" ${hasView ? 'checked' : ''}
+                                onchange="toggleOrgView(${adminId}, ${org.id}, this.checked)" onclick="event.stopPropagation()">
+                            <span class="org-name">${org.name}</span>
+                            ${permCount > 0 ? '<span style="font-size:10px;color:#22c55e;">● ' + permCount + '项</span>' : ''}
+                            <span class="org-meta">${org.userCount || 0}人 / ${org.teamCount || 0}队</span>
+                        </div>
+                        <div class="org-perm-body ${hasView ? 'expanded' : ''}" id="org-body-${org.id}">
+                            <div class="org-perm-group">
+                                <div class="org-perm-group-title">👤 成员管理</div>
+                                <div class="org-perm-checks">
+                                    <label class="org-perm-check ${hasUserView ? 'checked' : ''}" id="org-check-${org.id}-user-view">
+                                        <input type="checkbox" id="org-perm-${org.id}-user-view" ${hasUserView ? 'checked' : ''}
+                                            onchange="toggleOrgSubPerm(${adminId}, ${org.id}, 'user.view', this.checked)">
+                                        <span>查看成员</span>
+                                    </label>
+                                    <label class="org-perm-check ${hasUserEdit ? 'checked' : ''} ${!hasUserView ? 'disabled' : ''}" id="org-check-${org.id}-user-edit">
+                                        <input type="checkbox" id="org-perm-${org.id}-user-edit" ${hasUserEdit ? 'checked' : ''} ${!hasUserView ? 'disabled' : ''}
+                                            onchange="toggleOrgSubPerm(${adminId}, ${org.id}, 'user.edit', this.checked)">
+                                        <span>编辑成员</span>
+                                    </label>
+                                    <label class="org-perm-check ${hasUserBan ? 'checked' : ''} ${!hasUserView ? 'disabled' : ''}" id="org-check-${org.id}-user-ban">
+                                        <input type="checkbox" id="org-perm-${org.id}-user-ban" ${hasUserBan ? 'checked' : ''} ${!hasUserView ? 'disabled' : ''}
+                                            onchange="toggleOrgSubPerm(${adminId}, ${org.id}, 'user.ban', this.checked)">
+                                        <span>禁用成员</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="org-perm-group">
+                                <div class="org-perm-group-title">◈ 队伍管理</div>
+                                <div class="org-perm-checks">
+                                    <label class="org-perm-check ${hasTeamView ? 'checked' : ''}" id="org-check-${org.id}-team-view">
+                                        <input type="checkbox" id="org-perm-${org.id}-team-view" ${hasTeamView ? 'checked' : ''}
+                                            onchange="toggleOrgSubPerm(${adminId}, ${org.id}, 'team.view', this.checked)">
+                                        <span>查看队伍</span>
+                                    </label>
+                                    <label class="org-perm-check ${hasTeamEdit ? 'checked' : ''} ${!hasTeamView ? 'disabled' : ''}" id="org-check-${org.id}-team-edit">
+                                        <input type="checkbox" id="org-perm-${org.id}-team-edit" ${hasTeamEdit ? 'checked' : ''} ${!hasTeamView ? 'disabled' : ''}
+                                            onchange="toggleOrgSubPerm(${adminId}, ${org.id}, 'team.edit', this.checked)">
+                                        <span>编辑队伍</span>
+                                    </label>
+                                    <label class="org-perm-check ${hasTeamBan ? 'checked' : ''} ${!hasTeamView ? 'disabled' : ''}" id="org-check-${org.id}-team-ban">
+                                        <input type="checkbox" id="org-perm-${org.id}-team-ban" ${hasTeamBan ? 'checked' : ''} ${!hasTeamView ? 'disabled' : ''}
+                                            onchange="toggleOrgSubPerm(${adminId}, ${org.id}, 'team.ban', this.checked)">
+                                        <span>禁用队伍</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 切换组织查看权限（根权限）
+        async function toggleOrgView(adminId, orgId, checked) {
+            const checkbox = document.getElementById(`org-view-${orgId}`);
+            checkbox.checked = checked;
+            const card = document.getElementById(`org-card-${orgId}`);
+            const body = document.getElementById(`org-body-${orgId}`);
+
+            if (checked) {
+                await grantOrgPerm(adminId, `org.${orgId}.view`);
+                card.classList.add('active');
+                body.classList.add('expanded');
+            } else {
+                await revokeOrgPerm(adminId, `org.${orgId}.view`);
+                card.classList.remove('active');
+                body.classList.remove('expanded');
+                // 前端同步取消所有子复选框
+                ['user.view','user.edit','user.ban','team.view','team.edit','team.ban'].forEach(sub => {
+                    const subCb = document.getElementById(`org-perm-${orgId}-${sub.replace('.', '-')}`);
+                    if (subCb) { subCb.checked = false; subCb.disabled = false; }
+                    const subLabel = document.getElementById(`org-check-${orgId}-${sub.replace('.', '-')}`);
+                    if (subLabel) { subLabel.classList.remove('checked'); subLabel.classList.remove('disabled'); }
+                });
+                // 重新禁用 edit/ban（因为 view 未勾选）
+                ['user.edit','user.ban','team.edit','team.ban'].forEach(sub => {
+                    const subCb = document.getElementById(`org-perm-${orgId}-${sub.replace('.', '-')}`);
+                    if (subCb) subCb.disabled = true;
+                    const subLabel = document.getElementById(`org-check-${orgId}-${sub.replace('.', '-')}`);
+                    if (subLabel) subLabel.classList.add('disabled');
+                });
+            }
+            // 刷新权限缓存
+            await refreshCurrentPermissions(adminId);
+        }
+
+        // 切换子权限
+        async function toggleOrgSubPerm(adminId, orgId, subPerm, checked) {
+            const cbId = `org-perm-${orgId}-${subPerm.replace('.', '-')}`;
+            const labelId = `org-check-${orgId}-${subPerm.replace('.', '-')}`;
+            const cb = document.getElementById(cbId);
+            const label = document.getElementById(labelId);
+
+            if (checked) {
+                await grantOrgPerm(adminId, `org.${orgId}.${subPerm}`);
+                label.classList.add('checked');
+
+                // 如果勾选 edit/ban，后端会自动授予对应 view，前端同步
+                if (subPerm.endsWith('.edit') || subPerm.endsWith('.ban')) {
+                    const dimension = subPerm.split('.')[0]; // user or team
+                    const viewCbId = `org-perm-${orgId}-${dimension}-view`;
+                    const viewLabelId = `org-check-${orgId}-${dimension}-view`;
+                    const viewCb = document.getElementById(viewCbId);
+                    const viewLabel = document.getElementById(viewLabelId);
+                    if (viewCb && !viewCb.checked) {
+                        viewCb.checked = true;
+                        viewLabel.classList.add('checked');
+                    }
+                    // 启用同维度的 edit/ban
+                    ['edit', 'ban'].forEach(act => {
+                        const actCb = document.getElementById(`org-perm-${orgId}-${dimension}-${act}`);
+                        const actLabel = document.getElementById(`org-check-${orgId}-${dimension}-${act}`);
+                        if (actCb) { actCb.disabled = false; }
+                        if (actLabel) { actLabel.classList.remove('disabled'); }
+                    });
+                }
+
+                // 如果勾选 view（user.view / team.view），启用对应 edit/ban
+                if (subPerm.endsWith('.view')) {
+                    const dimension = subPerm.split('.')[0];
+                    ['edit', 'ban'].forEach(act => {
+                        const actCb = document.getElementById(`org-perm-${orgId}-${dimension}-${act}`);
+                        const actLabel = document.getElementById(`org-check-${orgId}-${dimension}-${act}`);
+                        if (actCb) { actCb.disabled = false; }
+                        if (actLabel) { actLabel.classList.remove('disabled'); }
+                    });
+                }
+            } else {
+                await revokeOrgPerm(adminId, `org.${orgId}.${subPerm}`);
+                label.classList.remove('checked');
+
+                // 如果取消 view，后端级联撤销 edit+ban，前端同步
+                if (subPerm.endsWith('.view')) {
+                    const dimension = subPerm.split('.')[0];
+                    ['edit', 'ban'].forEach(act => {
+                        const actCbId = `org-perm-${orgId}-${dimension}-${act}`;
+                        const actLabelId = `org-check-${orgId}-${dimension}-${act}`;
+                        const actCb = document.getElementById(actCbId);
+                        const actLabel = document.getElementById(actLabelId);
+                        if (actCb) { actCb.checked = false; actCb.disabled = true; }
+                        if (actLabel) { actLabel.classList.remove('checked'); actLabel.classList.add('disabled'); }
+                    });
+                }
+            }
+            // 刷新权限缓存
+            await refreshCurrentPermissions(adminId);
+        }
+
+        // 授予组织权限
+        async function grantOrgPerm(adminId, permission) {
+            try {
+                const res = await fetch(`/api/admin/admins/${adminId}/permissions`, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ permission })
+                });
+                if (!res.ok) {
+                    const data = await res.json();
+                    alert('授权失败: ' + (data.error || data.message));
+                }
+            } catch (e) {
+                alert('授权失败: ' + e.message);
+            }
+        }
+
+        // 撤销组织权限（级联）
+        async function revokeOrgPerm(adminId, permission) {
+            try {
+                const res = await fetch(`/api/admin/admins/${adminId}/revoke-permission`, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ permission })
+                });
+                if (!res.ok) {
+                    const data = await res.json();
+                    alert('撤销失败: ' + (data.error || data.message));
+                }
+            } catch (e) {
+                alert('撤销失败: ' + e.message);
+            }
+        }
+
+        // 刷新当前管理员权限缓存
+        async function refreshCurrentPermissions(adminId) {
+            try {
+                const res = await fetch(`/api/admin/admins/${adminId}`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                currentPermissions = data.permissions || [];
+            } catch (e) {
+                console.error('刷新权限失败:', e);
+            }
+        }
+
         // 初始化
         loadAdmins();
         loadContests();
+        loadOrganizations();
     </script>
 
 </body>

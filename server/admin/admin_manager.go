@@ -405,6 +405,11 @@ func HandleGrantPermission(c *gin.Context, db *sql.DB) {
 		matched, _ := regexp.MatchString(`^contest\.\d+\.(view|monitor)$`, req.Permission)
 		isValid = matched
 	}
+	// 检查 org.{id}.* 格式
+	if !isValid {
+		matched, _ := regexp.MatchString(`^org\.\d+\.(view|user\.view|user\.edit|user\.ban|team\.view|team\.edit|team\.ban)$`, req.Permission)
+		isValid = matched
+	}
 	if !isValid {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "INVALID_PERMISSION", "message": "不支持的权限类型"})
 		return
@@ -418,13 +423,59 @@ func HandleGrantPermission(c *gin.Context, db *sql.DB) {
 		resourceIDs = &req.ResourceIDs
 	}
 
+	// 级联自动授予前置权限（org 权限）
+	orgPermRegex := regexp.MustCompile(`^org\.(\d+)\.(.+)$`)
+	if matches := orgPermRegex.FindStringSubmatch(req.Permission); matches != nil {
+		orgIDStr := matches[1]
+		subPerm := matches[2]
+
+		// 1. 任何 org.{id}.* 子权限都需要 org.{id}.view
+		if subPerm != "view" {
+			autoGrantPerm := fmt.Sprintf("org.%s.view", orgIDStr)
+			_, err := db.Exec(`INSERT INTO admin_permissions (user_id, permission, granted_by, granted_at) SELECT $1::bigint, $2::text, $3::bigint, NOW() WHERE NOT EXISTS (SELECT 1 FROM admin_permissions WHERE user_id = $1::bigint AND permission = $2::text AND resource_type IS NULL)`, id, autoGrantPerm, grantedBy)
+			if err != nil {
+				log.Printf("auto grant org view permission failed: %v", err)
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "INTERNAL_ERROR"})
+				return
+			}
+		}
+
+		// 2. user.edit/user.ban 需要 user.view
+		if subPerm == "user.edit" || subPerm == "user.ban" {
+			autoGrantPerm := fmt.Sprintf("org.%s.user.view", orgIDStr)
+			_, err := db.Exec(`INSERT INTO admin_permissions (user_id, permission, granted_by, granted_at) SELECT $1::bigint, $2::text, $3::bigint, NOW() WHERE NOT EXISTS (SELECT 1 FROM admin_permissions WHERE user_id = $1::bigint AND permission = $2::text AND resource_type IS NULL)`, id, autoGrantPerm, grantedBy)
+			if err != nil {
+				log.Printf("auto grant user view permission failed: %v", err)
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "INTERNAL_ERROR"})
+				return
+			}
+		}
+
+		// 3. team.edit/team.ban 需要 team.view
+		if subPerm == "team.edit" || subPerm == "team.ban" {
+			autoGrantPerm := fmt.Sprintf("org.%s.team.view", orgIDStr)
+			_, err := db.Exec(`INSERT INTO admin_permissions (user_id, permission, granted_by, granted_at) SELECT $1::bigint, $2::text, $3::bigint, NOW() WHERE NOT EXISTS (SELECT 1 FROM admin_permissions WHERE user_id = $1::bigint AND permission = $2::text AND resource_type IS NULL)`, id, autoGrantPerm, grantedBy)
+			if err != nil {
+				log.Printf("auto grant team view permission failed: %v", err)
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "INTERNAL_ERROR"})
+				return
+			}
+		}
+	}
+
 	// 插入或更新权限
-	_, err = db.Exec(`
+	// org 权限的 resource_type 为 NULL，PostgreSQL UNIQUE 约束对 NULL 不生效，需特殊处理
+	if orgPermRegex.MatchString(req.Permission) {
+		_, err = db.Exec(`INSERT INTO admin_permissions (user_id, permission, granted_by, granted_at) SELECT $1::bigint, $2::text, $3::bigint, NOW() WHERE NOT EXISTS (SELECT 1 FROM admin_permissions WHERE user_id = $1::bigint AND permission = $2::text AND resource_type IS NULL)`,
+			id, req.Permission, grantedBy)
+	} else {
+		_, err = db.Exec(`
 		INSERT INTO admin_permissions (user_id, permission, resource_type, resource_ids, granted_by, granted_at)
 		VALUES ($1, $2, $3, $4, $5, NOW())
 		ON CONFLICT (user_id, permission, resource_type) 
 		DO UPDATE SET resource_ids = $4, granted_by = $5, granted_at = NOW()`,
-		id, req.Permission, resourceType, resourceIDs, grantedBy)
+			id, req.Permission, resourceType, resourceIDs, grantedBy)
+	}
 	if err != nil {
 		log.Printf("grant permission error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "INTERNAL_ERROR"})
@@ -459,6 +510,256 @@ func HandleRevokePermission(c *gin.Context, db *sql.DB) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "PERMISSION_REVOKED"})
+}
+
+// HandleRevokePermissionByName 按权限名称撤销权限（支持级联）
+func HandleRevokePermissionByName(c *gin.Context, db *sql.DB) {
+	adminID := c.Param("id")
+
+	var req struct {
+		Permission string `json:"permission" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "INVALID_REQUEST"})
+		return
+	}
+
+	// 检查是否为普通管理员
+	var role string
+	err := db.QueryRow("SELECT role FROM users WHERE id = $1", adminID).Scan(&role)
+	if err == sql.ErrNoRows {
+		c.JSON(http.StatusNotFound, gin.H{"error": "NOT_FOUND"})
+		return
+	}
+	if role != "admin" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "NOT_AN_ADMIN"})
+		return
+	}
+
+	// 确定需要级联删除的权限列表
+	permsToDelete := []string{req.Permission}
+
+	orgPermRegex := regexp.MustCompile(`^org\.(\d+)\.(.+)$`)
+	if matches := orgPermRegex.FindStringSubmatch(req.Permission); matches != nil {
+		orgIDStr := matches[1]
+		subPerm := matches[2]
+
+		if subPerm == "view" {
+			// 撤销 org.{id}.view → 级联全部 6 个子权限
+			permsToDelete = append(permsToDelete,
+				fmt.Sprintf("org.%s.user.view", orgIDStr),
+				fmt.Sprintf("org.%s.user.edit", orgIDStr),
+				fmt.Sprintf("org.%s.user.ban", orgIDStr),
+				fmt.Sprintf("org.%s.team.view", orgIDStr),
+				fmt.Sprintf("org.%s.team.edit", orgIDStr),
+				fmt.Sprintf("org.%s.team.ban", orgIDStr),
+			)
+		} else if subPerm == "user.view" {
+			// 撤销 user.view → 级联 user.edit + user.ban
+			permsToDelete = append(permsToDelete,
+				fmt.Sprintf("org.%s.user.edit", orgIDStr),
+				fmt.Sprintf("org.%s.user.ban", orgIDStr),
+			)
+		} else if subPerm == "team.view" {
+			// 撤销 team.view → 级联 team.edit + team.ban
+			permsToDelete = append(permsToDelete,
+				fmt.Sprintf("org.%s.team.edit", orgIDStr),
+				fmt.Sprintf("org.%s.team.ban", orgIDStr),
+			)
+		}
+	}
+
+	// 批量删除
+	totalDeleted := int64(0)
+	for _, perm := range permsToDelete {
+		result, err := db.Exec("DELETE FROM admin_permissions WHERE user_id = $1 AND permission = $2", adminID, perm)
+		if err != nil {
+			log.Printf("revoke permission '%s' for admin %s error: %v", perm, adminID, err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "INTERNAL_ERROR"})
+			return
+		}
+		if n, _ := result.RowsAffected(); n > 0 {
+			totalDeleted += n
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "PERMISSION_REVOKED", "revokedCount": totalDeleted})
+}
+
+// HasPermission 检查管理员是否拥有指定权限（简化版，不需要 resource_type/resource_ids）
+func HasPermission(db *sql.DB, userID int64, role string, permission string) bool {
+	if role == "super" {
+		return true
+	}
+	var exists int
+	err := db.QueryRow("SELECT 1 FROM admin_permissions WHERE user_id = $1 AND permission = $2", userID, permission).Scan(&exists)
+	return err == nil && exists == 1
+}
+
+// HandleGetMyOrganizations 获取当前管理员有权限的组织列表
+func HandleGetMyOrganizations(c *gin.Context, db *sql.DB) {
+	userID := c.GetInt64("userID")
+	role := c.GetString("role")
+
+	// 超管返回所有组织
+	if role == "super" {
+		rows, err := db.Query(`
+			SELECT o.id, o.name, o.description, o.status,
+			       (SELECT COUNT(*) FROM users WHERE organization_id = o.id) as user_count,
+			       (SELECT COUNT(*) FROM teams WHERE organization_id = o.id) as team_count
+			FROM organizations o
+			ORDER BY o.id ASC`)
+		if err != nil {
+			log.Printf("get all organizations error: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "INTERNAL_ERROR"})
+			return
+		}
+		defer rows.Close()
+
+		var orgs []gin.H
+		for rows.Next() {
+			var id int64
+			var name, status string
+			var description sql.NullString
+			var userCount, teamCount int
+			rows.Scan(&id, &name, &description, &status, &userCount, &teamCount)
+			org := gin.H{
+				"id":          id,
+				"name":        name,
+				"description": "",
+				"status":      status,
+				"userCount":   userCount,
+				"teamCount":   teamCount,
+				"permissions": []string{"view", "user.view", "user.edit", "user.ban", "team.view", "team.edit", "team.ban"},
+			}
+			if description.Valid {
+				org["description"] = description.String
+			}
+			orgs = append(orgs, org)
+		}
+		c.JSON(http.StatusOK, gin.H{"organizations": orgs})
+		return
+	}
+
+	// 查询该管理员所有 org.* 权限
+	rows, err := db.Query("SELECT permission FROM admin_permissions WHERE user_id = $1 AND permission LIKE 'org.%'", userID)
+	if err != nil {
+		log.Printf("get my org permissions error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "INTERNAL_ERROR"})
+		return
+	}
+	defer rows.Close()
+
+	// 解析出 org_id → permissions 映射
+	orgPermRegex := regexp.MustCompile(`^org\.(\d+)\.(.+)$`)
+	orgPerms := make(map[string][]string) // orgID -> [view, user.view, user.edit, ...]
+	for rows.Next() {
+		var perm string
+		rows.Scan(&perm)
+		matches := orgPermRegex.FindStringSubmatch(perm)
+		if matches != nil {
+			orgID := matches[1]
+			subPerm := matches[2]
+			orgPerms[orgID] = append(orgPerms[orgID], subPerm)
+		}
+	}
+
+	// 只保留有 view 权限的组织
+	var orgIDs []string
+	for orgID, perms := range orgPerms {
+		for _, p := range perms {
+			if p == "view" {
+				orgIDs = append(orgIDs, orgID)
+				break
+			}
+		}
+	}
+
+	if len(orgIDs) == 0 {
+		c.JSON(http.StatusOK, gin.H{"organizations": []interface{}{}})
+		return
+	}
+
+	// 构建 IN 查询获取组织详情
+	placeholders := make([]string, len(orgIDs))
+	args := make([]interface{}, len(orgIDs))
+	for i, oid := range orgIDs {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+		args[i] = oid
+	}
+
+	query := fmt.Sprintf(`
+		SELECT o.id, o.name, o.description, o.status,
+		       (SELECT COUNT(*) FROM users WHERE organization_id = o.id) as user_count,
+		       (SELECT COUNT(*) FROM teams WHERE organization_id = o.id) as team_count
+		FROM organizations o
+		WHERE o.id IN (%s)
+		ORDER BY o.id ASC`, strings.Join(placeholders, ","))
+
+	orgRows, err := db.Query(query, args...)
+	if err != nil {
+		log.Printf("get my organizations error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "INTERNAL_ERROR"})
+		return
+	}
+	defer orgRows.Close()
+
+	var orgs []gin.H
+	for orgRows.Next() {
+		var id int64
+		var name, status string
+		var description sql.NullString
+		var userCount, teamCount int
+		orgRows.Scan(&id, &name, &description, &status, &userCount, &teamCount)
+		org := gin.H{
+			"id":          id,
+			"name":        name,
+			"description": "",
+			"status":      status,
+			"userCount":   userCount,
+			"teamCount":   teamCount,
+			"permissions": orgPerms[strconv.FormatInt(id, 10)],
+		}
+		if description.Valid {
+			org["description"] = description.String
+		}
+		orgs = append(orgs, org)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"organizations": orgs})
+}
+
+// HandleGetOrganizationsForPermission 获取所有组织列表（用于权限分配时选择）
+func HandleGetOrganizationsForPermission(c *gin.Context, db *sql.DB) {
+	rows, err := db.Query(`
+		SELECT o.id, o.name, o.status,
+		       (SELECT COUNT(*) FROM users WHERE organization_id = o.id) as user_count,
+		       (SELECT COUNT(*) FROM teams WHERE organization_id = o.id) as team_count
+		FROM organizations o
+		ORDER BY o.id ASC`)
+	if err != nil {
+		log.Printf("get organizations for permission error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "INTERNAL_ERROR"})
+		return
+	}
+	defer rows.Close()
+
+	type OrgInfo struct {
+		ID        int64  `json:"id"`
+		Name      string `json:"name"`
+		Status    string `json:"status"`
+		UserCount int    `json:"userCount"`
+		TeamCount int    `json:"teamCount"`
+	}
+
+	var orgs []OrgInfo
+	for rows.Next() {
+		var o OrgInfo
+		rows.Scan(&o.ID, &o.Name, &o.Status, &o.UserCount, &o.TeamCount)
+		orgs = append(orgs, o)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"organizations": orgs})
 }
 
 // HandleGetMyPermissions 获取当前管理员的权限列表（用于前端判断）

@@ -16,12 +16,11 @@
         .sidebar-item.active .icon { color: var(--accent); }
         .admin-card { background: var(--bg-panel); border: 1px solid var(--border-color); position: relative; }
         .progress-bar { transition: width 0.5s ease-in-out; }
-        .btn-icon { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); color: var(--text-dim); border-radius: 2px; transition: 0.2s; cursor: pointer; }
-        .btn-icon:hover { border-color: white; color: white; background: rgba(255,255,255,0.1); }
         .btn-danger-ghost { color: #888; border: 1px solid transparent; padding: 0.25rem 0.5rem; font-size: 0.75rem; transition: 0.2s; cursor: pointer; background: transparent; }
         .btn-danger-ghost:hover { color: var(--danger); border-color: var(--danger); background: rgba(239,68,68,0.1); }
         .container-id { background: #000; color: var(--info); padding: 2px 6px; border-radius: 2px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; }
-        .view-btn.active { background: #ff6b00; color: black; font-weight: bold; border-color: #ff6b00; }
+        .btn-icon { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); color: var(--text-dim); border-radius: 2px; transition: 0.2s; cursor: pointer; }
+        .btn-icon:hover { border-color: white; color: white; background: rgba(255,255,255,0.1); }
         .tactical-table thead th { background: #151515; color: #666; font-family: 'JetBrains Mono', monospace; font-weight: normal; text-transform: uppercase; letter-spacing: 0.05em; padding: 1rem; border-bottom: 1px solid #333; text-align: left; font-size: 0.75rem; }
         .tactical-table tbody tr { border-bottom: 1px solid #252525; transition: background 0.2s; }
         .tactical-table tbody tr:hover { background: rgba(255,255,255,0.02); }
@@ -29,16 +28,16 @@
         .status-badge { display: inline-flex; align-items: center; font-size: 0.7rem; padding: 2px 8px; border-radius: 99px; border: 1px solid transparent; }
         .status-running { border-color: var(--success); color: var(--success); background: rgba(34, 197, 94, 0.1); }
         .status-expired { border-color: var(--danger); color: var(--danger); background: rgba(239, 68, 68, 0.1); }
-        .grid-container-card { background: #1a1a1a; border: 1px solid #333; padding: 1rem; position: relative; transition: all 0.2s; }
-        .grid-container-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        .grid-status-bar { height: 3px; width: 100%; position: absolute; top: 0; left: 0; }
+        .tab-btn { padding: 0.5rem 1rem; font-size: 0.75rem; border-bottom: 2px solid transparent; color: #888; cursor: pointer; transition: all 0.2s; background: transparent; border-top: none; border-left: none; border-right: none; }
+        .tab-btn:hover { color: white; }
+        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+        .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 40vh; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #111; }
         ::-webkit-scrollbar-thumb { background: #333; }
         .hidden { display: none !important; }
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; display: flex; align-items: center; justify-content: center; }
-        .modal-content { background: #1e1e1e; border: 1px solid #333; padding: 1.5rem; max-width: 600px; width: 90%; max-height: 80vh; overflow: auto; }
-        .log-viewer { background: #0a0a0a; border: 1px solid #333; padding: 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; white-space: pre-wrap; max-height: 400px; overflow: auto; color: #aaa; }
+        .modal-content { background: #1e1e1e; border: 1px solid #333; padding: 1.5rem; max-width: 400px; width: 90%; }
     </style>
     <script src="js/portal-auth.js"></script>
 </head>
@@ -68,7 +67,7 @@
         <div class="p-4 border-t border-[#333]">
             <div class="flex items-center gap-3">
                 <div class="w-8 h-8 bg-[#333] rounded-full flex items-center justify-center text-[#ff6b00] font-bold">A</div>
-                <div><p class="text-xs text-white font-bold">超级管理员</p><p class="text-[10px] text-green-500">● 连接稳定</p></div>
+                <div><p class="text-xs text-white font-bold">管理员</p><p class="text-[10px] text-green-500">● 在线</p></div>
             </div>
         </div>
     </aside>
@@ -84,93 +83,108 @@
             </div>
         </header>
 
-        <main class="flex-1 flex flex-col pt-8 px-8 relative overflow-hidden">
+        <main class="flex-1 flex flex-col pt-6 px-8 relative overflow-hidden">
+
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold text-white font-eng tracking-wide">DOCKER_INSTANCES</h2>
+            </div>
+
+            <!-- 组织 Tab 栏 -->
+            <div id="org-tabs" class="flex border-b border-[#333] mb-6 overflow-x-auto" style="min-height: 38px;">
+                <div class="text-gray-500 text-xs font-mono py-2 px-4">加载中...</div>
+            </div>
+
             <!-- 统计卡片 -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div class="admin-card p-5">
-                    <div class="flex justify-between items-end mb-2">
-                        <span class="text-xs text-gray-500 font-mono uppercase">运行中容器</span>
-                        <span id="stat-running" class="text-xl font-eng font-bold text-green-500">-</span>
+            <div id="stats-section" class="hidden">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                    <div class="admin-card p-5">
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="text-xs text-gray-500 font-mono uppercase">运行中容器</span>
+                            <span id="stat-running" class="text-xl font-eng font-bold text-green-500">-</span>
+                        </div>
+                        <div class="w-full bg-[#333] h-1.5 rounded-full overflow-hidden">
+                            <div id="progress-running" class="bg-green-500 h-full progress-bar" style="width: 0%"></div>
+                        </div>
                     </div>
-                    <div class="w-full bg-[#333] h-1.5 rounded-full overflow-hidden">
-                        <div id="progress-running" class="bg-green-500 h-full progress-bar" style="width: 0%"></div>
+                    <div class="admin-card p-5">
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="text-xs text-gray-500 font-mono uppercase">过期待清理</span>
+                            <span id="stat-expired" class="text-xl font-eng font-bold text-red-400">-</span>
+                        </div>
+                        <div class="w-full bg-[#333] h-1.5 rounded-full overflow-hidden">
+                            <div id="progress-expired" class="bg-red-500 h-full progress-bar" style="width: 0%"></div>
+                        </div>
                     </div>
-                    <div id="stat-docker" class="mt-2 text-[10px] text-gray-600 font-mono">Docker 实际: -</div>
+                    <div class="admin-card p-5">
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="text-xs text-gray-500 font-mono uppercase">今日创建</span>
+                            <span id="stat-today-created" class="text-xl font-eng font-bold text-blue-400">-</span>
+                        </div>
+                        <div class="w-full bg-[#333] h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-blue-500 h-full progress-bar" style="width: 50%"></div>
+                        </div>
+                    </div>
+                    <div class="admin-card p-5">
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="text-xs text-gray-500 font-mono uppercase">今日销毁</span>
+                            <span id="stat-today-destroyed" class="text-xl font-eng font-bold text-gray-400">-</span>
+                        </div>
+                        <div class="w-full bg-[#333] h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-gray-500 h-full progress-bar" style="width: 30%"></div>
+                        </div>
+                    </div>
                 </div>
-                <div class="admin-card p-5">
-                    <div class="flex justify-between items-end mb-2">
-                        <span class="text-xs text-gray-500 font-mono uppercase">过期待清理</span>
-                        <span id="stat-expired" class="text-xl font-eng font-bold text-red-400">-</span>
+
+                <!-- 工具栏 -->
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 bg-[#1a1a1a] p-4 border border-[#333]">
+                    <div class="flex items-center gap-4 w-full md:w-auto">
+                        <h2 class="text-sm font-bold text-white font-eng tracking-wide">CONTAINER_POOL</h2>
+                        <div class="h-6 w-px bg-[#333]"></div>
+                        <div class="relative">
+                            <input id="search-input" type="text" placeholder="搜索容器ID / 队伍 / 用户..." class="bg-[#111] border border-[#333] text-xs text-white px-4 py-2 w-72 focus:border-[#ff6b00] outline-none font-mono placeholder-gray-600">
+                            <button onclick="loadInstances()" class="absolute right-2 top-1.5 text-gray-500 hover:text-white">🔍</button>
+                        </div>
                     </div>
-                    <div class="w-full bg-[#333] h-1.5 rounded-full overflow-hidden">
-                        <div id="progress-expired" class="bg-red-500 h-full progress-bar" style="width: 0%"></div>
+                    <div class="flex gap-3">
+                        <select id="status-filter" onchange="loadInstances()" class="bg-[#111] border border-[#333] text-xs text-gray-400 px-3 py-2 outline-none hover:border-[#555] cursor-pointer">
+                            <option value="">全部状态</option>
+                            <option value="running">运行中</option>
+                        </select>
+                        <button onclick="loadInstances()" class="btn-danger-ghost border-blue-900 text-blue-400">刷新</button>
                     </div>
-                    <div class="mt-2 text-[10px] text-gray-600 font-mono">已超过有效期</div>
                 </div>
-                <div class="admin-card p-5">
-                    <div class="flex justify-between items-end mb-2">
-                        <span class="text-xs text-gray-500 font-mono uppercase">今日创建</span>
-                        <span id="stat-today-created" class="text-xl font-eng font-bold text-blue-400">-</span>
+
+                <!-- 实例列表 -->
+                <div class="admin-card overflow-hidden flex-1">
+                    <div style="max-height: 420px; overflow-y: auto;">
+                        <table class="w-full tactical-table">
+                            <thead>
+                                <tr>
+                                    <th>容器名</th>
+                                    <th>队伍</th>
+                                    <th>比赛</th>
+                                    <th>题目</th>
+                                    <th>创建者</th>
+                                    <th>端口映射</th>
+                                    <th>状态</th>
+                                    <th>过期时间</th>
+                                    <th class="text-right pr-6">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="instances-tbody">
+                                <tr><td colspan="9" class="text-center text-gray-500 py-8">请选择组织</td></tr>
+                            </tbody>
+                        </table>
                     </div>
-                    <div class="w-full bg-[#333] h-1.5 rounded-full overflow-hidden">
-                        <div class="bg-blue-500 h-full progress-bar" style="width: 50%"></div>
-                    </div>
-                    <div class="mt-2 text-[10px] text-gray-600 font-mono">今日新建容器实例</div>
-                </div>
-                <div class="admin-card p-5">
-                    <div class="flex justify-between items-end mb-2">
-                        <span class="text-xs text-gray-500 font-mono uppercase">今日销毁</span>
-                        <span id="stat-today-destroyed" class="text-xl font-eng font-bold text-gray-400">-</span>
-                    </div>
-                    <div class="w-full bg-[#333] h-1.5 rounded-full overflow-hidden">
-                        <div class="bg-gray-500 h-full progress-bar" style="width: 30%"></div>
-                    </div>
-                    <div class="mt-2 text-[10px] text-gray-600 font-mono">今日销毁容器实例</div>
                 </div>
             </div>
 
-            <!-- 工具栏 -->
-            <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 bg-[#1a1a1a] p-4 border border-[#333]">
-                <div class="flex items-center gap-4 w-full md:w-auto">
-                    <h2 class="text-lg font-bold text-white font-eng tracking-wide">CONTAINER_POOL</h2>
-                    <div class="h-6 w-px bg-[#333]"></div>
-                    <div class="relative">
-                        <input id="search-input" type="text" placeholder="搜索容器ID / 队伍 / 用户..." class="bg-[#111] border border-[#333] text-xs text-white px-4 py-2 w-72 focus:border-[#ff6b00] outline-none font-mono placeholder-gray-600">
-                        <button onclick="loadInstances()" class="absolute right-2 top-1.5 text-gray-500 hover:text-white">🔍</button>
-                    </div>
-                </div>
-                <div class="flex gap-3">
-                    <select id="contest-filter" onchange="loadInstances()" class="bg-[#111] border border-[#333] text-xs text-gray-400 px-3 py-2 outline-none hover:border-[#555] cursor-pointer">
-                        <option value="">所有比赛</option>
-                    </select>
-                    <button onclick="batchDestroy()" class="btn-danger-ghost border-yellow-900 text-yellow-500">批量销毁选中</button>
-                    <button onclick="cleanExpired()" class="btn-danger-ghost border-red-900 text-red-500 bg-red-900 bg-opacity-10">清理过期实例</button>
-                    <button onclick="loadInstances()" class="btn-danger-ghost border-blue-900 text-blue-400">刷新</button>
-                </div>
-            </div>
-
-            <!-- 实例列表 -->
-            <div id="list-view" class="admin-card overflow-hidden flex-1">
-                <div style="max-height: 550px; overflow-y: auto;">
-                <table class="w-full tactical-table">
-                    <thead>
-                        <tr>
-                            <th class="w-12 text-center"><input type="checkbox" id="select-all" class="accent-[#ff6b00]" onchange="toggleSelectAll()"></th>
-                            <th>容器 ID</th>
-                            <th>队伍 / 用户</th>
-                            <th>比赛</th>
-                            <th>题目</th>
-                            <th>端口映射</th>
-                            <th>创建时间</th>
-                            <th>过期时间</th>
-                            <th>状态</th>
-                            <th class="text-right pr-6">操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="instances-tbody">
-                        <tr><td colspan="10" class="text-center text-gray-500 py-8">加载中...</td></tr>
-                    </tbody>
-                </table>
+            <!-- 空状态 -->
+            <div id="empty-state" class="hidden">
+                <div class="empty-state">
+                    <div style="font-size: 64px; opacity: 0.2; margin-bottom: 16px;">🐳</div>
+                    <div style="font-size: 18px; font-weight: bold; color: white; margin-bottom: 8px;">暂无 Docker 管理权限</div>
+                    <div style="font-size: 13px; color: #888;">您尚未被分配任何组织的 Docker 管理权限，请联系超级管理员。</div>
                 </div>
             </div>
 
@@ -181,28 +195,14 @@
                         <span class="text-gray-500">天格后台管理系统</span>
                     </div>
                     <span class="text-white font-mono">Copyright © 2021-present tan91. All Rights Reserved.</span>
-                    <a href="https://github.com/NUDTTAN91" target="_blank" class="text-[#ff6b00] hover:text-white transition-colors"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg></a>
-                    <a href="https://blog.csdn.net/ZXW_NUDT" target="_blank" class="text-[#ff6b00] hover:text-white transition-colors"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></a>
                 </div>
             </footer>
         </main>
     </div>
 
-    <!-- 日志弹窗 -->
-    <div id="log-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-white font-bold">容器日志</h3>
-                <button onclick="closeLogModal()" class="text-gray-400 hover:text-white text-xl">&times;</button>
-            </div>
-            <div id="log-container-id" class="text-xs text-blue-400 font-mono mb-2">Container: -</div>
-            <div id="log-content" class="log-viewer">加载中...</div>
-        </div>
-    </div>
-
     <!-- 确认弹窗 -->
     <div id="confirm-modal" class="modal-overlay hidden">
-        <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-content">
             <h3 id="confirm-title" class="text-white font-bold mb-4">确认操作</h3>
             <p id="confirm-message" class="text-gray-400 text-sm mb-6"></p>
             <div class="flex justify-end gap-3">
@@ -213,12 +213,12 @@
     </div>
 
     <script>
-        function parseJwt(token) { try { const base64Url = token.split('.')[1]; const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/'); const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')); return JSON.parse(jsonPayload); } catch (e) { return null; } }
-        const token = localStorage.getItem('tg_token');
-        if (!token) { window.location.href = '/login.html'; } else { const payload = parseJwt(token); if (!payload || payload.role !== 'super') { document.querySelector('main').innerHTML = `<div class="flex-1 flex items-center justify-center" style="min-height:60vh;"><div class="text-center"><div style="font-size:96px;margin-bottom:24px;opacity:0.3;">🔒</div><div style="font-size:24px;font-weight:bold;color:white;margin-bottom:8px;">无操作权限</div><div style="font-size:14px;color:#888;">此功能仅超级管理员可用</div><a href="/portal/admin.html" style="display:inline-block;margin-top:24px;padding:10px 24px;background:#ff6b00;color:black;font-weight:bold;font-size:14px;text-decoration:none;">返回首页</a></div></div>`; } }
-        document.getElementById('logout-btn').addEventListener('click', () => { localStorage.removeItem('tg_token'); window.location.href = '/login.html'; });
+        const API = '/api/admin-common';
+        function getToken() { return localStorage.getItem('tg_token'); }
 
-        let selectedIds = new Set();
+        let allOrgs = [];
+        let currentOrgId = null;
+        let currentPerms = [];
 
         function showTip(msg, type = 'info') {
             const colors = { success: '#22c55e', error: '#ef4444', warning: '#f59e0b', info: '#3b82f6' };
@@ -229,98 +229,109 @@
             setTimeout(() => tip.remove(), 3000);
         }
 
+        function escapeHtml(text) { const d = document.createElement('div'); d.textContent = text || ''; return d.innerHTML; }
+
+        async function init() {
+            try {
+                const res = await fetch(`${API}/my-organizations`, { headers: { 'Authorization': 'Bearer ' + getToken() } });
+                if (!res.ok) throw new Error('加载失败');
+                const data = await res.json();
+                const orgs = data.organizations || [];
+
+                // 过滤有 docker.view 权限的组织
+                allOrgs = orgs.filter(o => (o.permissions || []).includes('docker.view'));
+
+                if (allOrgs.length === 0) {
+                    document.getElementById('org-tabs').innerHTML = '';
+                    document.getElementById('empty-state').classList.remove('hidden');
+                    return;
+                }
+
+                renderTabs();
+                document.getElementById('stats-section').classList.remove('hidden');
+                selectOrg(allOrgs[0].id);
+            } catch (e) {
+                console.error(e);
+                document.getElementById('org-tabs').innerHTML = '<div class="text-red-500 text-xs font-mono py-2 px-4">加载失败</div>';
+            }
+        }
+
+        function renderTabs() {
+            const container = document.getElementById('org-tabs');
+            container.innerHTML = allOrgs.map(o =>
+                `<button class="tab-btn font-mono" data-org-id="${o.id}" onclick="selectOrg(${o.id})">${escapeHtml(o.name)}</button>`
+            ).join('');
+        }
+
+        function selectOrg(orgId) {
+            currentOrgId = orgId;
+            document.querySelectorAll('#org-tabs .tab-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.orgId) === orgId);
+            });
+            const org = allOrgs.find(o => o.id === orgId);
+            currentPerms = org ? (org.permissions || []) : [];
+            loadStats();
+            loadInstances();
+        }
+
         async function loadStats() {
             try {
-                const res = await fetch('/api/admin/docker/instances/stats', { headers: { Authorization: 'Bearer ' + token } });
+                const res = await fetch(`${API}/organizations/${currentOrgId}/docker/stats`, { headers: { 'Authorization': 'Bearer ' + getToken() } });
                 const data = await res.json();
                 document.getElementById('stat-running').textContent = data.runningCount || 0;
                 document.getElementById('stat-expired').textContent = data.expiredCount || 0;
                 document.getElementById('stat-today-created').textContent = data.todayCreated || 0;
                 document.getElementById('stat-today-destroyed').textContent = data.todayDestroyed || 0;
-                document.getElementById('stat-docker').textContent = `Docker 实际: ${data.dockerCount || 0}`;
-                const runningPct = Math.min((data.runningCount || 0) / 100 * 100, 100);
-                document.getElementById('progress-running').style.width = runningPct + '%';
-                const expiredPct = data.runningCount > 0 ? (data.expiredCount || 0) / data.runningCount * 100 : 0;
-                document.getElementById('progress-expired').style.width = expiredPct + '%';
+                const runPct = Math.min((data.runningCount || 0) / 100 * 100, 100);
+                document.getElementById('progress-running').style.width = runPct + '%';
+                const expPct = data.runningCount > 0 ? (data.expiredCount || 0) / data.runningCount * 100 : 0;
+                document.getElementById('progress-expired').style.width = expPct + '%';
             } catch (e) { console.error('加载统计失败', e); }
         }
 
-        async function loadContests() {
-            try {
-                const res = await fetch('/api/admin/docker/instances/contests', { headers: { Authorization: 'Bearer ' + token } });
-                const data = await res.json();
-                const select = document.getElementById('contest-filter');
-                select.innerHTML = '<option value="">所有比赛</option>';
-                (data.contests || []).forEach(c => {
-                    select.innerHTML += `<option value="${c.id}">${c.title} (${c.instanceCount})</option>`;
-                });
-            } catch (e) { console.error('加载比赛列表失败', e); }
-        }
-
-        async function loadInstances(keepSelection = false) {
+        async function loadInstances() {
             const tbody = document.getElementById('instances-tbody');
-            tbody.innerHTML = '<tr><td colspan="10" class="text-center text-gray-500 py-8">加载中...</td></tr>';
-            if (!keepSelection) {
-                selectedIds.clear();
-                document.getElementById('select-all').checked = false;
-            }
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-gray-500 py-8">加载中...</td></tr>';
 
             const search = document.getElementById('search-input').value;
-            const contestId = document.getElementById('contest-filter').value;
+            const statusFilter = document.getElementById('status-filter').value;
             const params = new URLSearchParams();
             if (search) params.append('search', search);
-            if (contestId) params.append('contestId', contestId);
+            if (statusFilter) params.append('status', statusFilter);
 
             try {
-                const res = await fetch('/api/admin/docker/instances?' + params.toString(), { headers: { Authorization: 'Bearer ' + token } });
+                const res = await fetch(`${API}/organizations/${currentOrgId}/docker/instances?${params.toString()}`, { headers: { 'Authorization': 'Bearer ' + getToken() } });
                 const data = await res.json();
                 const instances = data.instances || [];
+                const canDelete = currentPerms.includes('docker.delete');
+
                 if (instances.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="10" class="text-center text-gray-500 py-8">暂无运行中的容器实例</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="9" class="text-center text-gray-500 py-8">暂无容器实例</td></tr>';
                     return;
                 }
+
                 tbody.innerHTML = instances.map(inst => {
                     const ports = Object.entries(inst.ports || {}).map(([k, v]) => `${v}:${k}`).join(', ') || '-';
                     const statusClass = inst.isExpired ? 'status-expired' : 'status-running';
                     const statusText = inst.isExpired ? '⚠ 已过期' : '● 运行中';
-                    const isChecked = selectedIds.has(inst.id) ? 'checked' : '';
+                    const destroyBtn = canDelete ? `<div title="强制销毁" class="btn-icon text-red-500 hover:bg-red-900 border-red-900 hover:border-red-500" onclick="destroyInstance(${inst.id}, '${escapeHtml(inst.containerName || '')}')">✕</div>` : '';
+
                     return `<tr class="${inst.isExpired ? 'bg-red-900 bg-opacity-5' : ''}">
-                        <td class="text-center"><input type="checkbox" class="accent-[#ff6b00] row-checkbox" data-id="${inst.id}" ${isChecked} onchange="toggleSelect(${inst.id})"></td>
-                        <td><div class="flex flex-col"><span class="container-id w-fit ${inst.isExpired ? 'bg-red-900 text-red-300' : ''}">${inst.containerId}</span><span class="text-[10px] text-gray-500 mt-1">${inst.containerName || '-'}</span></div></td>
-                        <td><div class="text-sm font-bold text-white">${inst.teamName}</div><div class="text-[10px] text-gray-500 font-mono">${inst.userName}</div></td>
-                        <td class="text-xs text-gray-400">${inst.contestName}</td>
-                        <td class="text-xs text-gray-300">${inst.challengeName}</td>
+                        <td><div class="flex flex-col"><span class="container-id w-fit ${inst.isExpired ? 'bg-red-900 text-red-300' : ''}">${escapeHtml(inst.containerName || inst.containerId)}</span></div></td>
+                        <td><div class="text-sm font-bold text-white">${escapeHtml(inst.teamName)}</div></td>
+                        <td class="text-xs text-gray-400">${escapeHtml(inst.contestName)}</td>
+                        <td class="text-xs text-gray-300">${escapeHtml(inst.challengeName)}</td>
+                        <td class="text-xs text-gray-400 font-mono">${escapeHtml(inst.userName)}</td>
                         <td class="text-xs text-blue-400 font-mono">${ports}</td>
-                        <td class="text-xs text-gray-500 font-mono">${inst.createdAt}</td>
-                        <td class="text-xs text-gray-500 font-mono">${inst.expiresAt}</td>
                         <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-                        <td class="text-right pr-4">
-                            <div class="flex justify-end gap-2">
-                                <div title="查看日志" class="btn-icon" onclick="viewLogs(${inst.id})">📄</div>
-                                <div title="强制销毁" class="btn-icon text-red-500 hover:bg-red-900 border-red-900 hover:border-red-500" onclick="destroyInstance(${inst.id}, '${inst.containerName}')">✕</div>
-                            </div>
-                        </td>
+                        <td class="text-xs text-gray-500 font-mono">${inst.expiresAt || '-'}</td>
+                        <td class="text-right pr-4"><div class="flex justify-end gap-2">${destroyBtn}</div></td>
                     </tr>`;
                 }).join('');
             } catch (e) {
                 console.error('加载实例失败', e);
-                tbody.innerHTML = '<tr><td colspan="10" class="text-center text-red-500 py-8">加载失败</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center text-red-500 py-8">加载失败</td></tr>';
             }
-        }
-
-        function toggleSelect(id) {
-            if (selectedIds.has(id)) selectedIds.delete(id);
-            else selectedIds.add(id);
-        }
-
-        function toggleSelectAll() {
-            const checked = document.getElementById('select-all').checked;
-            document.querySelectorAll('.row-checkbox').forEach(cb => {
-                cb.checked = checked;
-                const id = parseInt(cb.dataset.id);
-                if (checked) selectedIds.add(id);
-                else selectedIds.delete(id);
-            });
         }
 
         let confirmCallback = null;
@@ -336,66 +347,24 @@
         async function destroyInstance(id, name) {
             showConfirm('确认销毁', `确定要销毁容器 "${name}" 吗？此操作不可恢复。`, async () => {
                 try {
-                    const res = await fetch(`/api/admin/docker/instances/${id}`, { method: 'DELETE', headers: { Authorization: 'Bearer ' + token } });
+                    const res = await fetch(`${API}/organizations/${currentOrgId}/docker/instances/${id}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': 'Bearer ' + getToken() }
+                    });
                     const data = await res.json();
-                    if (res.ok) { showTip(data.message || '销毁成功', 'success'); loadInstances(); loadStats(); }
+                    if (res.ok) { showTip(data.message || '销毁成功', 'success'); loadStats(); loadInstances(); }
                     else showTip(data.error || '销毁失败', 'error');
                 } catch (e) { showTip('销毁失败', 'error'); }
             });
         }
 
-        async function batchDestroy() {
-            if (selectedIds.size === 0) { showTip('请先选择要销毁的实例', 'warning'); return; }
-            showConfirm('批量销毁', `确定要销毁选中的 ${selectedIds.size} 个容器吗？此操作不可恢复。`, async () => {
-                try {
-                    const res = await fetch('/api/admin/docker/instances/batch-destroy', {
-                        method: 'POST',
-                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ ids: Array.from(selectedIds) })
-                    });
-                    const data = await res.json();
-                    showTip(data.message || '批量销毁完成', res.ok ? 'success' : 'warning');
-                    loadInstances(); loadStats();
-                } catch (e) { showTip('批量销毁失败', 'error'); }
-            });
-        }
-
-        async function cleanExpired() {
-            showConfirm('清理过期实例', '确定要清理所有已过期的容器实例吗？', async () => {
-                try {
-                    const res = await fetch('/api/admin/docker/instances/clean', { method: 'POST', headers: { Authorization: 'Bearer ' + token } });
-                    const data = await res.json();
-                    showTip(data.message || '清理完成', res.ok ? 'success' : 'warning');
-                    loadInstances(); loadStats();
-                } catch (e) { showTip('清理失败', 'error'); }
-            });
-        }
-
-        async function viewLogs(id) {
-            document.getElementById('log-modal').classList.remove('hidden');
-            document.getElementById('log-content').textContent = '加载中...';
-            document.getElementById('log-container-id').textContent = 'Container: -';
-            try {
-                const res = await fetch(`/api/admin/docker/instances/${id}/logs?lines=200`, { headers: { Authorization: 'Bearer ' + token } });
-                const data = await res.json();
-                document.getElementById('log-container-id').textContent = 'Container: ' + (data.containerId || '-');
-                document.getElementById('log-content').textContent = data.logs || '无日志';
-            } catch (e) {
-                document.getElementById('log-content').textContent = '加载日志失败';
-            }
-        }
-        function closeLogModal() { document.getElementById('log-modal').classList.add('hidden'); }
-
-        // 搜索回车触发
         document.getElementById('search-input').addEventListener('keyup', e => { if (e.key === 'Enter') loadInstances(); });
+        document.getElementById('logout-btn').addEventListener('click', () => { localStorage.removeItem('tg_token'); localStorage.removeItem('tg_user'); window.location.href = '/login.html'; });
 
-        // 初始化
-        loadStats();
-        loadContests();
-        loadInstances();
+        init();
 
-        // 自动刷新（30秒）- 保持选中状态
-        setInterval(() => { loadStats(); loadInstances(true); }, 30000);
+        // 自动刷新（30秒）
+        setInterval(() => { if (currentOrgId) { loadStats(); loadInstances(); } }, 30000);
     </script>
 </body>
 </html>

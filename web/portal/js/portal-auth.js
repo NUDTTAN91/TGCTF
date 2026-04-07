@@ -41,9 +41,9 @@
         'admin-teams.html': 'none',          // 组织队伍管理，页面内根据API返回决定内容
         'admin-organizations.html': 'none',  // 组织管理，页面内根据API返回决定内容
         'admin-data-import.html': 'super_only',
-        'admin-docker.html': 'super_only',
-        'admin-anti-cheat.html': 'super_only',
-        'admin-logs.html': 'super_only',
+        'admin-docker.html': 'none',
+        'admin-anti-cheat.html': 'none',
+        'admin-logs.html': 'none',
         'admin-settings.html': 'super_only',
         'admin-categories.html': 'super_only',
         'admin-question-bank.html': 'super_only',

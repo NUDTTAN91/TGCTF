@@ -349,44 +349,6 @@
                         </div>
                     </div>
                     
-                    <!-- 分类标题 -->
-                    <div class="px-3 py-2 text-[10px] text-[#555] font-bold bg-[#1a1a1a]">运维监控</div>
-                    
-                    <!-- docker实例管理 -->
-                    <div class="perm-menu-item">
-                        <div class="perm-menu-header disabled">
-                            <span class="icon">🐳</span>
-                            <span class="text-sm text-gray-400">docker实例管理</span>
-                            <span class="coming-soon">即将推出</span>
-                        </div>
-                    </div>
-                    
-                    <!-- 防作弊系统 -->
-                    <div class="perm-menu-item">
-                        <div class="perm-menu-header disabled">
-                            <span class="icon">🛡️</span>
-                            <span class="text-sm text-gray-400">防作弊系统</span>
-                            <span class="coming-soon">即将推出</span>
-                        </div>
-                    </div>
-                    
-                    <!-- 系统日志 -->
-                    <div class="perm-menu-item">
-                        <div class="perm-menu-header disabled">
-                            <span class="icon">⚠</span>
-                            <span class="text-sm text-gray-400">系统日志</span>
-                            <span class="coming-soon">即将推出</span>
-                        </div>
-                    </div>
-                    
-                    <!-- 系统设置 -->
-                    <div class="perm-menu-item">
-                        <div class="perm-menu-header disabled">
-                            <span class="icon">⚙</span>
-                            <span class="text-sm text-gray-400">系统设置</span>
-                            <span class="coming-soon">即将推出</span>
-                        </div>
-                    </div>
                 </div>
 
 
@@ -849,6 +811,10 @@
                 const hasTeamView = perms.has('team.view');
                 const hasTeamEdit = perms.has('team.edit');
                 const hasTeamBan = perms.has('team.ban');
+                const hasDockerView = perms.has('docker.view');
+                const hasDockerDelete = perms.has('docker.delete');
+                const hasAntiCheatView = perms.has('anticheat.view');
+                const hasLogsView = perms.has('logs.view');
                 const permCount = perms.size;
 
                 return `
@@ -901,6 +867,41 @@
                                     </label>
                                 </div>
                             </div>
+                            <div class="org-perm-group">
+                                <div class="org-perm-group-title">🐳 Docker 管理</div>
+                                <div class="org-perm-checks">
+                                    <label class="org-perm-check ${hasDockerView ? 'checked' : ''}" id="org-check-${org.id}-docker-view">
+                                        <input type="checkbox" id="org-perm-${org.id}-docker-view" ${hasDockerView ? 'checked' : ''}
+                                            onchange="toggleOrgSubPerm(${adminId}, ${org.id}, 'docker.view', this.checked)">
+                                        <span>查看实例</span>
+                                    </label>
+                                    <label class="org-perm-check ${hasDockerDelete ? 'checked' : ''} ${!hasDockerView ? 'disabled' : ''}" id="org-check-${org.id}-docker-delete">
+                                        <input type="checkbox" id="org-perm-${org.id}-docker-delete" ${hasDockerDelete ? 'checked' : ''} ${!hasDockerView ? 'disabled' : ''}
+                                            onchange="toggleOrgSubPerm(${adminId}, ${org.id}, 'docker.delete', this.checked)">
+                                        <span>删除实例</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="org-perm-group">
+                                <div class="org-perm-group-title">🛡 防作弊</div>
+                                <div class="org-perm-checks">
+                                    <label class="org-perm-check ${hasAntiCheatView ? 'checked' : ''}" id="org-check-${org.id}-anticheat-view">
+                                        <input type="checkbox" id="org-perm-${org.id}-anticheat-view" ${hasAntiCheatView ? 'checked' : ''}
+                                            onchange="toggleOrgSubPerm(${adminId}, ${org.id}, 'anticheat.view', this.checked)">
+                                        <span>查看记录</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="org-perm-group">
+                                <div class="org-perm-group-title">📋 系统日志</div>
+                                <div class="org-perm-checks">
+                                    <label class="org-perm-check ${hasLogsView ? 'checked' : ''}" id="org-check-${org.id}-logs-view">
+                                        <input type="checkbox" id="org-perm-${org.id}-logs-view" ${hasLogsView ? 'checked' : ''}
+                                            onchange="toggleOrgSubPerm(${adminId}, ${org.id}, 'logs.view', this.checked)">
+                                        <span>查看日志</span>
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -923,14 +924,14 @@
                 card.classList.remove('active');
                 body.classList.remove('expanded');
                 // 前端同步取消所有子复选框
-                ['user.view','user.edit','user.ban','team.view','team.edit','team.ban'].forEach(sub => {
+                ['user.view','user.edit','user.ban','team.view','team.edit','team.ban','docker.view','docker.delete','anticheat.view','logs.view'].forEach(sub => {
                     const subCb = document.getElementById(`org-perm-${orgId}-${sub.replace('.', '-')}`);
                     if (subCb) { subCb.checked = false; subCb.disabled = false; }
                     const subLabel = document.getElementById(`org-check-${orgId}-${sub.replace('.', '-')}`);
                     if (subLabel) { subLabel.classList.remove('checked'); subLabel.classList.remove('disabled'); }
                 });
                 // 重新禁用 edit/ban（因为 view 未勾选）
-                ['user.edit','user.ban','team.edit','team.ban'].forEach(sub => {
+                ['user.edit','user.ban','team.edit','team.ban','docker.delete'].forEach(sub => {
                     const subCb = document.getElementById(`org-perm-${orgId}-${sub.replace('.', '-')}`);
                     if (subCb) subCb.disabled = true;
                     const subLabel = document.getElementById(`org-check-${orgId}-${sub.replace('.', '-')}`);
@@ -953,8 +954,8 @@
                 label.classList.add('checked');
 
                 // 如果勾选 edit/ban，后端会自动授予对应 view，前端同步
-                if (subPerm.endsWith('.edit') || subPerm.endsWith('.ban')) {
-                    const dimension = subPerm.split('.')[0]; // user or team
+                if (subPerm.endsWith('.edit') || subPerm.endsWith('.ban') || subPerm === 'docker.delete') {
+                    const dimension = subPerm.split('.')[0]; // user or team or docker
                     const viewCbId = `org-perm-${orgId}-${dimension}-view`;
                     const viewLabelId = `org-check-${orgId}-${dimension}-view`;
                     const viewCb = document.getElementById(viewCbId);
@@ -963,33 +964,48 @@
                         viewCb.checked = true;
                         viewLabel.classList.add('checked');
                     }
-                    // 启用同维度的 edit/ban
-                    ['edit', 'ban'].forEach(act => {
-                        const actCb = document.getElementById(`org-perm-${orgId}-${dimension}-${act}`);
-                        const actLabel = document.getElementById(`org-check-${orgId}-${dimension}-${act}`);
-                        if (actCb) { actCb.disabled = false; }
-                        if (actLabel) { actLabel.classList.remove('disabled'); }
-                    });
+                    // 启用同维度的 edit/ban 或 delete
+                    if (dimension === 'docker') {
+                        const delCb = document.getElementById(`org-perm-${orgId}-docker-delete`);
+                        const delLabel = document.getElementById(`org-check-${orgId}-docker-delete`);
+                        if (delCb) { delCb.disabled = false; }
+                        if (delLabel) { delLabel.classList.remove('disabled'); }
+                    } else {
+                        ['edit', 'ban'].forEach(act => {
+                            const actCb = document.getElementById(`org-perm-${orgId}-${dimension}-${act}`);
+                            const actLabel = document.getElementById(`org-check-${orgId}-${dimension}-${act}`);
+                            if (actCb) { actCb.disabled = false; }
+                            if (actLabel) { actLabel.classList.remove('disabled'); }
+                        });
+                    }
                 }
 
-                // 如果勾选 view（user.view / team.view），启用对应 edit/ban
+                // 如果勾选 view（user.view / team.view / docker.view），启用对应 edit/ban 或 delete
                 if (subPerm.endsWith('.view')) {
                     const dimension = subPerm.split('.')[0];
-                    ['edit', 'ban'].forEach(act => {
-                        const actCb = document.getElementById(`org-perm-${orgId}-${dimension}-${act}`);
-                        const actLabel = document.getElementById(`org-check-${orgId}-${dimension}-${act}`);
-                        if (actCb) { actCb.disabled = false; }
-                        if (actLabel) { actLabel.classList.remove('disabled'); }
-                    });
+                    if (dimension === 'docker') {
+                        const delCb = document.getElementById(`org-perm-${orgId}-docker-delete`);
+                        const delLabel = document.getElementById(`org-check-${orgId}-docker-delete`);
+                        if (delCb) { delCb.disabled = false; }
+                        if (delLabel) { delLabel.classList.remove('disabled'); }
+                    } else {
+                        ['edit', 'ban'].forEach(act => {
+                            const actCb = document.getElementById(`org-perm-${orgId}-${dimension}-${act}`);
+                            const actLabel = document.getElementById(`org-check-${orgId}-${dimension}-${act}`);
+                            if (actCb) { actCb.disabled = false; }
+                            if (actLabel) { actLabel.classList.remove('disabled'); }
+                        });
+                    }
                 }
             } else {
                 await revokeOrgPerm(adminId, `org.${orgId}.${subPerm}`);
                 label.classList.remove('checked');
 
-                // 如果取消 view，后端级联撤销 edit+ban，前端同步
+                // 如果取消 view，后端级联撤销 edit+ban 或 delete，前端同步
                 if (subPerm.endsWith('.view')) {
                     const dimension = subPerm.split('.')[0];
-                    ['edit', 'ban'].forEach(act => {
+                    const dependents = dimension === 'docker' ? ['delete'] : ['edit', 'ban'];
+                    dependents.forEach(act => {
                         const actCbId = `org-perm-${orgId}-${dimension}-${act}`;
                         const actLabelId = `org-check-${orgId}-${dimension}-${act}`;
                         const actCb = document.getElementById(actCbId);

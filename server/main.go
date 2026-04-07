@@ -809,6 +809,27 @@ func main() {
 			adminCommonAPI.PUT("/organizations/:id/teams/:teamId/status", func(c *gin.Context) {
 				admin.HandleAdminCommonBanOrgTeam(c, db)
 			})
+			
+			// Docker 管理（组织范围）
+			adminCommonAPI.GET("/organizations/:id/docker/instances", func(c *gin.Context) {
+				admin.HandleAdminCommonOrgDockerInstances(c, db)
+			})
+			adminCommonAPI.DELETE("/organizations/:id/docker/instances/:instanceId", func(c *gin.Context) {
+				admin.HandleAdminCommonDestroyOrgDockerInstance(c, db)
+			})
+			adminCommonAPI.GET("/organizations/:id/docker/stats", func(c *gin.Context) {
+				admin.HandleAdminCommonOrgDockerStats(c, db)
+			})
+			
+			// 防作弊（组织范围）
+			adminCommonAPI.GET("/organizations/:id/anti-cheat", func(c *gin.Context) {
+				admin.HandleAdminCommonOrgAntiCheat(c, db)
+			})
+			
+			// 系统日志（组织范围）
+			adminCommonAPI.GET("/organizations/:id/logs", func(c *gin.Context) {
+				admin.HandleAdminCommonOrgLogs(c, db)
+			})
 		}
 	}
 

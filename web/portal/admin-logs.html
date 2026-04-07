@@ -29,6 +29,10 @@
         .tag-ip { background: #1f2420; color: #86efac; border: 1px solid #22c55e33; }
         .tag-success { background: #14532d; color: #4ade80; border: 1px solid #22c55e55; }
         .tag-failed { background: #450a0a; color: #f87171; border: 1px solid #ef444455; }
+        .tab-btn { padding: 0.5rem 1rem; font-size: 0.75rem; border-bottom: 2px solid transparent; color: #888; cursor: pointer; transition: all 0.2s; background: transparent; border-top: none; border-left: none; border-right: none; }
+        .tab-btn:hover { color: white; }
+        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+        .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 40vh; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #111; }
         ::-webkit-scrollbar-thumb { background: #333; }
@@ -61,7 +65,7 @@
         <div class="p-4 border-t border-[#333]">
             <div class="flex items-center gap-3">
                 <div class="w-8 h-8 bg-[#333] rounded-full flex items-center justify-center text-[#ff6b00] font-bold">A</div>
-                <div><p class="text-xs text-white font-bold">超级管理员</p><p class="text-[10px] text-green-500">● 连接稳定</p></div>
+                <div><p class="text-xs text-white font-bold">管理员</p><p class="text-[10px] text-green-500">● 在线</p></div>
             </div>
         </div>
     </aside>
@@ -77,48 +81,72 @@
             </div>
         </header>
 
-        <main class="flex-1 flex flex-col pt-6 px-8 relative overflow-y-auto">
-            
-            <div class="admin-card flex flex-col" style="height: calc(100vh - 160px);">
-                <div class="p-4 border-b border-[#333] bg-[#1a1a1a] flex justify-between items-center flex-shrink-0">
-                    <h2 class="text-sm font-bold text-white tracking-wider">SYSTEM_LOGS_STREAM</h2>
-                    <div class="flex gap-2">
-                        <select id="type-filter" class="bg-[#111] border border-[#333] text-xs px-3 py-1.5 text-white outline-none font-mono">
-                            <option value="">全部类型</option>
-                            <option value="login">登录</option>
-                            <option value="challenge_view">题目查看</option>
-                            <option value="flag_submit">Flag提交</option>
-                            <option value="container_create">容器创建</option>
-                            <option value="container_destroy">容器销毁</option>
-                            <option value="container_extend">容器续期</option>
-                            <option value="cheating">作弊检测</option>
-                        </select>
-                        <select id="level-filter" class="bg-[#111] border border-[#333] text-xs px-3 py-1.5 text-white outline-none font-mono">
-                            <option value="">全部级别</option>
-                            <option value="success">成功</option>
-                            <option value="error">错误</option>
-                            <option value="warning">警告</option>
-                            <option value="info">信息</option>
-                        </select>
-                        <input id="search-input" type="text" placeholder="搜索日志..." class="bg-[#111] border border-[#333] text-xs px-3 py-1.5 text-white outline-none w-48 font-mono">
-                        <button onclick="loadLogs()" class="bg-[#333] border border-[#333] text-xs text-gray-300 px-4 py-1.5 hover:text-white">刷新</button>
+        <main class="flex-1 flex flex-col pt-6 px-8 relative overflow-hidden">
+
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold text-white font-eng tracking-wide">SYSTEM_LOGS</h2>
+            </div>
+
+            <!-- 组织 Tab 栏 -->
+            <div id="org-tabs" class="flex border-b border-[#333] mb-6 overflow-x-auto" style="min-height: 38px;">
+                <div class="text-gray-500 text-xs font-mono py-2 px-4">加载中...</div>
+            </div>
+
+            <!-- 内容区 -->
+            <div id="content-section" class="hidden flex-1 flex flex-col min-h-0">
+                <div class="admin-card flex flex-col flex-1">
+                    <!-- 工具栏 -->
+                    <div class="p-4 border-b border-[#333] bg-[#1a1a1a] flex justify-between items-center flex-shrink-0">
+                        <h2 class="text-sm font-bold text-white tracking-wider">SYSTEM_LOGS_STREAM</h2>
+                        <div class="flex gap-2">
+                            <select id="type-filter" class="bg-[#111] border border-[#333] text-xs px-3 py-1.5 text-white outline-none font-mono">
+                                <option value="">全部类型</option>
+                                <option value="login">登录</option>
+                                <option value="challenge_view">题目查看</option>
+                                <option value="flag_submit">Flag提交</option>
+                                <option value="container_create">容器创建</option>
+                                <option value="container_destroy">容器销毁</option>
+                                <option value="container_extend">容器续期</option>
+                                <option value="cheating">作弊检测</option>
+                            </select>
+                            <select id="level-filter" class="bg-[#111] border border-[#333] text-xs px-3 py-1.5 text-white outline-none font-mono">
+                                <option value="">全部级别</option>
+                                <option value="success">成功</option>
+                                <option value="error">错误</option>
+                                <option value="warning">警告</option>
+                                <option value="info">信息</option>
+                            </select>
+                            <input id="search-input" type="text" placeholder="搜索日志..." class="bg-[#111] border border-[#333] text-xs px-3 py-1.5 text-white outline-none w-48 font-mono">
+                            <button onclick="loadLogs()" class="bg-[#333] border border-[#333] text-xs text-gray-300 px-4 py-1.5 hover:text-white cursor-pointer">刷新</button>
+                        </div>
+                    </div>
+
+                    <!-- 日志表格 -->
+                    <div class="flex-1 overflow-y-auto bg-[#1e1e1e]">
+                        <table class="log-table">
+                            <thead class="sticky top-0 z-10"><tr><th>时间</th><th>IP</th><th>用户</th><th>信息</th><th>状态</th></tr></thead>
+                            <tbody id="logs-tbody"><tr><td colspan="5" class="text-center text-gray-500 py-8">请选择组织</td></tr></tbody>
+                        </table>
+                    </div>
+
+                    <!-- 分页 -->
+                    <div class="p-3 border-t border-[#333] flex justify-between items-center bg-[#1a1a1a] text-xs font-mono text-gray-500 flex-shrink-0">
+                        <span id="total-info">共 0 条记录</span>
+                        <div class="flex items-center gap-4">
+                            <button onclick="prevPage()" class="hover:text-white cursor-pointer">&lt; 上一页</button>
+                            <span id="page-info">PAGE 1 / 1</span>
+                            <button onclick="nextPage()" class="hover:text-white cursor-pointer">下一页 &gt;</button>
+                        </div>
                     </div>
                 </div>
+            </div>
 
-                <div id="logs-container" class="flex-1 overflow-y-auto bg-[#1e1e1e]">
-                    <table class="log-table">
-                        <thead class="sticky top-0 z-10"><tr><th>时间</th><th>IP</th><th>用户</th><th>信息</th><th>状态</th></tr></thead>
-                        <tbody id="logs-tbody"><tr><td colspan="5" class="text-center text-gray-500 py-8">加载中...</td></tr></tbody>
-                    </table>
-                </div>
-
-                <div class="p-3 border-t border-[#333] flex justify-between items-center bg-[#1a1a1a] text-xs font-mono text-gray-500 flex-shrink-0">
-                    <span id="total-info">共 0 条记录</span>
-                    <div class="flex items-center gap-4">
-                        <button onclick="prevPage()" class="hover:text-white">&lt; 上一页</button>
-                        <span id="page-info">PAGE 1 / 1</span>
-                        <button onclick="nextPage()" class="hover:text-white">下一页 &gt;</button>
-                    </div>
+            <!-- 空状态 -->
+            <div id="empty-state" class="hidden">
+                <div class="empty-state">
+                    <div style="font-size: 64px; opacity: 0.2; margin-bottom: 16px;">⚠</div>
+                    <div style="font-size: 18px; font-weight: bold; color: white; margin-bottom: 8px;">暂无日志查看权限</div>
+                    <div style="font-size: 13px; color: #888;">您尚未被分配任何组织的日志查看权限，请联系超级管理员。</div>
                 </div>
             </div>
 
@@ -129,60 +157,98 @@
                         <span class="text-gray-500">天格后台管理系统</span>
                     </div>
                     <span class="text-white font-mono">Copyright © 2021-present tan91. All Rights Reserved.</span>
-                    <a href="https://github.com/NUDTTAN91" target="_blank" class="text-[#ff6b00] hover:text-white transition-colors"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg></a>
-                    <a href="https://blog.csdn.net/ZXW_NUDT" target="_blank" class="text-[#ff6b00] hover:text-white transition-colors"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></a>
                 </div>
             </footer>
-
         </main>
     </div>
 
     <script>
-        function parseJwt(token) { try { const base64Url = token.split('.')[1]; const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/'); const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')); return JSON.parse(jsonPayload); } catch (e) { return null; } }
-        const token = localStorage.getItem('tg_token');
-        if (!token) { window.location.href = '/login.html'; } else { const payload = parseJwt(token); if (!payload || payload.role !== 'super') { document.querySelector('main').innerHTML = `<div class="flex-1 flex items-center justify-center" style="min-height:60vh;"><div class="text-center"><div style="font-size:96px;margin-bottom:24px;opacity:0.3;">🔒</div><div style="font-size:24px;font-weight:bold;color:white;margin-bottom:8px;">无操作权限</div><div style="font-size:14px;color:#888;">此功能仅超级管理员可用</div><a href="/portal/admin.html" style="display:inline-block;margin-top:24px;padding:10px 24px;background:#ff6b00;color:black;font-weight:bold;font-size:14px;text-decoration:none;">返回首页</a></div></div>`; } }
-        document.getElementById('logout-btn').addEventListener('click', () => { localStorage.removeItem('tg_token'); window.location.href = '/login.html'; });
+        const API = '/api/admin-common';
+        function getToken() { return localStorage.getItem('tg_token'); }
 
+        let allOrgs = [];
+        let currentOrgId = null;
         let currentPage = 1;
         let totalPages = 1;
         const pageSize = 50;
 
+        function escapeHtml(text) { const d = document.createElement('div'); d.textContent = text || ''; return d.innerHTML; }
 
+        async function init() {
+            try {
+                const res = await fetch(`${API}/my-organizations`, { headers: { 'Authorization': 'Bearer ' + getToken() } });
+                if (!res.ok) throw new Error('加载失败');
+                const data = await res.json();
+                const orgs = data.organizations || [];
+
+                // 过滤有 logs.view 权限的组织
+                allOrgs = orgs.filter(o => (o.permissions || []).includes('logs.view'));
+
+                if (allOrgs.length === 0) {
+                    document.getElementById('org-tabs').innerHTML = '';
+                    document.getElementById('empty-state').classList.remove('hidden');
+                    return;
+                }
+
+                renderTabs();
+                document.getElementById('content-section').classList.remove('hidden');
+                selectOrg(allOrgs[0].id);
+            } catch (e) {
+                console.error(e);
+                document.getElementById('org-tabs').innerHTML = '<div class="text-red-500 text-xs font-mono py-2 px-4">加载失败</div>';
+            }
+        }
+
+        function renderTabs() {
+            const container = document.getElementById('org-tabs');
+            container.innerHTML = allOrgs.map(o =>
+                `<button class="tab-btn font-mono" data-org-id="${o.id}" onclick="selectOrg(${o.id})">${escapeHtml(o.name)}</button>`
+            ).join('');
+        }
+
+        function selectOrg(orgId) {
+            currentOrgId = orgId;
+            currentPage = 1;
+            document.querySelectorAll('#org-tabs .tab-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.orgId) === orgId);
+            });
+            loadLogs();
+        }
 
         async function loadLogs() {
             const type = document.getElementById('type-filter').value;
             const level = document.getElementById('level-filter').value;
             const search = document.getElementById('search-input').value;
-            
-            let url = `/api/admin/logs?page=${currentPage}&pageSize=${pageSize}`;
+
+            let url = `${API}/organizations/${currentOrgId}/logs?page=${currentPage}&pageSize=${pageSize}`;
             if (type) url += `&type=${type}`;
             if (level) url += `&level=${level}`;
             if (search) url += `&search=${encodeURIComponent(search)}`;
 
             try {
-                const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+                const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + getToken() } });
                 const data = await res.json();
-                
+
                 totalPages = data.totalPages || 1;
                 document.getElementById('total-info').textContent = `共 ${data.total || 0} 条记录`;
                 document.getElementById('page-info').textContent = `PAGE ${currentPage} / ${totalPages}`;
-                
+
                 const tbody = document.getElementById('logs-tbody');
                 if (!data.logs || data.logs.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-500 py-8">暂无日志记录</td></tr>';
                     return;
                 }
-                
+
                 tbody.innerHTML = data.logs.map(log => {
                     const time = log.createdAt || '-';
                     const isSuccess = log.level === 'success' || log.level === 'info';
                     const statusTag = isSuccess ? 'tag-success' : 'tag-failed';
                     const statusText = isSuccess ? 'SUCCESS' : 'FAILED';
-                    
+
                     return `<tr>
-                        <td class="col-time"><span class="tag tag-time">${time}</span></td>
-                        <td class="col-ip"><span class="tag tag-ip">${log.ipAddress || '-'}</span></td>
-                        <td class="col-user">${log.userName || '-'}</td>
+                        <td class="col-time"><span class="tag tag-time">${escapeHtml(time)}</span></td>
+                        <td class="col-ip"><span class="tag tag-ip">${escapeHtml(log.ipAddress || '-')}</span></td>
+                        <td class="col-user">${escapeHtml(log.userName || '-')}</td>
                         <td class="col-msg">${escapeHtml(log.message)}</td>
                         <td class="col-status"><span class="tag ${statusTag}">${statusText}</span></td>
                     </tr>`;
@@ -193,12 +259,6 @@
             }
         }
 
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text || '';
-            return div.innerHTML;
-        }
-
         function prevPage() { if (currentPage > 1) { currentPage--; loadLogs(); } }
         function nextPage() { if (currentPage < totalPages) { currentPage++; loadLogs(); } }
 
@@ -207,56 +267,9 @@
         document.getElementById('level-filter').addEventListener('change', () => { currentPage = 1; loadLogs(); });
         document.getElementById('search-input').addEventListener('keyup', (e) => { if (e.key === 'Enter') { currentPage = 1; loadLogs(); } });
 
-        // 初始化
-        loadLogs();
+        document.getElementById('logout-btn').addEventListener('click', () => { localStorage.removeItem('tg_token'); localStorage.removeItem('tg_user'); window.location.href = '/login.html'; });
 
-        // WebSocket 实时推送
-        function connectWebSocket() {
-            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const ws = new WebSocket(`${wsProtocol}//${location.host}/api/admin/logs/ws?token=${encodeURIComponent(token)}`);
-            
-            ws.onmessage = (event) => {
-                const log = JSON.parse(event.data);
-                // 在表格顶部插入新日志
-                const tbody = document.getElementById('logs-tbody');
-                const isSuccess = log.level === 'success' || log.level === 'info';
-                const statusTag = isSuccess ? 'tag-success' : 'tag-failed';
-                const statusText = isSuccess ? 'SUCCESS' : 'FAILED';
-                
-                const newRow = document.createElement('tr');
-                newRow.innerHTML = `
-                    <td class="col-time"><span class="tag tag-time">${log.createdAt || '-'}</span></td>
-                    <td class="col-ip"><span class="tag tag-ip">${log.ipAddress || '-'}</span></td>
-                    <td class="col-user">${log.userName || '-'}</td>
-                    <td class="col-msg">${escapeHtml(log.message)}</td>
-                    <td class="col-status"><span class="tag ${statusTag}">${statusText}</span></td>
-                `;
-                newRow.style.animation = 'fadeIn 0.3s ease-in';
-                
-                // 插入到顶部
-                if (tbody.firstChild) {
-                    tbody.insertBefore(newRow, tbody.firstChild);
-                } else {
-                    tbody.appendChild(newRow);
-                }
-                
-                // 更新计数
-                const totalInfo = document.getElementById('total-info');
-                const match = totalInfo.textContent.match(/\d+/);
-                if (match) {
-                    totalInfo.textContent = `共 ${parseInt(match[0]) + 1} 条记录`;
-                }
-            };
-            
-            ws.onclose = () => {
-                // 断线重连
-                setTimeout(connectWebSocket, 2000);
-            };
-            
-            ws.onerror = () => ws.close();
-        }
-        
-        connectWebSocket();
+        init();
     </script>
 </body>
 </html>

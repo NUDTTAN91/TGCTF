@@ -407,7 +407,7 @@ func HandleGrantPermission(c *gin.Context, db *sql.DB) {
 	}
 	// 检查 org.{id}.* 格式
 	if !isValid {
-		matched, _ := regexp.MatchString(`^org\.\d+\.(view|user\.view|user\.edit|user\.ban|team\.view|team\.edit|team\.ban)$`, req.Permission)
+		matched, _ := regexp.MatchString(`^org\.\d+\.(view|user\.view|user\.edit|user\.ban|team\.view|team\.edit|team\.ban|docker\.view|docker\.delete|anticheat\.view|logs\.view)$`, req.Permission)
 		isValid = matched
 	}
 	if !isValid {
@@ -457,6 +457,17 @@ func HandleGrantPermission(c *gin.Context, db *sql.DB) {
 			_, err := db.Exec(`INSERT INTO admin_permissions (user_id, permission, granted_by, granted_at) SELECT $1::bigint, $2::text, $3::bigint, NOW() WHERE NOT EXISTS (SELECT 1 FROM admin_permissions WHERE user_id = $1::bigint AND permission = $2::text AND resource_type IS NULL)`, id, autoGrantPerm, grantedBy)
 			if err != nil {
 				log.Printf("auto grant team view permission failed: %v", err)
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "INTERNAL_ERROR"})
+				return
+			}
+		}
+
+		// 4. docker.delete 需要 docker.view
+		if subPerm == "docker.delete" {
+			autoGrantPerm := fmt.Sprintf("org.%s.docker.view", orgIDStr)
+			_, err := db.Exec(`INSERT INTO admin_permissions (user_id, permission, granted_by, granted_at) SELECT $1::bigint, $2::text, $3::bigint, NOW() WHERE NOT EXISTS (SELECT 1 FROM admin_permissions WHERE user_id = $1::bigint AND permission = $2::text AND resource_type IS NULL)`, id, autoGrantPerm, grantedBy)
+			if err != nil {
+				log.Printf("auto grant docker view permission failed: %v", err)
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "INTERNAL_ERROR"})
 				return
 			}
@@ -545,7 +556,7 @@ func HandleRevokePermissionByName(c *gin.Context, db *sql.DB) {
 		subPerm := matches[2]
 
 		if subPerm == "view" {
-			// 撤销 org.{id}.view → 级联全部 6 个子权限
+			// 撤销 org.{id}.view → 级联全部子权限
 			permsToDelete = append(permsToDelete,
 				fmt.Sprintf("org.%s.user.view", orgIDStr),
 				fmt.Sprintf("org.%s.user.edit", orgIDStr),
@@ -553,6 +564,10 @@ func HandleRevokePermissionByName(c *gin.Context, db *sql.DB) {
 				fmt.Sprintf("org.%s.team.view", orgIDStr),
 				fmt.Sprintf("org.%s.team.edit", orgIDStr),
 				fmt.Sprintf("org.%s.team.ban", orgIDStr),
+				fmt.Sprintf("org.%s.docker.view", orgIDStr),
+				fmt.Sprintf("org.%s.docker.delete", orgIDStr),
+				fmt.Sprintf("org.%s.anticheat.view", orgIDStr),
+				fmt.Sprintf("org.%s.logs.view", orgIDStr),
 			)
 		} else if subPerm == "user.view" {
 			// 撤销 user.view → 级联 user.edit + user.ban
@@ -565,6 +580,11 @@ func HandleRevokePermissionByName(c *gin.Context, db *sql.DB) {
 			permsToDelete = append(permsToDelete,
 				fmt.Sprintf("org.%s.team.edit", orgIDStr),
 				fmt.Sprintf("org.%s.team.ban", orgIDStr),
+			)
+		} else if subPerm == "docker.view" {
+			// 撤销 docker.view → 级联 docker.delete
+			permsToDelete = append(permsToDelete,
+				fmt.Sprintf("org.%s.docker.delete", orgIDStr),
 			)
 		}
 	}

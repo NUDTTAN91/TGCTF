@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/sidebar.css">
     <style>
         :root {
             --bg-dark: #0a0a0a;
@@ -25,10 +26,7 @@
         .font-eng { font-family: 'Chakra Petch', sans-serif; }
         .font-mono { font-family: 'JetBrains Mono', monospace; }
 
-        /* 顶部导航 */
-        .nav-link { position: relative; color: #666; transition: 0.3s; }
-        .nav-link:hover, .nav-link.active { color: white; }
-        .nav-link.active::after { content: ''; position: absolute; bottom: -24px; left: 0; width: 100%; height: 2px; background: var(--accent); box-shadow: 0 -5px 10px var(--accent); }
+        /* 顶部导航 - 已由侧边栏替代 */
 
         /* === 1. Top 3 卡片 (仅战队榜) === */
         .rank-card {
@@ -214,35 +212,8 @@
 </head>
 <body class="min-h-screen flex flex-col relative">
 
-    <!-- 顶部导航 -->
-    <header class="h-20 border-b border-[#333] bg-[#0a0a0a] bg-opacity-95 backdrop-blur sticky top-0 z-50">
-        <div class="container mx-auto px-6 h-full flex items-center justify-between">
-            <div class="flex items-center gap-10">
-                <a href="/home.html" class="text-2xl font-black font-eng text-white tracking-tighter hover:text-[#ff6b00] transition">TG <span class="text-[#ff6b00]">/</span> HUB</a>
-                <nav class="hidden md:flex gap-8 font-mono text-xs font-bold text-gray-500">
-                    <a href="javascript:void(0)" onclick="goToChallenges()" class="nav-link">靶场中心</a>
-                    <a href="#" class="nav-link active">战态感知 (RANK)</a>
-                </nav>
-            </div>
-            
-            <!-- 右侧控制 -->
-            <div class="flex items-center gap-6">
-                <!-- 切换榜单类型 -->
-                <div class="flex items-center gap-3 bg-[#111] px-3 py-1.5 border border-[#333] rounded-sm">
-                    <span class="text-[10px] text-gray-500 font-mono">榜单类型</span>
-                    <div class="flex gap-2">
-                        <button id="btn-team" onclick="switchRank('team')" class="text-xs font-bold text-black bg-[#ff6b00] px-3 py-0.5 font-mono transition">战队榜</button>
-                        <button id="btn-solo" onclick="switchRank('solo')" class="text-xs font-bold text-gray-500 hover:text-white px-3 py-0.5 font-mono transition">个人榜</button>
-                    </div>
-                </div>
-                <!-- 搜索 -->
-                <input type="text" id="search-input" placeholder="搜索..." oninput="filterRanking()" class="bg-black border border-[#333] text-xs text-white px-3 py-1.5 w-48 outline-none font-mono focus:border-[#ff6b00] transition">
-            </div>
-        </div>
-    </header>
-
     <!-- 主内容区 -->
-    <main class="container mx-auto px-6 py-12">
+    <main class="sidebar-page-content container mx-auto px-6 py-12">
         
         <!-- 头部标题 -->
         <div class="flex justify-between items-end mb-12">
@@ -250,7 +221,17 @@
                 <h1 id="rank-title" class="text-4xl font-black text-white font-eng tracking-wide mb-2">TEAM RANKING</h1>
                 <p id="contest-subtitle" class="text-xs text-gray-500 font-mono">比赛名称 // LEADERBOARD</p>
             </div>
-            <!-- 自动刷新（隐藏显示） -->
+            <!-- 榜单切换 + 搜索 -->
+            <div class="flex items-center gap-6">
+                <div class="flex items-center gap-3 bg-[#111] px-3 py-1.5 border border-[#333] rounded-sm">
+                    <span class="text-[10px] text-gray-500 font-mono">榜单类型</span>
+                    <div class="flex gap-2">
+                        <button id="btn-team" onclick="switchRank('team')" class="text-xs font-bold text-black bg-[#ff6b00] px-3 py-0.5 font-mono transition">战队榜</button>
+                        <button id="btn-solo" onclick="switchRank('solo')" class="text-xs font-bold text-gray-500 hover:text-white px-3 py-0.5 font-mono transition">个人榜</button>
+                    </div>
+                </div>
+                <input type="text" id="search-input" placeholder="搜索..." oninput="filterRanking()" class="bg-black border border-[#333] text-xs text-white px-3 py-1.5 w-48 outline-none font-mono focus:border-[#ff6b00] transition">
+            </div>
         </div>
 
         <!-- ================================== -->
@@ -319,7 +300,7 @@
 
     </main>
 
-    <footer class="border-t border-[#333] bg-[#0a0a0a] py-6 mt-12">
+    <footer class="sidebar-page-content border-t border-[#333] bg-[#0a0a0a] py-6 mt-12">
         <div class="container mx-auto px-6 text-center">
             <p class="text-[10px] text-[#444] font-mono tracking-widest">
                 Copyright © 2021-present tan91. All Rights Reserved.
@@ -879,6 +860,8 @@
         // 初始化
         init();
     </script>
+
+    <script src="/assets/js/sidebar.js"></script>
 
 </body>
 </html>

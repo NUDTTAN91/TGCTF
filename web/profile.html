@@ -7,6 +7,7 @@
     <title>档案库 - TG</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/sidebar.css">
     <style>
         @font-face {
             font-family: 'JetBrains Mono';
@@ -128,29 +129,7 @@
 
     <div class="scan-line"></div>
 
-    <header class="border-b border-[#333] bg-[#191919] z-50 sticky top-0 backdrop-blur-sm bg-opacity-95">
-        <div class="container mx-auto px-4 h-20 flex items-center justify-between">
-            <div class="flex items-center gap-6">
-                <a href="/home.html" class="bg-[#ff6b00] text-black font-black text-2xl px-3 py-1 font-eng tracking-tighter hover:bg-white transition-colors cursor-pointer">TG</a>
-                <div class="hidden md:block h-6 w-[1px] bg-[#444]"></div>
-                <div class="hidden md:block text-xs text-[#737373] font-mono leading-tight">
-                    <p>档案库</p>
-                    <p>USER PROFILE</p>
-                </div>
-            </div>
-            <nav class="hidden md:flex items-center gap-8 font-bold text-sm tracking-widest text-gray-400">
-                <a href="/home.html" class="hover:text-[#ff6b00] transition-colors">首页</a>
-                <a href="/contests.html" class="hover:text-[#ff6b00] transition-colors">靶场中心</a>
-                <a href="/profile.html" class="text-[#ff6b00]">档案库</a>
-                <a href="/admin/admin.html" id="admin-entry" class="hidden bg-[#ff6b00] text-black px-3 py-1 hover:bg-white transition-colors">管理后台</a>
-            </nav>
-            <div>
-                <button class="font-mono text-xs font-bold border border-[#ff6b00] text-[#ff6b00] px-4 py-2 hover:bg-[#ff6b00] hover:text-black transition-all uppercase tracking-wider" id="logout-btn">Logout</button>
-            </div>
-        </div>
-    </header>
-
-    <main class="flex-grow flex">
+    <main class="sidebar-page-content flex-grow flex">
         <!-- 左侧边栏 -->
         <aside class="w-64 bg-[#1c1c1c] border-r border-[#333] flex-shrink-0">
             <!-- 用户卡片 -->
@@ -418,9 +397,6 @@
         }
 
         const payload = parseJwt(token);
-        if (payload && payload.role === 'super') {
-            document.getElementById('admin-entry').classList.remove('hidden');
-        }
 
         // 侧边栏切换
         document.querySelectorAll('.sidebar-item').forEach(item => {
@@ -769,12 +745,6 @@
             }
         }
 
-        // 登出
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            localStorage.removeItem('tg_token');
-            window.location.href = '/login.html';
-        });
-
         // ========== 队伍头像相关 ==========
         let currentTeamAvatar = null;
         let selectedTeamAvatarFile = null;
@@ -860,5 +830,6 @@
         loadProfile();
         loadMyTeam();
     </script>
+    <script src="/assets/js/sidebar.js"></script>
 </body>
 </html>

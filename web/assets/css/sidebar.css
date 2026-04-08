@@ -1,0 +1,215 @@
+/* ============ SIDEBAR SHARED STYLES ============ */
+
+.sidebar {
+    --sb-accent: #ff6b00;
+    --sb-accent-glow: rgba(255, 107, 0, 0.6);
+    --sb-accent-dim: rgba(255, 107, 0, 0.3);
+    --sb-dark: #0a0a0a;
+    --sb-panel: #111111;
+    --sb-text: #ffffff;
+    --sb-text-dim: rgba(255,255,255,0.6);
+    --sb-border: rgba(255, 107, 0, 0.3);
+    --sb-width: 70px;
+    --sb-expanded: 240px;
+
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: var(--sb-width);
+    background: var(--sb-panel);
+    border-right: 1px solid var(--sb-border);
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+.sidebar:hover {
+    width: var(--sb-expanded);
+}
+
+/* Logo */
+.sidebar-logo {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--sb-border);
+    gap: 15px;
+    flex-shrink: 0;
+}
+
+.sidebar .logo-icon {
+    width: 30px;
+    height: 30px;
+    background: var(--sb-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 12px;
+    color: #000;
+    flex-shrink: 0;
+    clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+    font-family: 'Chakra Petch', 'JetBrains Mono', sans-serif;
+}
+
+.sidebar .logo-text {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: var(--sb-accent);
+    text-shadow: 0 0 10px var(--sb-accent-glow);
+    opacity: 0;
+    transition: opacity 0.3s;
+    white-space: nowrap;
+    font-family: 'Chakra Petch', 'JetBrains Mono', sans-serif;
+}
+
+.sidebar:hover .logo-text {
+    opacity: 1;
+}
+
+/* Navigation */
+.sidebar-nav {
+    flex: 1;
+    padding: 20px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    height: 50px;
+    padding: 0 23px;
+    color: var(--sb-text-dim);
+    text-decoration: none;
+    transition: all 0.3s;
+    gap: 15px;
+    position: relative;
+    cursor: pointer;
+}
+
+.nav-item i {
+    font-size: 18px;
+    width: 24px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.nav-item span {
+    font-size: 13px;
+    letter-spacing: 1px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    white-space: nowrap;
+}
+
+.sidebar:hover .nav-item span {
+    opacity: 1;
+}
+
+.nav-item:hover {
+    color: var(--sb-text);
+    background: rgba(255, 107, 0, 0.1);
+}
+
+.nav-item.active {
+    color: var(--sb-accent);
+    background: rgba(255, 107, 0, 0.15);
+}
+
+.nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--sb-accent);
+    box-shadow: 0 0 10px var(--sb-accent-glow);
+}
+
+/* Divider */
+.nav-divider {
+    height: 1px;
+    background: var(--sb-border);
+    margin: 15px 20px;
+}
+
+/* Footer */
+.sidebar-footer {
+    padding: 20px;
+    border-top: 1px solid var(--sb-border);
+    flex-shrink: 0;
+}
+
+.sidebar-footer .nav-item {
+    padding: 0;
+    height: 40px;
+}
+
+/* Mobile Toggle */
+.mobile-toggle {
+    display: none;
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: 1100;
+    width: 40px;
+    height: 40px;
+    background: var(--sb-panel, #111111);
+    border: 1px solid rgba(255, 107, 0, 0.3);
+    color: #ffffff;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    border-radius: 0;
+    outline: none;
+}
+
+/* Overlay */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+}
+
+.sidebar-overlay.show {
+    display: block;
+}
+
+/* Page Content offset */
+.sidebar-page-content {
+    margin-left: 70px;
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+
+    .sidebar.open {
+        transform: translateX(0);
+        width: 240px;
+    }
+
+    .mobile-toggle {
+        display: flex;
+    }
+
+    .sidebar-page-content {
+        margin-left: 0;
+    }
+}

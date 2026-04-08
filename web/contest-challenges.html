@@ -826,6 +826,78 @@
             .toolbar { flex-direction: column; align-items: stretch; }
             .toolbar-right { justify-content: center; flex-wrap: wrap; }
         }
+
+        /* ======== 排行榜按钮 - 赛博朋克发光 + 金属光泽 ======== */
+        .leaderboard-btn-cyber {
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            color: #fff;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 14px;
+            border-radius: 4px;
+            background: linear-gradient(135deg, #ff6b00, #e85500);
+            border: none;
+            text-shadow: 0 0 6px rgba(255, 107, 0, 0.5);
+            box-shadow: 0 0 8px rgba(255, 107, 0, 0.2), 0 1px 3px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        /* 金属光泽叠层 */
+        .leaderboard-btn-cyber::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: linear-gradient(180deg,
+                rgba(255,255,255,0.18) 0%,
+                rgba(255,255,255,0.0) 45%,
+                rgba(0,0,0,0.08) 55%,
+                rgba(0,0,0,0.15) 100%);
+            pointer-events: none;
+            border-radius: inherit;
+        }
+        /* 光扫动画条 */
+        .leaderboard-btn-cyber::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -120%;
+            width: 60%;
+            height: 100%;
+            background: linear-gradient(90deg,
+                transparent 0%,
+                rgba(255,255,255,0.08) 25%,
+                rgba(255,255,255,0.32) 50%,
+                rgba(255,255,255,0.08) 75%,
+                transparent 100%);
+            animation: leaderboard-btn-sweep 3s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+        @keyframes leaderboard-btn-sweep {
+            0%   { left: -120%; }
+            40%  { left: 140%; }
+            100% { left: 140%; }
+        }
+        .leaderboard-btn-cyber:hover {
+            box-shadow: 0 0 18px rgba(255, 107, 0, 0.45), 0 0 40px rgba(255, 107, 0, 0.15);
+            text-shadow: 0 0 10px rgba(255, 107, 0, 0.8);
+            transform: translateY(-1px);
+        }
+        .leaderboard-btn-cyber i {
+            font-size: 10px;
+            position: relative;
+            z-index: 2;
+        }
+        .leaderboard-btn-cyber span {
+            position: relative;
+            z-index: 2;
+        }
     </style>
 </head>
 <body>
@@ -989,9 +1061,14 @@
 
         <!-- 排行榜 -->
         <div class="panel">
-            <div class="panel-header">
-                <h3 class="panel-title"><span class="icon">🏆</span> 实时排行榜</h3>
-                <span class="panel-badge">TOP 10</span>
+            <div class="panel-header" style="display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <h3 class="panel-title" style="margin:0;"><span class="icon">🏆</span> 实时排行榜</h3>
+                    <span class="panel-badge">TOP 10</span>
+                </div>
+                                <a href="javascript:void(0)" onclick="goToLeaderboard()" class="leaderboard-btn-cyber">
+                    <i class="fa-solid fa-ranking-star"></i> <span>完整排行榜</span>
+                </a>
             </div>
             <div class="panel-body">
                 <div class="scoreboard-list" id="scoreboardList">
@@ -2403,7 +2480,7 @@
     document.getElementById('modal-overlay').addEventListener('click', (e) => { if (e.target === document.getElementById('modal-overlay')) closeModal(); });
 
     // ========== 跳转排行榜 ==========
-    function goToLeaderboard() { window.location.href = `/contest-leaderboard.html?id=${contestId}`; }
+    function goToLeaderboard() { window.open(`/contest-leaderboard.html?id=${contestId}`, '_blank'); }
 
     // ========== WebSocket ==========
     let challengeWs = null;

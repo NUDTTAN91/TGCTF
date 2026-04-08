@@ -7,6 +7,7 @@
     <title>TG CTF - AWD-F 靶场中心</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/sidebar.css">
     <style>
         :root {
             --bg-dark: #0a0a0a;
@@ -166,6 +167,7 @@
 </head>
 <body class="flex h-screen w-screen selection:bg-[#ff6b00] selection:text-black bg-[#0a0a0a]">
 
+<div class="sidebar-page-content" style="display: flex; height: 100vh; width: 100%;">
     <!-- 左侧控制台 -->
     <aside class="w-80 bg-[#0d0d0d] border-r border-[#222] flex flex-col z-20 shrink-0 relative">
         <div class="h-20 flex items-center px-6 border-b border-[#222]">
@@ -229,8 +231,8 @@
     <!-- 右侧内容区 -->
     <main class="flex-1 flex flex-col min-w-0 relative z-10 bg-[#0a0a0a]">
         
-        <!-- 1. 顶部 Header -->
-        <header class="h-20 flex items-center justify-between px-8 border-b border-[#222] bg-[#0a0a0a] shrink-0">
+        <!-- 1. 内容级 Header（原顶部 Header 迁移） -->
+        <div class="h-20 flex items-center justify-between px-8 border-b border-[#222] bg-[#0a0a0a] shrink-0">
             <div class="flex flex-col">
                 <h1 id="contest-name" class="text-lg font-bold text-white font-eng tracking-wide">比赛名称</h1>
                 <span id="contest-mode" class="text-xs text-gray-500 font-mono">加载中...</span>
@@ -265,7 +267,7 @@
                     <label class="tactical-toggle"><input type="checkbox" id="hide-solved"><span class="toggle-slider"></span></label>
                 </label>
             </div>
-        </header>
+        </div>
 
         <!-- 2. 分类筛选栏 -->
         <div class="h-14 border-b border-[#222] bg-[#0d0d0d] flex items-center px-8 gap-4 overflow-x-auto" id="category-bar">
@@ -280,6 +282,7 @@
             </div>
         </div>
     </main>
+</div> <!-- end sidebar-page-content -->
 
     <!-- 题目详情弹窗 -->
     <div id="modal-overlay" class="fixed inset-0 z-50 items-center justify-center bg-black bg-opacity-90 hidden">
@@ -2234,5 +2237,6 @@
         setTimeout(initAWDFGlobalCountdown, 500);
     </script>
 
+<script src="/assets/js/sidebar.js"></script>
 </body>
 </html>

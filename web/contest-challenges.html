@@ -125,7 +125,7 @@
             display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
         }
         .stat-card .stat-label {
-            font-size: 11px; color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase;
+            font-size: 11px; color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; font-weight: 700;
         }
         .stat-card .stat-value {
             font-size: 24px; font-weight: 800; color: var(--accent);
@@ -134,8 +134,9 @@
             line-height: 1;
         }
         .stat-card .stat-value .stat-unit {
-            font-size: 12px; font-weight: 400; color: var(--text-dim);
+            font-size: 12px; font-weight: 700; color: var(--text-dim);
             text-shadow: none; margin-left: 4px;
+            font-family: 'JetBrains Mono', monospace;
         }
         .stat-card.time-card { min-width: 300px; }
         .stat-card.time-card .stat-value {
@@ -1277,6 +1278,28 @@
         });
     }
 
+    // ========== 日期数字滚动动画 ==========
+    function animateTimeDigits() {
+        document.querySelectorAll('.time-num').forEach(el => {
+            const targetStr = el.getAttribute('data-target');
+            const pad = parseInt(el.getAttribute('data-pad')) || 2;
+            const target = parseInt(targetStr);
+            if (isNaN(target)) return;
+            const duration = 1200;
+            const startTime = performance.now();
+            el.textContent = String(0).padStart(pad, '0');
+            function tick(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+                const current = Math.round(eased * target);
+                el.textContent = String(current).padStart(pad, '0');
+                if (progress < 1) requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
+        });
+    }
+
     // ========== 加载排行榜（独立函数） ==========
     async function loadScoreboard() {
         try {
@@ -1381,8 +1404,25 @@
             if (contestData.startTime && contestData.endTime) {
                 const start = new Date(contestData.startTime.replace(' ', 'T'));
                 const end = new Date(contestData.endTime.replace(' ', 'T'));
-                const formatDate = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
-                document.getElementById('contest-time').querySelector('.stat-value').innerHTML = `<span class="time-range">${formatDate(start)}</span> — <span class="time-range">${formatDate(end)}</span>`;
+                const buildDateHTML = (d) => {
+                    const parts = [
+                        { val: String(d.getFullYear()), pad: 4 },
+                        { sep: '-' },
+                        { val: String(d.getMonth()+1).padStart(2,'0'), pad: 2 },
+                        { sep: '-' },
+                        { val: String(d.getDate()).padStart(2,'0'), pad: 2 },
+                        { sep: ' ' },
+                        { val: String(d.getHours()).padStart(2,'0'), pad: 2 },
+                        { sep: ':' },
+                        { val: String(d.getMinutes()).padStart(2,'0'), pad: 2 },
+                        { sep: ':' },
+                        { val: String(d.getSeconds()).padStart(2,'0'), pad: 2 }
+                    ];
+                    return parts.map(p => p.sep !== undefined ? p.sep : `<span class="time-num" data-target="${p.val}" data-pad="${p.pad}">0</span>`).join('');
+                };
+                document.getElementById('contest-time').querySelector('.stat-value').innerHTML =
+                    `<span class="time-range">${buildDateHTML(start)}</span> — <span class="time-range">${buildDateHTML(end)}</span>`;
+                animateTimeDigits();
             }
             
             if (contestData.status === 'running') {

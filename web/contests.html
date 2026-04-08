@@ -8,6 +8,7 @@
     <title>TG CTF - 赛事列表</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/sidebar.css">
     <style>
         :root {
             --bg-dark: #050505;
@@ -113,23 +114,8 @@
 </head>
 <body class="h-screen flex flex-col relative selection:bg-[#ff6b00] selection:text-black">
 
-    <!-- 顶部导航 -->
-    <header class="h-16 border-b border-[#333] bg-[#0a0a0a] flex items-center justify-between px-6 z-20 shrink-0">
-        <div class="flex items-center gap-8">
-            <a href="/home.html" class="text-xl font-black font-eng text-white tracking-tighter hover:text-[#ff6b00] transition-colors">TG <span class="text-[#ff6b00]">/</span> HUB</a>
-            <div class="h-4 w-px bg-[#333]"></div>
-            <nav class="flex gap-6 font-mono text-xs font-bold text-gray-500">
-                <a href="/contests.html" class="text-white border-b-2 border-[#ff6b00] pb-5 mt-5">赛事列表</a>
-            </nav>
-        </div>
-        <div class="flex items-center gap-4">
-            <div class="font-mono text-xs text-gray-500">USER: <span id="username-display" class="text-white">--</span></div>
-            <button id="logout-btn" class="font-mono text-xs text-gray-500 hover:text-[#ff6b00] transition-colors">退出</button>
-        </div>
-    </header>
-
     <!-- 主布局：左右分栏 -->
-    <div class="flex flex-1 overflow-hidden">
+    <div class="sidebar-page-content flex flex-1 overflow-hidden">
         
         <!-- 左侧：档案列表 (List) -->
         <aside class="w-1/3 min-w-[350px] max-w-[450px] border-r border-[#333] bg-[#0f0f0f] flex flex-col z-10">
@@ -287,17 +273,7 @@
             window.location.href = '/change-password.html';
         }
 
-        // 显示用户名
         const payload = parseJwt(token);
-        if (payload && payload.displayName) {
-            document.getElementById('username-display').textContent = payload.displayName;
-        }
-
-        // 退出登录
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            localStorage.removeItem('tg_token');
-            window.location.href = '/login.html';
-        });
 
         // 比赛数据
         let missions = [];
@@ -571,6 +547,8 @@
         });
 
     </script>
+
+    <script src="/assets/js/sidebar.js"></script>
 
     <!-- 自定义弹窗 -->
     <div id="toast-overlay" class="toast-overlay hidden" onclick="hideToast()"></div>

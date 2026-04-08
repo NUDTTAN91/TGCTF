@@ -7,6 +7,7 @@
     <title>TG CTF - 靶场中心</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/sidebar.css">
     <style>
         :root {
             --bg-dark: #0a0a0a;
@@ -41,69 +42,6 @@
         }
         .font-eng { font-family: 'Chakra Petch', sans-serif; }
         .font-mono { font-family: 'JetBrains Mono', monospace; }
-
-        /* === 顶部导航 === */
-        .top-header {
-            height: 60px;
-            background: #0d0d0d;
-            border-bottom: 1px solid var(--border-dim);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 30px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        .logo {
-            font-family: 'Chakra Petch', sans-serif;
-            font-size: 20px;
-            font-weight: 900;
-            color: white;
-            letter-spacing: -1px;
-            text-decoration: none;
-        }
-        .logo span { color: var(--accent); }
-        .nav-links { display: flex; gap: 5px; }
-        .nav-link {
-            padding: 8px 18px;
-            color: var(--text-dim);
-            text-decoration: none;
-            font-size: 12px;
-            font-weight: 600;
-            letter-spacing: 1px;
-            transition: all 0.3s;
-            font-family: 'JetBrains Mono', monospace;
-            clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
-        }
-        .nav-link:hover { color: white; background: rgba(255, 107, 0, 0.1); }
-        .nav-link.active { color: var(--accent); background: rgba(255, 107, 0, 0.15); }
-        .user-btn {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 6px 15px 6px 6px;
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid var(--border);
-            color: var(--text-main);
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .user-btn:hover { border-color: var(--accent); }
-        .user-avatar-small {
-            width: 28px;
-            height: 28px;
-            background: linear-gradient(135deg, var(--accent), var(--purple));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 11px;
-            clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
-            overflow: hidden;
-        }
-        .user-avatar-small img { width: 100%; height: 100%; object-fit: cover; }
-        .user-name { font-size: 12px; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
 
         /* === 比赛头部 === */
         .comp-header {
@@ -883,7 +821,7 @@
             .content { padding: 20px; }
             .comp-header { padding: 20px; }
             .category-body { grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 15px; }
-            .nav-links { display: none; }
+            .content .nav-links { display: none; }
             .toolbar { flex-direction: column; align-items: stretch; }
             .toolbar-right { justify-content: center; flex-wrap: wrap; }
         }
@@ -891,25 +829,8 @@
 </head>
 <body>
 
-<!-- 顶部导航 -->
-<header class="top-header">
-    <a href="/home.html" class="logo">TG <span>_</span> CTF</a>
-    <nav class="nav-links">
-        <a href="/home.html" class="nav-link">仪表盘</a>
-        <a href="/contests.html" class="nav-link active">比赛</a>
-        <a href="javascript:void(0)" onclick="goToLeaderboard()" class="nav-link">排行榜</a>
-        <a href="#" class="nav-link">规则</a>
-    </nav>
-    <button class="user-btn" onclick="window.location.href='/profile.html'">
-        <div class="user-avatar-small" id="nav-avatar">
-            <img id="nav-avatar-img" src="" alt="" style="display:none">
-            <span id="nav-avatar-text">U</span>
-        </div>
-        <span class="user-name" id="nav-username">用户名</span>
-    </button>
-</header>
-
 <!-- 比赛头部 -->
+<div class="sidebar-page-content">
 <div class="comp-header">
     <div class="comp-header-inner">
         <div class="comp-info">
@@ -1200,6 +1121,7 @@
         </div>
     </div>
 </div>
+</div> <!-- end sidebar-page-content -->
 
 <!-- 封禁遮罩层 -->
 <div id="banned-overlay" class="fixed inset-0 z-[1200] flex items-center justify-center hidden" style="background: rgba(50, 50, 50, 0.95);">
@@ -1309,11 +1231,13 @@
     // ========== 初始化 ==========
     async function init() {
         if (userInfo) {
-            document.getElementById('nav-username').textContent = userInfo.displayName || userInfo.username;
-            document.getElementById('header-username').textContent = userInfo.displayName || userInfo.username;
-            document.getElementById('nav-avatar-text').textContent = (userInfo.displayName || userInfo.username || 'U')[0].toUpperCase();
-            document.getElementById('header-avatar-text').textContent = (userInfo.displayName || userInfo.username || 'U')[0].toUpperCase();
-            loadUserAvatar();
+            try {
+                document.getElementById('header-username').textContent = userInfo.displayName || userInfo.username;
+                document.getElementById('header-avatar-text').textContent = (userInfo.displayName || userInfo.username || 'U')[0].toUpperCase();
+                loadUserAvatar();
+            } catch (e) {
+                console.warn('User info update failed:', e);
+            }
         }
 
         if (!isAdminMode) {
@@ -2509,9 +2433,6 @@
             if (res.ok) {
                 const data = await res.json();
                 if (data.avatar) {
-                    document.getElementById('nav-avatar-img').src = data.avatar;
-                    document.getElementById('nav-avatar-img').style.display = 'block';
-                    document.getElementById('nav-avatar-text').style.display = 'none';
                     document.getElementById('header-avatar-img').src = data.avatar;
                     document.getElementById('header-avatar-img').style.display = 'block';
                     document.getElementById('header-avatar-text').style.display = 'none';
@@ -2553,5 +2474,6 @@
     init();
     setTimeout(initChallengeWebSocket, 1000);
 </script>
+<script src="/assets/js/sidebar.js"></script>
 </body>
 </html>

@@ -6,6 +6,7 @@
     <link rel="icon" type="image/svg+xml" href="../TeamIco.svg">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/fonts.css">
+    <link rel="stylesheet" href="/assets/css/admin-sidebar.css">
     <style>
         :root {
             --bg-dark: #121212;
@@ -20,11 +21,6 @@
         body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Noto Sans SC', sans-serif; }
         .font-eng { font-family: 'Chakra Petch', sans-serif; }
         .font-mono { font-family: 'JetBrains Mono', monospace; }
-
-        .sidebar-item { border-left: 2px solid transparent; transition: all 0.2s; }
-        .sidebar-item:hover, .sidebar-item.active { background: rgba(255, 107, 0, 0.05); border-left-color: var(--accent); color: white; }
-        .sidebar-item.active .icon { color: var(--accent); }
-
         .admin-card { background: var(--bg-panel); border: 1px solid var(--border-color); position: relative; transition: all 0.3s ease; }
         .admin-card:hover { transform: translateY(-2px); border-color: #555; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
         
@@ -77,50 +73,8 @@
     </style>
     <script src="js/portal-auth.js"></script>
 </head>
-<body class="flex h-screen overflow-hidden selection:bg-[#ff6b00] selection:text-black">
-
-    <!-- 左侧侧边栏 -->
-    <aside class="w-48 bg-[#161616] border-r border-[#333] flex flex-col z-20 shadow-xl">
-        <div class="h-16 flex items-center px-6 border-b border-[#333]">
-            <div class="bg-[#ff6b00] text-black font-black text-xl px-2 py-0.5 font-eng tracking-tighter mr-3">TG</div>
-            <span class="font-bold text-gray-300 tracking-wider text-sm">管理中枢</span>
-        </div>
-        <nav class="flex-1 py-6 space-y-1 font-mono text-xs overflow-y-auto">
-            <a href="/portal/admin.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⌂</span> 概览</a>
-            <p class="px-6 text-[#555] mb-2 font-bold mt-4">赛事核心</p>
-            <a href="/portal/admin-contests.html" class="sidebar-item active flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚑</span> 比赛管理</a>
-            <a href="/portal/admin-question-bank.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">☷</span> 题库</a>
-            <a href="/portal/admin-users.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">웃</span> 用户管理</a>
-            <a href="/portal/admin-teams.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">◈</span> 队伍管理</a>
-            <a href="/portal/admin-organizations.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🏢</span> 组织管理</a>
-            <a href="/portal/admin-data-import.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">📥</span> 数据导入</a>
-            <a href="/portal/admin-admins.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400 super-only"><span class="icon mr-3">👤</span> 管理员管理</a>
-            <p class="px-6 text-[#555] mb-2 font-bold mt-6">运维监控</p>
-            <a href="/portal/admin-docker.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🐳</span> docker实例管理</a>
-            <a href="/portal/admin-anti-cheat.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🛡️</span> 防作弊系统</a>
-            <a href="/portal/admin-logs.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚠</span> 系统日志</a>
-            <a href="/portal/admin-settings.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚙</span> 系统设置</a>
-        </nav>
-        <div class="p-4 border-t border-[#333]">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 bg-[#333] rounded-full flex items-center justify-center text-[#ff6b00] font-bold">A</div>
-                <div><p class="text-xs text-white font-bold">超级管理员</p><p class="text-[10px] text-green-500">● 连接稳定</p></div>
-            </div>
-        </div>
-    </aside>
-
-    <!-- 右侧内容区 -->
-    <div class="flex-1 flex flex-col min-w-0 bg-[#121212]">
-        <header class="h-16 bg-[#161616] border-b border-[#333] flex items-center justify-between px-8 z-10">
-            <div class="flex items-center gap-4 text-xs font-mono">
-                <span class="text-gray-500">位置:</span><span class="text-[#ff6b00]">赛事核心</span><span class="text-gray-600">/</span><span class="text-white">比赛管理</span>
-            </div>
-            <div class="flex items-center gap-3">
-                <a href="/home.html" class="font-mono text-xs font-bold border border-gray-500 text-gray-400 px-4 py-2 hover:border-white hover:text-white transition-all uppercase tracking-wider">← 返回前台</a>
-                <button id="logout-btn" class="font-mono text-xs font-bold border border-[#ff6b00] text-[#ff6b00] px-4 py-2 hover:bg-[#ff6b00] hover:text-black transition-all uppercase tracking-wider">Logout_离线</button>
-            </div>
-        </header>
-
+<body class="selection:bg-[#ff6b00] selection:text-black">
+    <div class="admin-sidebar-content">
         <main class="flex-1 flex flex-col pt-8 px-8 relative overflow-y-auto">
             
             <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-8 gap-6">
@@ -262,7 +216,7 @@
             }
         }
 
-        document.getElementById('logout-btn').addEventListener('click', () => {
+        document.getElementById('logout-btn')?.addEventListener('click', () => {
             localStorage.removeItem('tg_token');
             window.location.href = '/login.html';
         });
@@ -729,5 +683,6 @@
         startAutoRefresh();
     </script>
 
+<script src="/assets/js/admin-sidebar.js"></script>
 </body>
 </html>

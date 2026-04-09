@@ -7,6 +7,7 @@
     <title>编辑赛事 - TG 管理后台</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=JetBrains+Mono:wght@400;700&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/admin-sidebar.css">
     <style>
         :root {
             --bg-dark: #121212;
@@ -25,10 +26,6 @@
         .font-mono { font-family: 'JetBrains Mono', monospace; }
 
         .admin-card { background: var(--bg-panel); border: 1px solid var(--border-color); position: relative; display: flex; flex-direction: column; }
-        
-        .sidebar-item { border-left: 2px solid transparent; transition: all 0.2s; }
-        .sidebar-item:hover, .sidebar-item.active { background: rgba(255, 107, 0, 0.05); border-left-color: var(--accent); color: white; }
-        .sidebar-item.active .icon { color: var(--accent); }
         
         .tactical-input {
             background: #111; border: 1px solid #333; color: white; padding: 0 0.75rem; height: 42px; width: 100%; outline: none; transition: 0.2s; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem;
@@ -78,55 +75,13 @@
         @keyframes toastOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(100px); } }
     </style>
 </head>
-<body class="flex h-screen overflow-hidden selection:bg-[#ff6b00] selection:text-black">
+<body class="selection:bg-[#ff6b00] selection:text-black">
     <!-- Toast 容器 -->
     <div id="toast-container" class="toast-container"></div>
 
-    <!-- 侧边栏 -->
-    <aside class="w-64 bg-[#161616] border-r border-[#333] flex flex-col z-20 shadow-xl shrink-0">
-        <div class="h-16 flex items-center px-6 border-b border-[#333]">
-            <div class="bg-[#ff6b00] text-black font-black text-xl px-2 py-0.5 font-eng tracking-tighter mr-3">TG</div>
-            <span class="font-bold text-gray-300 tracking-wider text-sm">管理中枢</span>
-        </div>
-        <nav class="flex-1 py-6 space-y-1 font-mono text-xs overflow-y-auto">
-            <a href="/admin/admin.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⌂</span> 概览</a>
-            <p class="px-6 text-[#555] mb-2 font-bold mt-4">赛事核心</p>
-            <a href="/admin/admin-contests.html" class="sidebar-item active flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚑</span> 比赛管理</a>
-            <a href="/admin/admin-question-bank.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">☷</span> 题库</a>
-            <a href="/admin/admin-users.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">웃</span> 用户管理</a>
-            <a href="/admin/admin-teams.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">◈</span> 队伍管理</a>
-            <a href="/admin/admin-organizations.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🏢</span> 组织管理</a>
-            <a href="/admin/admin-data-import.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">📥</span> 数据导入</a>
-            <a href="/admin/admin-admins.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400 super-only"><span class="icon mr-3">👤</span> 管理员管理</a>
-            <p class="px-6 text-[#555] mb-2 font-bold mt-6">运维监控</p>
-            <a href="/admin/admin-docker.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🐳</span> docker实例管理</a>
-            <a href="/admin/admin-anti-cheat.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">🛡️</span> 防作弊系统</a>
-            <a href="/admin/admin-logs.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚠</span> 系统日志</a>
-            <a href="/admin/admin-settings.html" class="sidebar-item flex items-center px-6 py-3 text-gray-400"><span class="icon mr-3">⚙</span> 系统设置</a>
-        </nav>
-        <div class="p-4 border-t border-[#333]">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 bg-[#333] rounded-full flex items-center justify-center text-[#ff6b00] font-bold">A</div>
-                <div><p class="text-xs text-white font-bold">超级管理员</p><p class="text-[10px] text-green-500">● 连接稳定</p></div>
-            </div>
-        </div>
-    </aside>
-
-    <!-- 主体 -->
-    <div class="flex-1 flex flex-col min-w-0 bg-[#121212] overflow-hidden">
+    <div class="admin-sidebar-content">
         
-        <!-- 头部 -->
-        <header class="h-16 bg-[#161616] border-b border-[#333] flex items-center justify-between px-8 z-10 shrink-0">
-            <div class="flex items-center gap-4 text-xs font-mono">
-                <span class="text-gray-500">位置:</span><span class="text-[#ff6b00]">赛事管理</span><span class="text-gray-600">/</span><span class="text-white">编辑赛事</span>
-            </div>
-            <div class="flex items-center gap-4">
-                <span id="status-display" class="text-xs font-mono text-green-500 bg-green-900 bg-opacity-20 px-2 py-1 border border-green-800">● 状态: 进行中</span>
-                <button id="toggle-status-btn" class="text-red-500 border border-red-900 bg-red-900 bg-opacity-10 px-3 py-1 text-xs hover:bg-opacity-30 transition">紧急暂停</button>
-            </div>
-        </header>
-
-        <!-- 内容滚动区 -->
+<!-- 内容滚动区 -->
         <main class="flex-1 overflow-hidden pt-8 px-8 relative flex flex-col">
             
             <div class="mb-6 border-b border-[#333] pb-4">
@@ -2948,5 +2903,6 @@
         }
     </script>
 
+<script src="/assets/js/admin-sidebar.js"></script>
 </body>
 </html>

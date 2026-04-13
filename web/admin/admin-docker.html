@@ -344,7 +344,7 @@
         function closeLogModal() { document.getElementById('log-modal').classList.add('hidden'); }
 
         // 搜索回车触发
-        document.getElementById('search-input').addEventListener('keyup', e => { if (e.key === 'Enter') loadInstances(); });
+        document.getElementById('search-input')?.addEventListener('keyup', e => { if (e.key === 'Enter') loadInstances(); });
 
         // 初始化
         loadStats();

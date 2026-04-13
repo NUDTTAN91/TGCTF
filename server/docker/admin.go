@@ -9,6 +9,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os/exec"
 	"strconv"
@@ -50,12 +51,12 @@ func HandleAdminListInstances(c *gin.Context, db *sql.DB) {
 	baseQuery := `
 		SELECT * FROM (
 			SELECT 
-				ti.id, ti.container_id, ti.container_name,
+				ti.id, ti.container_id, COALESCE(ti.container_name, '') as container_name,
 				ti.team_id, COALESCE(t.name, '无队伍') as team_name,
 				ti.contest_id, COALESCE(ct.name, '未知比赛') as contest_name,
-				ti.challenge_id, COALESCE(q.title, '未知题目') as challenge_name,
+				ti.challenge_id, COALESCE(q.title, cc.inline_title, '未知题目') as challenge_name,
 				COALESCE(ti.created_by, 0), COALESCE(u.display_name, '-') as user_name,
-				ti.ports, ti.status, ti.expires_at, ti.created_at,
+				COALESCE(ti.ports, '{}') as ports, ti.status, ti.expires_at, ti.created_at,
 				'jeopardy' as source_table
 			FROM team_instances ti
 			LEFT JOIN teams t ON ti.team_id = t.id
@@ -65,12 +66,12 @@ func HandleAdminListInstances(c *gin.Context, db *sql.DB) {
 			LEFT JOIN users u ON ti.created_by = u.id
 			UNION ALL
 			SELECT 
-				tia.id, tia.container_id, tia.container_name,
+				tia.id, tia.container_id, COALESCE(tia.container_name, '') as container_name,
 				tia.team_id, COALESCE(t.name, '无队伍') as team_name,
 				tia.contest_id, COALESCE(ct.name, '未知比赛') as contest_name,
 				tia.challenge_id, COALESCE(qa.title, '未知题目') as challenge_name,
 				COALESCE(tia.created_by, 0), COALESCE(u.display_name, '系统') as user_name,
-				tia.ports, tia.status, tia.expires_at, tia.created_at,
+				COALESCE(tia.ports, '{}') as ports, tia.status, tia.expires_at, tia.created_at,
 				'awdf' as source_table
 			FROM team_instances_awdf tia
 			LEFT JOIN teams t ON tia.team_id = t.id
@@ -130,6 +131,7 @@ func HandleAdminListInstances(c *gin.Context, db *sql.DB) {
 			&inst.UserID, &inst.UserName,
 			&portsJSON, &inst.Status, &expiresAt, &createdAt, &sourceTable)
 		if err != nil {
+			log.Printf("[AdminListInstances] rows.Scan error: %v", err)
 			continue
 		}
 		json.Unmarshal([]byte(portsJSON), &inst.Ports)

@@ -473,7 +473,8 @@
         async function loadQuestion() {
             if (!editId) return;
             
-            document.getElementById('page-title').textContent = '编辑题目';
+            const pageTitle = document.getElementById('page-title');
+            if (pageTitle) pageTitle.textContent = '编辑题目';
             
             try {
                 const res = await fetch(`/api/admin/questions/${editId}`, {
@@ -978,7 +979,8 @@
                     if (result.id) {
                         history.replaceState(null, '', `/admin/admin-question-edit.html?id=${result.id}`);
                         editId = result.id.toString();
-                        document.getElementById('page-title').textContent = '编辑题目';
+                        const pageTitle = document.getElementById('page-title');
+                        if (pageTitle) pageTitle.textContent = '编辑题目';
                         loadQuestionList(); // 重新加载列表以更新导航
                     }
                 }

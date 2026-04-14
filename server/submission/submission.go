@@ -82,6 +82,18 @@ func HandleSubmitFlag(c *gin.Context, db *sql.DB) {
 		return
 	}
 
+	// 检查队伍是否已被封禁
+	var teamStatus string
+	err = db.QueryRow(`SELECT COALESCE(status, '') FROM contest_teams WHERE contest_id = $1 AND team_id = $2`,
+		contestID, teamID.Int64).Scan(&teamStatus)
+	if teamStatus == "cheating_banned" {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error":   "TEAM_BANNED",
+			"message": "您的队伍因作弊行为已被封禁，无法继续提交",
+		})
+		return
+	}
+
 	// 错误提交冷却检查（10秒）- 使用数据库时间计算避免时区问题
 	var elapsedSeconds float64
 	err = db.QueryRow(`SELECT EXTRACT(EPOCH FROM (NOW() - submitted_at)) FROM submissions 
@@ -338,24 +350,34 @@ func HandleSubmitFlag(c *gin.Context, db *sql.DB) {
 			log.Printf("insert cheating submission error: %v", err)
 		}
 
-		_, err = db.Exec(`UPDATE contest_teams SET status = 'cheating_banned' WHERE contest_id = $1 AND team_id = $2`,
+		// 封禁提交者队伍（管理员队伍豁免）
+		result, err := db.Exec(`UPDATE contest_teams SET status = 'cheating_banned' 
+			WHERE contest_id = $1 AND team_id = $2 
+			AND team_id NOT IN (SELECT id FROM teams WHERE is_admin_team = true)`,
 			contestID, teamID.Int64)
 		if err == nil {
-			if AnnounceCheating != nil {
-				AnnounceCheating(db, contestIDInt, submitterTeamName, "提交了其他队伍的Flag")
+			if rowsAffected, _ := result.RowsAffected(); rowsAffected > 0 {
+				if AnnounceCheating != nil {
+					AnnounceCheating(db, contestIDInt, submitterTeamName, "提交了其他队伍的Flag")
+				}
+				// 广播作弊封禁事件
+				monitor.AddMonitorEventToDB(db, contestID, "cheat", submitterTeamName, "", "")
 			}
-			// 广播作弊封禁事件
-			monitor.AddMonitorEventToDB(db, contestID, "cheat", submitterTeamName, "", "")
 		}
 
-		_, err = db.Exec(`UPDATE contest_teams SET status = 'cheating_banned' WHERE contest_id = $1 AND team_id = $2`,
+		// 封禁被盗flag的队伍（管理员队伍豁免）
+		result, err = db.Exec(`UPDATE contest_teams SET status = 'cheating_banned' 
+			WHERE contest_id = $1 AND team_id = $2 
+			AND team_id NOT IN (SELECT id FROM teams WHERE is_admin_team = true)`,
 			contestID, cheatingVictimTeamID)
 		if err == nil {
-			if AnnounceCheating != nil {
-				AnnounceCheating(db, contestIDInt, cheatingVictimTeamName, "Flag被其他队伍使用，涉嫌共享Flag")
+			if rowsAffected, _ := result.RowsAffected(); rowsAffected > 0 {
+				if AnnounceCheating != nil {
+					AnnounceCheating(db, contestIDInt, cheatingVictimTeamName, "Flag被其他队伍使用，涉嫌共享Flag")
+				}
+				// 广播作弊封禁事件
+				monitor.AddMonitorEventToDB(db, contestID, "cheat", cheatingVictimTeamName, "", "")
 			}
-			// 广播作弊封禁事件
-			monitor.AddMonitorEventToDB(db, contestID, "cheat", cheatingVictimTeamName, "", "")
 		}
 
 		// 广播大屏更新

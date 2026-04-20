@@ -112,31 +112,12 @@ func HandleMonitorWebSocket(c *gin.Context, jwtSecret []byte, db *sql.DB) {
 		return
 	}
 
-	// 提取用户信息并检查权限
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
+	// 验证 claims 有效性
+	if _, ok := token.Claims.(jwt.MapClaims); !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "INVALID_CLAIMS"})
 		return
 	}
 
-	role, _ := claims["role"].(string)
-	// 必须是管理员（super 或 admin）
-	if role != "super" && role != "admin" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "FORBIDDEN", "message": "仅管理员可访问数据大屏"})
-		return
-	}
-
-	// 普通管理员需要检查权限
-	if role == "admin" {
-		var userID int64
-		if sub, ok := claims["sub"].(float64); ok {
-			userID = int64(sub)
-		}
-		if !checkMonitorPermission(db, userID, contestID) {
-			c.JSON(http.StatusForbidden, gin.H{"error": "NO_PERMISSION", "message": "您没有查看此比赛数据大屏的权限"})
-			return
-		}
-	}
 	
 	conn, err := monitorUpgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {

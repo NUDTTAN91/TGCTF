@@ -736,7 +736,7 @@ func HandleGetChallengeStats(c *gin.Context, db *sql.DB) {
 				if contestMode == "awd-f" {
 					db.QueryRow(`SELECT q.title FROM question_bank_awdf q JOIN contest_challenges_awdf cc ON q.id = cc.question_id WHERE cc.id = $1`, challengeID).Scan(&challengeName)
 				} else {
-					db.QueryRow(`SELECT q.title FROM question_bank q JOIN contest_challenges cc ON q.id = cc.question_id WHERE cc.id = $1`, challengeID).Scan(&challengeName)
+					db.QueryRow(`SELECT COALESCE(q.title, cc.inline_title, '') FROM contest_challenges cc LEFT JOIN question_bank q ON q.id = cc.question_id WHERE cc.id = $1`, challengeID).Scan(&challengeName)
 				}
 				db.QueryRow(`SELECT COALESCE(display_name, username) FROM users WHERE id = $1`, userID).Scan(&userName)
 				

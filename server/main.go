@@ -334,6 +334,9 @@ func main() {
 			adminAPI.GET("/categories/:id", func(c *gin.Context) {
 				question.HandleGetCategory(c, db)
 			})
+			adminAPI.PUT("/categories/order", func(c *gin.Context) {
+				question.HandleBatchUpdateCategoryOrder(c, db)
+			})
 			adminAPI.PUT("/categories/:id", func(c *gin.Context) {
 				question.HandleUpdateCategory(c, db)
 			})

@@ -806,26 +806,35 @@
         </div>
     </div>
 
-    <!-- 拖拽调整顺序弹窗 -->
+    <!-- 拖拽调整顺序弹窗（左右双面板） -->
     <div id="batch-order-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm hidden transition-opacity duration-200">
-        <div class="bg-[#1e1e1e] border border-[#ff6b00] w-full max-w-4xl shadow-2xl relative p-6 max-h-[90vh] overflow-y-auto">
-            <h3 class="text-lg font-bold text-white font-eng mb-4">⇅ 调整题目显示顺序</h3>
-            
+        <div class="bg-[#1e1e1e] border border-[#ff6b00] w-full max-w-6xl shadow-2xl relative p-6 max-h-[85vh] flex flex-col">
+            <!-- 标题行 -->
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-lg font-bold text-white font-eng">⇅ 题目排序管理</h3>
+                <button onclick="hideBatchOrderModal()" class="text-gray-500 hover:text-white text-2xl leading-none">&times;</button>
+            </div>
             <div class="text-xs text-gray-500 mb-4 font-mono bg-[#111] p-3 border border-[#333]">
-                拖拽题目调整顺序，上下拖动即可排序。保存后用户看到的题目将按此顺序排列。
+                左侧拖拽调整分类顺序，点击分类后在右侧拖拽调整题目顺序
             </div>
-            
-            <div id="order-list-container" class="border border-[#333] max-h-[60vh] overflow-y-auto mb-4">
-                <div class="p-4 text-center text-gray-500">加载中...</div>
-            </div>
-            
-            <div class="flex gap-2 mb-4">
-                <button onclick="resetOrderToDefault()" class="btn-outline text-xs text-gray-400 border-gray-600">还原默认顺序</button>
-            </div>
-            
-            <div class="flex justify-end gap-3">
-                <button onclick="hideBatchOrderModal()" class="btn-outline">取消</button>
-                <button onclick="saveBatchOrder()" class="btn-primary">保存顺序</button>
+            <!-- 双面板 -->
+            <div class="flex gap-4 flex-1 min-h-0">
+                <!-- 左面板：分类排序 -->
+                <div class="w-[280px] flex flex-col flex-shrink-0">
+                    <div class="text-sm font-bold text-gray-300 mb-2">分类排序</div>
+                    <div id="category-order-container" class="border border-[#333] bg-[#1a1a1a] flex-1 overflow-y-auto mb-3">
+                        <div class="p-4 text-center text-gray-500">加载中...</div>
+                    </div>
+                    <button onclick="saveCategoryOrder()" class="btn-primary w-full text-sm">保存分类顺序</button>
+                </div>
+                <!-- 右面板：题目排序 -->
+                <div class="flex-1 flex flex-col min-w-0">
+                    <div id="challenge-order-title" class="text-sm font-bold text-gray-300 mb-2">请选择左侧分类</div>
+                    <div id="challenge-order-container" class="border border-[#333] bg-[#1a1a1a] flex-1 overflow-y-auto mb-3">
+                        <div class="p-4 text-center text-gray-500">请先在左侧选择一个分类</div>
+                    </div>
+                    <button onclick="saveChallengeOrder()" class="btn-primary w-full text-sm">保存题目顺序</button>
+                </div>
             </div>
         </div>
     </div>
@@ -3055,14 +3064,32 @@
             }
         }
 
-        // ========== 拖拽调整顺序 ==========
-        let dragOrderList = []; // 存储拖拽排序列表
-        let draggedItem = null;
+        // ========== 拖拽调整顺序（两级排序） ==========
+        let categoryDragList = [];
+        let challengeDragList = [];
+        let selectedCategoryForOrder = null;
+        let draggedCatItem = null;
+        let draggedChItem = null;
+
+        function getCatName(ch) {
+            let name = ch.categoryName;
+            if (name && typeof name === 'object') name = name.String || '';
+            return (name || 'N/A').toUpperCase();
+        }
 
         function showBatchOrderModal() {
-            // 打开弹窗时初始化列表
-            initDragOrderList();
-            renderDragList();
+            categoryDragList = [...categories].sort((a, b) => (a.sortOrder || 999) - (b.sortOrder || 999)).filter(cat => {
+                            const catNameUpper = cat.name.toUpperCase();
+                            return challenges.some(ch => getCatName(ch) === catNameUpper);
+                        });
+            renderCategoryDragList();
+            if (categoryDragList.length > 0) {
+                selectCategoryForOrder(categoryDragList[0].name);
+            } else {
+                selectedCategoryForOrder = null;
+                document.getElementById('challenge-order-title').textContent = '请选择左侧分类';
+                document.getElementById('challenge-order-container').innerHTML = '<div class="p-4 text-center text-gray-500">暂无分类</div>';
+            }
             document.getElementById('batch-order-modal').classList.remove('hidden');
         }
 
@@ -3070,91 +3097,108 @@
             document.getElementById('batch-order-modal').classList.add('hidden');
         }
 
-        // 初始化拖拽列表（只在打开弹窗时调用）
-        function initDragOrderList() {
-            dragOrderList = [...challenges].sort((a, b) => {
-                const orderA = a.displayOrder || 999999;
-                const orderB = b.displayOrder || 999999;
-                if (orderA !== orderB) return orderA - orderB;
-                return (a.id || 0) - (b.id || 0);
-            });
-        }
-
-        // 渲染拖拽列表（不重置dragOrderList）
-        function renderDragList() {
-            const container = document.getElementById('order-list-container');
-            if (dragOrderList.length === 0) {
-                container.innerHTML = '<div class="p-4 text-center text-gray-500">暂无题目</div>';
+        // ===== 左侧分类列表 =====
+        function renderCategoryDragList() {
+            const container = document.getElementById('category-order-container');
+            if (categoryDragList.length === 0) {
+                container.innerHTML = '<div class="p-4 text-center text-gray-500">暂无分类</div>';
                 return;
             }
-            
-            container.innerHTML = `<div id="drag-list" class="divide-y divide-[#222]">
-                ${dragOrderList.map((ch, idx) => {
-                    const title = ch.title || (ch.question && ch.question.title) || 'N/A';
-                    let catName = ch.categoryName;
-                    if (catName && typeof catName === 'object') catName = catName.String || 'N/A';
-                    if (!catName) catName = 'N/A';
-                    const statusText = ch.status === 'public' ? '公开' : '隐藏';
-                    const statusClass = ch.status === 'public' ? 'text-green-500' : 'text-gray-500';
-                    return `
-                        <div class="drag-item flex items-center gap-3 p-3 bg-[#1a1a1a] hover:bg-[#222] cursor-move transition-colors" 
-                             data-id="${ch.id}" data-idx="${idx}" draggable="true">
-                            <span class="text-gray-600 text-lg">☰</span>
-                            <span class="text-cyan-400 font-mono w-8">${idx + 1}</span>
-                            <span class="text-white flex-1">${title}</span>
-                            <span class="text-gray-500 text-xs">${catName}</span>
-                            <span class="${statusClass} text-xs">${statusText}</span>
-                        </div>
-                    `;
-                }).join('')}
-            </div>`;
-            
-            // 绑定拖拽事件
-            initDragEvents();
+            container.innerHTML = categoryDragList.map((cat, idx) => {
+                const catUpper = cat.name.toUpperCase();
+                const count = challenges.filter(ch => getCatName(ch) === catUpper).length;
+                const isSelected = selectedCategoryForOrder && selectedCategoryForOrder.toUpperCase() === catUpper;
+                const selectedStyle = isSelected ? 'border-l-[3px] border-l-[#ff6b00] bg-[#252525]' : 'border-l-[3px] border-l-transparent';
+                return `<div class="cat-drag-item flex items-center gap-2 p-3 hover:bg-[#222] cursor-move transition-colors ${selectedStyle}"
+                             data-idx="${idx}" data-cat="${cat.name}" draggable="true"
+                             onclick="selectCategoryForOrder('${cat.name.replace(/'/g, "\\'")}')">
+                        <span class="text-gray-600 text-lg">☰</span>
+                        <span class="text-[#ff6b00] font-mono w-6 text-sm">${idx + 1}</span>
+                        <span class="text-white flex-1 truncate text-sm">${cat.name}</span>
+                        <span class="text-gray-500 text-xs">${count}题</span>
+                    </div>`;
+            }).join('');
+            initCatDragEvents();
         }
 
-        function initDragEvents() {
-            const items = document.querySelectorAll('.drag-item');
-            items.forEach(item => {
-                item.addEventListener('dragstart', handleDragStart);
-                item.addEventListener('dragend', handleDragEnd);
-                item.addEventListener('dragover', handleDragOver);
-                item.addEventListener('dragleave', handleDragLeave);
-                item.addEventListener('drop', handleDrop);
+        function selectCategoryForOrder(catName) {
+            selectedCategoryForOrder = catName;
+            document.getElementById('challenge-order-title').textContent = catName + ' — 题目排序';
+            challengeDragList = challenges
+                .filter(ch => getCatName(ch) === catName.toUpperCase())
+                .sort((a, b) => {
+                    const oa = a.displayOrder || 999999;
+                    const ob = b.displayOrder || 999999;
+                    if (oa !== ob) return oa - ob;
+                    return (a.id || 0) - (b.id || 0);
+                });
+            renderChallengeDragList();
+            renderCategoryDragList();
+        }
+
+        // ===== 右侧题目列表 =====
+        function renderChallengeDragList() {
+            const container = document.getElementById('challenge-order-container');
+            if (!selectedCategoryForOrder) {
+                container.innerHTML = '<div class="p-4 text-center text-gray-500">请先在左侧选择一个分类</div>';
+                return;
+            }
+            if (challengeDragList.length === 0) {
+                container.innerHTML = '<div class="p-4 text-center text-gray-500">该分类下暂无题目</div>';
+                return;
+            }
+            container.innerHTML = challengeDragList.map((ch, idx) => {
+                const title = ch.title || (ch.question && ch.question.title) || 'N/A';
+                const score = ch.initialScore || 0;
+                const statusText = ch.status === 'public' ? '公开' : '隐藏';
+                const statusClass = ch.status === 'public' ? 'text-green-500' : 'text-gray-500';
+                return `<div class="ch-drag-item flex items-center gap-3 p-3 hover:bg-[#222] cursor-move transition-colors"
+                             data-idx="${idx}" data-id="${ch.id}" draggable="true">
+                        <span class="text-gray-600 text-lg">☰</span>
+                        <span class="text-cyan-400 font-mono w-6 text-sm">${idx + 1}</span>
+                        <span class="text-white flex-1 truncate">${title}</span>
+                        <span class="text-gray-500 text-xs">${score}pts</span>
+                        <span class="${statusClass} text-xs">${statusText}</span>
+                    </div>`;
+            }).join('');
+            initChDragEvents();
+        }
+
+        // ===== 分类拖拽事件 =====
+        function initCatDragEvents() {
+            document.querySelectorAll('.cat-drag-item').forEach(item => {
+                item.addEventListener('dragstart', handleCatDragStart);
+                item.addEventListener('dragend', handleCatDragEnd);
+                item.addEventListener('dragover', handleCatDragOver);
+                item.addEventListener('dragleave', handleCatDragLeave);
+                item.addEventListener('drop', handleCatDrop);
             });
         }
-
-        function handleDragStart(e) {
-            draggedItem = this;
+        function handleCatDragStart(e) {
+            draggedCatItem = this;
             this.style.opacity = '0.4';
             this.style.background = '#333';
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/plain', this.dataset.idx);
         }
-
-        function handleDragEnd(e) {
+        function handleCatDragEnd(e) {
             this.style.opacity = '1';
             this.style.background = '';
-            document.querySelectorAll('.drag-item').forEach(item => {
+            document.querySelectorAll('.cat-drag-item').forEach(item => {
                 item.style.borderTop = '';
                 item.style.borderBottom = '';
                 item.style.background = '';
             });
-            draggedItem = null;
+            draggedCatItem = null;
         }
-
-        function handleDragOver(e) {
+        function handleCatDragOver(e) {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
-            if (!draggedItem || this === draggedItem) return;
-            
-            // 清除所有元素的边框
-            document.querySelectorAll('.drag-item').forEach(item => {
+            if (!draggedCatItem || this === draggedCatItem) return;
+            document.querySelectorAll('.cat-drag-item').forEach(item => {
                 item.style.borderTop = '';
                 item.style.borderBottom = '';
             });
-            
-            // 根据鼠标位置显示边框
             const rect = this.getBoundingClientRect();
             const midY = rect.top + rect.height / 2;
             if (e.clientY < midY) {
@@ -3165,62 +3209,134 @@
                 this.dataset.insertBefore = 'false';
             }
         }
-
-        function handleDragLeave(e) {
+        function handleCatDragLeave(e) {
             this.style.borderTop = '';
             this.style.borderBottom = '';
         }
-
-        function handleDrop(e) {
+        function handleCatDrop(e) {
             e.preventDefault();
             e.stopPropagation();
-            if (!draggedItem || this === draggedItem) return;
-            
-            const fromIdx = parseInt(draggedItem.dataset.idx);
+            if (!draggedCatItem || this === draggedCatItem) return;
+            const fromIdx = parseInt(draggedCatItem.dataset.idx);
             const toIdx = parseInt(this.dataset.idx);
             const insertBefore = this.dataset.insertBefore === 'true';
-            
-            console.log('Drop:', {fromIdx, toIdx, insertBefore, listLen: dragOrderList.length});
-            
-            // 从数组中移除被拖拽的元素
-            const movedItem = dragOrderList.splice(fromIdx, 1)[0];
-            
-            // 计算新的插入位置
+            const movedItem = categoryDragList.splice(fromIdx, 1)[0];
             let newIdx;
             if (fromIdx < toIdx) {
-                // 向下拖，删除后索引要减1
                 newIdx = insertBefore ? toIdx - 1 : toIdx;
             } else {
-                // 向上拖
                 newIdx = insertBefore ? toIdx : toIdx + 1;
             }
-            newIdx = Math.max(0, Math.min(newIdx, dragOrderList.length));
-            
-            console.log('Insert at:', newIdx);
-            
-            // 插入到新位置
-            dragOrderList.splice(newIdx, 0, movedItem);
-            
-            // 清除样式并重新渲染（注意：这里调用renderDragList，不重置数组）
+            newIdx = Math.max(0, Math.min(newIdx, categoryDragList.length));
+            categoryDragList.splice(newIdx, 0, movedItem);
             this.style.borderTop = '';
             this.style.borderBottom = '';
-            renderDragList();
+            renderCategoryDragList();
         }
 
-        // 还原默认顺序（按添加顺序）
-        function resetOrderToDefault() {
-            dragOrderList = [...challenges].sort((a, b) => (a.id || 0) - (b.id || 0));
-            renderDragList();
-            showToast('已还原为默认顺序', 'info');
+        // ===== 题目拖拽事件 =====
+        function initChDragEvents() {
+            document.querySelectorAll('.ch-drag-item').forEach(item => {
+                item.addEventListener('dragstart', handleChDragStart);
+                item.addEventListener('dragend', handleChDragEnd);
+                item.addEventListener('dragover', handleChDragOver);
+                item.addEventListener('dragleave', handleChDragLeave);
+                item.addEventListener('drop', handleChDrop);
+            });
+        }
+        function handleChDragStart(e) {
+            draggedChItem = this;
+            this.style.opacity = '0.4';
+            this.style.background = '#333';
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', this.dataset.idx);
+        }
+        function handleChDragEnd(e) {
+            this.style.opacity = '1';
+            this.style.background = '';
+            document.querySelectorAll('.ch-drag-item').forEach(item => {
+                item.style.borderTop = '';
+                item.style.borderBottom = '';
+                item.style.background = '';
+            });
+            draggedChItem = null;
+        }
+        function handleChDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            if (!draggedChItem || this === draggedChItem) return;
+            document.querySelectorAll('.ch-drag-item').forEach(item => {
+                item.style.borderTop = '';
+                item.style.borderBottom = '';
+            });
+            const rect = this.getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
+            if (e.clientY < midY) {
+                this.style.borderTop = '3px solid #ff6b00';
+                this.dataset.insertBefore = 'true';
+            } else {
+                this.style.borderBottom = '3px solid #ff6b00';
+                this.dataset.insertBefore = 'false';
+            }
+        }
+        function handleChDragLeave(e) {
+            this.style.borderTop = '';
+            this.style.borderBottom = '';
+        }
+        function handleChDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!draggedChItem || this === draggedChItem) return;
+            const fromIdx = parseInt(draggedChItem.dataset.idx);
+            const toIdx = parseInt(this.dataset.idx);
+            const insertBefore = this.dataset.insertBefore === 'true';
+            const movedItem = challengeDragList.splice(fromIdx, 1)[0];
+            let newIdx;
+            if (fromIdx < toIdx) {
+                newIdx = insertBefore ? toIdx - 1 : toIdx;
+            } else {
+                newIdx = insertBefore ? toIdx : toIdx + 1;
+            }
+            newIdx = Math.max(0, Math.min(newIdx, challengeDragList.length));
+            challengeDragList.splice(newIdx, 0, movedItem);
+            this.style.borderTop = '';
+            this.style.borderBottom = '';
+            renderChallengeDragList();
         }
 
-        // 保存顺序
-        async function saveBatchOrder() {
-            const orders = dragOrderList.map((ch, idx) => ({
+        // ===== 保存分类顺序 =====
+        async function saveCategoryOrder() {
+            const orders = categoryDragList.map((cat, idx) => ({
+                id: cat.id,
+                sortOrder: idx + 1
+            }));
+            try {
+                const res = await fetch('/api/admin/categories/order', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ orders })
+                });
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || 'Failed');
+                }
+                showToast('分类顺序已保存', 'success');
+                loadCategories();
+            } catch (e) {
+                showToast('保存分类顺序失败: ' + e.message, 'error');
+            }
+        }
+
+        // ===== 保存题目顺序 =====
+        async function saveChallengeOrder() {
+            if (!selectedCategoryForOrder) return showToast('请先选择一个分类', 'error');
+            const orders = challengeDragList.map((ch, idx) => ({
                 id: ch.id,
                 displayOrder: idx + 1
             }));
-            
             try {
                 const res = await fetch(`/api/admin/contests/${contestId}/contest-challenges/order`, {
                     method: 'PUT',
@@ -3230,18 +3346,15 @@
                     },
                     body: JSON.stringify({ orders })
                 });
-                
                 if (!res.ok) {
                     const data = await res.json();
                     throw new Error(data.error || 'Failed');
                 }
-                
                 const result = await res.json();
                 showToast(`已更新 ${result.updated} 道题目的顺序`, 'success');
-                hideBatchOrderModal();
-                loadChallenges(); // 重新加载题目列表
+                loadChallenges();
             } catch (e) {
-                showToast('保存失败: ' + e.message, 'error');
+                showToast('保存题目顺序失败: ' + e.message, 'error');
             }
         }
     </script>

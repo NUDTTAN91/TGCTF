@@ -46,7 +46,7 @@ func HandleListCategories(c *gin.Context, db *sql.DB) {
 	rows, err := db.Query(`
 		SELECT id, name, icon_url, glow_color, is_default, sort_order, created_at, updated_at
 		FROM categories
-		ORDER BY id ASC
+		ORDER BY sort_order ASC, id ASC
 	`)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "DATABASE_ERROR"})
@@ -238,6 +238,45 @@ func HandleUpdateCategory(c *gin.Context, db *sql.DB) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Category updated"})
+}
+
+// BatchUpdateCategoryOrderRequest 批量更新分类排序请求
+type BatchUpdateCategoryOrderRequest struct {
+	Orders []CategoryOrder `json:"orders"`
+}
+
+// CategoryOrder 分类排序项
+type CategoryOrder struct {
+	ID        int64 `json:"id"`
+	SortOrder int   `json:"sortOrder"`
+}
+
+// HandleBatchUpdateCategoryOrder 批量更新分类显示顺序
+func HandleBatchUpdateCategoryOrder(c *gin.Context, db *sql.DB) {
+	var req BatchUpdateCategoryOrderRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "INVALID_REQUEST"})
+		return
+	}
+
+	if len(req.Orders) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "NO_ORDERS"})
+		return
+	}
+
+	// 批量更新
+	var updated int
+	for _, order := range req.Orders {
+		result, err := db.Exec(`UPDATE categories SET sort_order = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
+			order.SortOrder, order.ID)
+		if err == nil {
+			if rows, _ := result.RowsAffected(); rows > 0 {
+				updated++
+			}
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"updated": updated, "message": "更新成功"})
 }
 
 // HandleDeleteCategory 删除题目类别

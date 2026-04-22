@@ -1867,7 +1867,7 @@
 
     // ========== 弹窗功能 ==========
     function openModal(challengeId) {
-        if (contestData && contestData.status === 'ended' && !isAdminMode) {
+        if (contestData && contestData.status === 'ended' && !contestData.practiceMode && !isAdminMode) {
             showToast('比赛已结束', 'warning');
             return;
         }

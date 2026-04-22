@@ -966,7 +966,7 @@
         // 打开题目详情弹窗
         function openModal(challengeId) {
             // 检查比赛状态 - 普通用户在比赛结束后不能打开题目
-            if (contestData && contestData.status === 'ended' && !isAdminMode) {
+            if (contestData && contestData.status === 'ended' && !contestData.practiceMode && !isAdminMode) {
                 showTip('比赛已结束', 'warning');
                 return;
             }

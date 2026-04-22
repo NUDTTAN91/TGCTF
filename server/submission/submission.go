@@ -42,6 +42,7 @@ type AnnounceBloodFunc func(db *sql.DB, contestID int64, challengeName, teamName
 // 全局变量，用于注入公告函数
 var AnnounceCheating AnnounceCheatingFunc
 var AnnounceBlood AnnounceBloodFunc
+var AnnouncePracticeSolve func(db *sql.DB, contestID int64, challengeName, teamName string)
 
 // normalizeChoiceAnswer 标准化选择题答案（排序后比较）
 // 例如 "2,0,1" 和 "0,1,2" 都视为相同答案
@@ -539,6 +540,19 @@ func HandleSubmitFlag(c *gin.Context, db *sql.DB) {
 	if isPracticeSubmission && isCorrect {
 		resp.Message = "【练习模式】" + resp.Message + "（不计入排行榜）"
 		resp.Score = 0
+
+		// 练习模式播报
+		if AnnouncePracticeSolve != nil {
+			var pracChallengeName, pracTeamName string
+			if contestMode == "awd-f" {
+				db.QueryRow(`SELECT q.title FROM question_bank_awdf q JOIN contest_challenges_awdf cc ON q.id = cc.question_id WHERE cc.id = $1`, challengeID).Scan(&pracChallengeName)
+			} else {
+				db.QueryRow(`SELECT COALESCE(q.title, cc.inline_title, '') FROM contest_challenges cc LEFT JOIN question_bank q ON q.id = cc.question_id WHERE cc.id = $1`, challengeID).Scan(&pracChallengeName)
+			}
+			db.QueryRow(`SELECT name FROM teams WHERE id = $1`, teamID.Int64).Scan(&pracTeamName)
+			contestIDInt, _ := strconv.ParseInt(contestID, 10, 64)
+			AnnouncePracticeSolve(db, contestIDInt, pracChallengeName, pracTeamName)
+		}
 	}
 
 	// 记录Flag提交日志（包含提交次数）

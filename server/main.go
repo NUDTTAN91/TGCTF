@@ -56,6 +56,7 @@ func main() {
 	// 初始化自动公告函数（用于Flag提交时自动发布一二三血、作弊公告）
 	submission.AnnounceBlood = contest.AnnounceBlood
 	submission.AnnounceCheating = contest.AnnounceCheating
+	submission.AnnouncePracticeSolve = contest.AnnouncePracticeSolve
 
 	// 初始化题目状态变更公告函数
 	question.AnnounceChallenge = contest.AnnounceChallenge

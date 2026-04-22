@@ -542,6 +542,17 @@ func HandleUpdateContest(c *gin.Context, db *sql.DB) {
 					fmt.Sprintf("比赛结束时间变更（%s → %s），已自动重算分数",
 						oldEndTime.In(time.Local).Format("2006-01-02 15:04"),
 						newEndTime.Format("2006-01-02 15:04")), nil)
+				// 创建时间变更公告
+				action := "延期"
+				if newEndTime.Before(oldEndTime) {
+					action = "缩期"
+				}
+				annTitle := fmt.Sprintf("比赛%s通知", action)
+				annContent := fmt.Sprintf("比赛结束时间已%s（%s → %s），已根据新时间重新计算得分。",
+					action,
+					oldEndTime.In(time.Local).Format("2006-01-02 15:04"),
+					newEndTime.Format("2006-01-02 15:04"))
+				CreateAutoAnnouncement(db, int64(idInt), "time_change", annTitle, annContent)
 				// 广播排行榜刷新
 				go func() {
 					data := monitor.GetMonitorDataForBroadcast(db, id)

@@ -274,3 +274,10 @@ func AnnounceCheating(db *sql.DB, contestID int64, teamName, reason string) {
 	}
 	CreateAutoAnnouncement(db, contestID, "cheating", title, content)
 }
+
+// AnnouncePracticeSolve 练习模式解题播报
+func AnnouncePracticeSolve(db *sql.DB, contestID int64, challengeName, teamName string) {
+	title := fmt.Sprintf("【练习】%s 解出了 %s", teamName, challengeName)
+	content := fmt.Sprintf("队伍【%s】在练习模式下解出了题目【%s】（不计入排行榜）", teamName, challengeName)
+	CreateAutoAnnouncement(db, contestID, "practice_solve", title, content)
+}

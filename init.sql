@@ -98,6 +98,7 @@ CREATE TABLE IF NOT EXISTS contests (
     flag_format VARCHAR(128) DEFAULT 'flag{[GUID]}', -- Flag格式，[GUID]为占位符
     defense_interval INTEGER DEFAULT 300,             -- AWD-F 全局防守间隔（秒），默认5分钟
     judge_concurrency INTEGER DEFAULT 5,              -- AWD-F 并发判题数
+    practice_mode BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -318,6 +319,7 @@ CREATE TABLE IF NOT EXISTS submissions (
     cheating_victim_team_id INTEGER,              -- 被盗flag的队伍ID
     score INTEGER NOT NULL DEFAULT 0,             -- 获得的分数（正确时）
     ip_address VARCHAR(64),                       -- 提交时的IP地址
+    is_practice BOOLEAN NOT NULL DEFAULT FALSE,
     submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

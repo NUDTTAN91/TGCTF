@@ -110,6 +110,7 @@ type Contest struct {
 	FlagFormat       string  `json:"flagFormat,omitempty"` // Flag格式，[GUID]为占位符
 	DefenseInterval  int     `json:"defenseInterval,omitempty"`  // AWD-F 防守间隔（秒）
 	JudgeConcurrency int     `json:"judgeConcurrency,omitempty"` // AWD-F 并发判题数
+	PracticeMode     bool    `json:"practiceMode"`               // 练习模式
 	CreatedAt        string  `json:"createdAt,omitempty"`
 	UpdatedAt        string  `json:"updatedAt,omitempty"`
 }
@@ -138,6 +139,7 @@ type UpdateContestRequest struct {
 	FlagFormat       *string `json:"flagFormat"`       // Flag格式，null表示不修改
 	DefenseInterval  *int    `json:"defenseInterval"`  // AWD-F 防守间隔
 	JudgeConcurrency *int    `json:"judgeConcurrency"` // AWD-F 并发判题数
+	PracticeMode     *bool   `json:"practiceMode"`     // 练习模式开关
 }
 
 // ContestWithStats 带统计信息的比赛
@@ -152,6 +154,7 @@ type ContestWithStats struct {
 	EndTime        string  `json:"endTime"`
 	TeamLimit      int     `json:"teamLimit,omitempty"`
 	ContainerLimit int     `json:"containerLimit,omitempty"`
+	PracticeMode   bool    `json:"practiceMode"`
 	CreatedAt      string  `json:"createdAt,omitempty"`
 	UpdatedAt      string  `json:"updatedAt,omitempty"`
 	TeamCount      int     `json:"teamCount"`
@@ -172,12 +175,12 @@ func HandleListContests(c *gin.Context, db *sql.DB) {
 	if status != "" {
 		rows, err = db.Query(`
 			SELECT id, name, COALESCE(description,''), mode, status, cover_image,
-			       start_time, end_time, created_at, updated_at 
+			       practice_mode, start_time, end_time, created_at, updated_at 
 			FROM contests WHERE status = $1 ORDER BY start_time DESC`, status)
 	} else {
 		rows, err = db.Query(`
 			SELECT id, name, COALESCE(description,''), mode, status, cover_image,
-			       start_time, end_time, created_at, updated_at 
+			       practice_mode, start_time, end_time, created_at, updated_at 
 			FROM contests ORDER BY start_time DESC`)
 	}
 
@@ -193,7 +196,7 @@ func HandleListContests(c *gin.Context, db *sql.DB) {
 		var ct ContestWithStats
 		var startTime, endTime, createdAt, updatedAt time.Time
 		if err := rows.Scan(&ct.ID, &ct.Name, &ct.Description, &ct.Mode, &ct.Status, &ct.CoverImage,
-			&startTime, &endTime, &createdAt, &updatedAt); err != nil {
+			&ct.PracticeMode, &startTime, &endTime, &createdAt, &updatedAt); err != nil {
 			log.Printf("scan contest error: %v", err)
 			continue
 		}
@@ -288,12 +291,12 @@ func HandleGetContest(c *gin.Context, db *sql.DB) {
 		SELECT id, name, COALESCE(description,''), mode, status, cover_image,
 		       COALESCE(team_limit, 4), COALESCE(container_limit, 1),
 		       COALESCE(flag_format, 'flag{[GUID]}'),
-		       defense_interval, judge_concurrency,
+		       defense_interval, judge_concurrency, practice_mode,
 		       start_time, end_time, created_at, updated_at 
 		FROM contests WHERE id = $1`, id).Scan(
 		&ct.ID, &ct.Name, &ct.Description, &ct.Mode, &ct.Status, &ct.CoverImage,
 		&ct.TeamLimit, &ct.ContainerLimit, &flagFormat,
-		&defenseInterval, &judgeConcurrency,
+		&defenseInterval, &judgeConcurrency, &ct.PracticeMode,
 		&startTime, &endTime, &createdAt, &updatedAt)
 
 	if err == sql.ErrNoRows {
@@ -440,6 +443,13 @@ func HandleUpdateContest(c *gin.Context, db *sql.DB) {
 		argIndex++
 	}
 
+	// 练习模式
+	if req.PracticeMode != nil {
+		updates = append(updates, "practice_mode = $"+strconv.Itoa(argIndex))
+		args = append(args, *req.PracticeMode)
+		argIndex++
+	}
+
 	// 处理FlagFormat：如果改变了格式，需要删除所有已生成的Flag
 	var flagFormatChanged bool
 	if req.FlagFormat != nil {
@@ -485,6 +495,11 @@ func HandleUpdateContest(c *gin.Context, db *sql.DB) {
 		result, _ := db.Exec(`DELETE FROM team_challenge_flags WHERE contest_id = $1`, id)
 		affected, _ := result.RowsAffected()
 		log.Printf("[FlagFormat] Contest %s flag format changed, deleted %d flags", id, affected)
+	}
+
+	// 练习模式开启时，自动解封所有被封禁的队伍
+	if req.PracticeMode != nil && *req.PracticeMode {
+		db.Exec(`UPDATE contest_teams SET status = 'approved' WHERE contest_id = $1 AND status = 'cheating_banned'`, id)
 	}
 
 	// AWD-F 比赛状态变更钩子：启动/销毁容器

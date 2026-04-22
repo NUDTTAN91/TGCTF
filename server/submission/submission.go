@@ -114,12 +114,16 @@ func HandleSubmitFlag(c *gin.Context, db *sql.DB) {
 	}
 
 	var contestStatus, contestMode string
-	err = db.QueryRow(`SELECT status, mode FROM contests WHERE id = $1`, contestID).Scan(&contestStatus, &contestMode)
+	var practiceMode bool
+	err = db.QueryRow(`SELECT status, mode, practice_mode FROM contests WHERE id = $1`, contestID).Scan(&contestStatus, &contestMode, &practiceMode)
 	if err == sql.ErrNoRows {
 		c.JSON(http.StatusNotFound, gin.H{"error": "CONTEST_NOT_FOUND", "message": "比赛不存在"})
 		return
 	}
-	if contestStatus != "running" {
+	isPracticeSubmission := false
+	if contestStatus == "ended" && practiceMode {
+		isPracticeSubmission = true
+	} else if contestStatus != "running" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "CONTEST_NOT_RUNNING", "message": "比赛未在进行中"})
 		return
 	}
@@ -343,40 +347,46 @@ func HandleSubmitFlag(c *gin.Context, db *sql.DB) {
 				"flag": submittedFlag, "victimTeam": cheatingVictimTeamName,
 			})
 
-		_, err = db.Exec(`INSERT INTO submissions (contest_id, challenge_id, team_id, user_id, flag, is_correct, is_cheating, cheating_victim_team_id, score, ip_address)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-			contestID, challengeID, teamID.Int64, userID, submittedFlag, false, true, cheatingVictimTeamID, 0, clientIP)
+		_, err = db.Exec(`INSERT INTO submissions (contest_id, challenge_id, team_id, user_id, flag, is_correct, is_cheating, cheating_victim_team_id, score, ip_address, is_practice)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+			contestID, challengeID, teamID.Int64, userID, submittedFlag, false, true, cheatingVictimTeamID, 0, clientIP, isPracticeSubmission)
 		if err != nil {
 			log.Printf("insert cheating submission error: %v", err)
 		}
 
-		// 封禁提交者队伍（管理员队伍豁免）
-		result, err := db.Exec(`UPDATE contest_teams SET status = 'cheating_banned' 
-			WHERE contest_id = $1 AND team_id = $2 
-			AND team_id NOT IN (SELECT id FROM teams WHERE is_admin_team = true)`,
-			contestID, teamID.Int64)
-		if err == nil {
-			if rowsAffected, _ := result.RowsAffected(); rowsAffected > 0 {
-				if AnnounceCheating != nil {
-					AnnounceCheating(db, contestIDInt, submitterTeamName, "提交了其他队伍的Flag")
-				}
-				// 广播作弊封禁事件
-				monitor.AddMonitorEventToDB(db, contestID, "cheat", submitterTeamName, "", "")
+		if practiceMode {
+			// 练习模式：不封禁，只发出作弊警告
+			if AnnounceCheating != nil {
+				AnnounceCheating(db, contestIDInt, submitterTeamName, "提交了其他队伍的Flag（练习模式，已记录）")
 			}
-		}
-
-		// 封禁被盗flag的队伍（管理员队伍豁免）
-		result, err = db.Exec(`UPDATE contest_teams SET status = 'cheating_banned' 
-			WHERE contest_id = $1 AND team_id = $2 
-			AND team_id NOT IN (SELECT id FROM teams WHERE is_admin_team = true)`,
-			contestID, cheatingVictimTeamID)
-		if err == nil {
-			if rowsAffected, _ := result.RowsAffected(); rowsAffected > 0 {
-				if AnnounceCheating != nil {
-					AnnounceCheating(db, contestIDInt, cheatingVictimTeamName, "Flag被其他队伍使用，涉嫌共享Flag")
+			monitor.AddMonitorEventToDB(db, contestID, "cheat_warning", submitterTeamName, "", cheatingVictimTeamName)
+		} else {
+			// 正式模式：封禁提交者队伍（管理员队伍豁免）
+			result, err := db.Exec(`UPDATE contest_teams SET status = 'cheating_banned' 
+				WHERE contest_id = $1 AND team_id = $2 
+				AND team_id NOT IN (SELECT id FROM teams WHERE is_admin_team = true)`,
+				contestID, teamID.Int64)
+			if err == nil {
+				if rowsAffected, _ := result.RowsAffected(); rowsAffected > 0 {
+					if AnnounceCheating != nil {
+						AnnounceCheating(db, contestIDInt, submitterTeamName, "提交了其他队伍的Flag")
+					}
+					monitor.AddMonitorEventToDB(db, contestID, "cheat", submitterTeamName, "", "")
 				}
-				// 广播作弊封禁事件
-				monitor.AddMonitorEventToDB(db, contestID, "cheat", cheatingVictimTeamName, "", "")
+			}
+
+			// 封禁被盗flag的队伍（管理员队伍豁免）
+			result, err = db.Exec(`UPDATE contest_teams SET status = 'cheating_banned' 
+				WHERE contest_id = $1 AND team_id = $2 
+				AND team_id NOT IN (SELECT id FROM teams WHERE is_admin_team = true)`,
+				contestID, cheatingVictimTeamID)
+			if err == nil {
+				if rowsAffected, _ := result.RowsAffected(); rowsAffected > 0 {
+					if AnnounceCheating != nil {
+						AnnounceCheating(db, contestIDInt, cheatingVictimTeamName, "Flag被其他队伍使用，涉嫌共享Flag")
+					}
+					monitor.AddMonitorEventToDB(db, contestID, "cheat", cheatingVictimTeamName, "", "")
+				}
 			}
 		}
 
@@ -386,10 +396,17 @@ func HandleSubmitFlag(c *gin.Context, db *sql.DB) {
 			monitor.BroadcastMonitorUpdate(contestID, data)
 		}()
 
-		c.JSON(http.StatusForbidden, gin.H{
-			"error":   "CHEATING_DETECTED",
-			"message": "检测到作弊行为：您提交了其他队伍的Flag！您的队伍已被封禁。",
-		})
+		if practiceMode {
+			c.JSON(http.StatusForbidden, gin.H{
+				"error":   "CHEATING_DETECTED",
+				"message": "检测到作弊行为：您提交了其他队伍的Flag！（练习模式，已记录但不予封禁）",
+			})
+		} else {
+			c.JSON(http.StatusForbidden, gin.H{
+				"error":   "CHEATING_DETECTED",
+				"message": "检测到作弊行为：您提交了其他队伍的Flag！您的队伍已被封禁。",
+			})
+		}
 		return
 	}
 
@@ -397,7 +414,7 @@ func HandleSubmitFlag(c *gin.Context, db *sql.DB) {
 	bonusScore := 0
 	solveOrder := 0
 	firstBlood, secondBlood, thirdBlood := false, false, false
-	if isCorrect {
+	if isCorrect && !isPracticeSubmission {
 		var solveCount int
 		if contestMode == "awd-f" {
 			db.QueryRow(`SELECT COUNT(*) FROM team_solves_awdf WHERE contest_id = $1 AND challenge_id = $2`, contestID, challengeID).Scan(&solveCount)
@@ -437,9 +454,9 @@ func HandleSubmitFlag(c *gin.Context, db *sql.DB) {
 	// 获取提交IP
 	clientIP := c.ClientIP()
 
-	_, err = db.Exec(`INSERT INTO submissions (contest_id, challenge_id, team_id, user_id, flag, is_correct, score, ip_address)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-		contestID, challengeID, teamID.Int64, userID, submittedFlag, isCorrect, score, clientIP)
+	_, err = db.Exec(`INSERT INTO submissions (contest_id, challenge_id, team_id, user_id, flag, is_correct, score, ip_address, is_practice)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+		contestID, challengeID, teamID.Int64, userID, submittedFlag, isCorrect, score, clientIP, isPracticeSubmission)
 	if err != nil {
 		log.Printf("insert submission error: %v", err)
 	}
@@ -460,7 +477,7 @@ func HandleSubmitFlag(c *gin.Context, db *sql.DB) {
 		admin.CheckAndBroadcastMultiIP(db, teamID.Int64, contestIDInt64)
 	}()
 
-	if isCorrect {
+	if isCorrect && !isPracticeSubmission {
 		// AWD-F 和普通模式使用不同的解题记录表
 		if contestMode == "awd-f" {
 			_, err = db.Exec(`INSERT INTO team_solves_awdf (contest_id, challenge_id, team_id, first_solver_id, solve_order)
@@ -519,6 +536,11 @@ func HandleSubmitFlag(c *gin.Context, db *sql.DB) {
 		resp.Message = "Flag错误"
 	}
 
+	if isPracticeSubmission && isCorrect {
+		resp.Message = "【练习模式】" + resp.Message + "（不计入排行榜）"
+		resp.Score = 0
+	}
+
 	// 记录Flag提交日志（包含提交次数）
 	contestIDInt, _ := strconv.ParseInt(contestID, 10, 64)
 	challengeIDInt, _ := strconv.ParseInt(challengeID, 10, 64)
@@ -535,9 +557,14 @@ func HandleSubmitFlag(c *gin.Context, db *sql.DB) {
 	db.QueryRow(`SELECT COUNT(*) FROM submissions WHERE contest_id = $1 AND challenge_id = $2 AND team_id = $3`,
 		contestID, challengeID, teamID.Int64).Scan(&submitCount)
 	
+	practiceTag := ""
+	if isPracticeSubmission {
+		practiceTag = "【练习】"
+	}
+
 	if isCorrect {
 		logs.WriteLog(db, logs.TypeFlagSubmit, logs.LevelSuccess, &userID, &teamID.Int64, &contestIDInt, &challengeIDInt, clientIP,
-			"队伍 ["+teamName+"] 提交题目 ["+challengeName+"] 的答案 — 正确 | Flag: "+submittedFlag, map[string]interface{}{
+			"队伍 ["+teamName+"] "+practiceTag+"提交题目 ["+challengeName+"] 的答案 — 正确 | Flag: "+submittedFlag, map[string]interface{}{
 				"flag": submittedFlag, "score": score, "submitCount": submitCount,
 			})
 		// 广播大屏更新
@@ -547,7 +574,7 @@ func HandleSubmitFlag(c *gin.Context, db *sql.DB) {
 		}()
 	} else {
 		logs.WriteLog(db, logs.TypeFlagSubmit, logs.LevelError, &userID, &teamID.Int64, &contestIDInt, &challengeIDInt, clientIP,
-			"队伍 ["+teamName+"] 提交题目 ["+challengeName+"] 的答案 — 错误 | Flag: "+submittedFlag, map[string]interface{}{
+			"队伍 ["+teamName+"] "+practiceTag+"提交题目 ["+challengeName+"] 的答案 — 错误 | Flag: "+submittedFlag, map[string]interface{}{
 				"flag": submittedFlag, "submitCount": submitCount,
 			})
 		// 广播尝试解题事件

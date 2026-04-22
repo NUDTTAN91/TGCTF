@@ -187,6 +187,17 @@
                                 </div>
 
                                 <div>
+                                    <label class="form-label">练习模式</label>
+                                    <div class="flex items-center gap-3">
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" id="edit-practice-mode" class="sr-only peer">
+                                            <div class="w-9 h-5 bg-[#333] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#ff6b00] peer-checked:after:bg-white"></div>
+                                        </label>
+                                        <span class="text-[10px] text-gray-500 leading-tight">开启后比赛中不封禁只警告<br>赛后允许练习提交（不计分）</span>
+                                    </div>
+                                </div>
+
+                                <div>
                                     <label class="form-label">参与组织 <span class="text-gray-600">(可多选，不选则所有组织可见)</span></label>
                                     <div class="relative" id="org-select-container">
                                         <div id="org-select-trigger" onclick="toggleOrgDropdown()" class="bg-[#111] border border-[#333] px-3 py-2 cursor-pointer flex items-center justify-between hover:border-[#555] transition-colors h-[42px]">
@@ -994,6 +1005,7 @@
                 // 队伍限制
                 document.getElementById('edit-team-limit').value = contestData.teamLimit || 4;
                 document.getElementById('edit-container-limit').value = contestData.containerLimit || 1;
+                document.getElementById('edit-practice-mode').checked = contestData.practiceMode || false;
                 
                 // 状态显示
                 updateStatusDisplay(contestData.status);
@@ -1090,6 +1102,7 @@
             const coverImage = document.getElementById('edit-cover').value.trim();
             const teamLimit = parseInt(document.getElementById('edit-team-limit').value) || 4;
             const containerLimit = parseInt(document.getElementById('edit-container-limit').value) || 1;
+            const practiceMode = document.getElementById('edit-practice-mode').checked;
 
             if (!name || !startTime || !endTime) {
                 showToast('请填写必填字段', 'warning');
@@ -1104,7 +1117,7 @@
                         'Authorization': 'Bearer ' + token,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ name, description, startTime, endTime, coverImage, teamLimit, containerLimit })
+                    body: JSON.stringify({ name, description, startTime, endTime, coverImage, teamLimit, containerLimit, practiceMode })
                 });
                 if (!res.ok) throw new Error('Failed');
                 

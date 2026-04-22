@@ -8,13 +8,18 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"log"
+	"math"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"tgctf/server/logs"
+	"tgctf/server/monitor"
 )
 
 // GenerateFlagsForTeamInContest 队伍审核通过时生成Flag的函数引用
@@ -362,6 +367,10 @@ func HandleUpdateContest(c *gin.Context, db *sql.DB) {
 	var oldStatus, oldMode string
 	db.QueryRow(`SELECT status, mode FROM contests WHERE id = $1`, id).Scan(&oldStatus, &oldMode)
 
+	// 查询当前 endTime 保存为 oldEndTime（用于检测结束时间变更）
+	var oldEndTime time.Time
+	db.QueryRow(`SELECT end_time FROM contests WHERE id = $1`, id).Scan(&oldEndTime)
+
 	// 动态构建更新语句
 	updates := []string{}
 	args := []interface{}{}
@@ -516,7 +525,213 @@ func HandleUpdateContest(c *gin.Context, db *sql.DB) {
 		go OnAWDFContestStatusChange(db, contestIDInt, oldStatus, newStatus, newMode)
 	}
 
+	// 检测 endTime 变更，触发分数重算
+	if req.EndTime != "" {
+		newEndTime, err := time.ParseInLocation("2006-01-02T15:04", req.EndTime, time.Local)
+		if err == nil && !newEndTime.Equal(oldEndTime) {
+			idInt, _ := strconv.Atoi(id)
+			if err := recalculateOnEndTimeChange(db, int64(idInt), newEndTime); err != nil {
+				log.Printf("分数重算失败: %v", err)
+			} else {
+				// 写日志
+				adminID := c.GetInt64("userID")
+				clientIP := c.ClientIP()
+				contestIDInt := int64(idInt)
+				logs.WriteLog(db, "contest_update", "info",
+					&adminID, nil, &contestIDInt, nil, clientIP,
+					fmt.Sprintf("比赛结束时间变更（%s → %s），已自动重算分数",
+						oldEndTime.In(time.Local).Format("2006-01-02 15:04"),
+						newEndTime.Format("2006-01-02 15:04")), nil)
+				// 广播排行榜刷新
+				go func() {
+					data := monitor.GetMonitorDataForBroadcast(db, id)
+					monitor.BroadcastMonitorUpdate(id, data)
+				}()
+			}
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{"message": "UPDATED", "flagsRegenerated": flagFormatChanged})
+}
+
+// calculateDynamicScore 计算动态分数（指数衰减模型）
+func calculateDynamicScore(initialScore, minScore, difficulty, solveCount int) int {
+	if solveCount == 0 {
+		return initialScore
+	}
+	if difficulty < 1 {
+		difficulty = 1
+	} else if difficulty > 10 {
+		difficulty = 10
+	}
+	decayFactor := math.Exp(-float64(solveCount-1) / (float64(difficulty) * 10.0))
+	score := float64(minScore) + float64(initialScore-minScore)*decayFactor
+	if score < float64(minScore) {
+		return minScore
+	}
+	return int(math.Round(score))
+}
+
+// calculateScoreWithBonus 计算含血量奖励的最终分数
+func calculateScoreWithBonus(baseScore, solveOrder, firstBonus, secondBonus, thirdBonus int) int {
+	bonusPercent := 0
+	if solveOrder == 1 {
+		bonusPercent = firstBonus
+	} else if solveOrder == 2 {
+		bonusPercent = secondBonus
+	} else if solveOrder == 3 {
+		bonusPercent = thirdBonus
+	}
+	return baseScore + (baseScore * bonusPercent / 100)
+}
+
+// recalculateOnEndTimeChange 当管理员修改比赛结束时间时，自动重算分数
+func recalculateOnEndTimeChange(db *sql.DB, contestID int64, newEndTime time.Time) error {
+	// 1. 查询比赛配置
+	var startTime time.Time
+	var firstBonus, secondBonus, thirdBonus int
+	err := db.QueryRow(`SELECT start_time, COALESCE(first_blood_bonus, 5), COALESCE(second_blood_bonus, 3), COALESCE(third_blood_bonus, 1) FROM contests WHERE id = $1`, contestID).Scan(&startTime, &firstBonus, &secondBonus, &thirdBonus)
+	if err != nil {
+		return err
+	}
+
+	// 2. 更新 is_practice 状态
+	// 比赛时间范围内的正确提交 → 正式
+	_, err = db.Exec(`UPDATE submissions SET is_practice = false WHERE contest_id = $1 AND is_correct = true AND submitted_at >= $2 AND submitted_at <= $3`,
+		contestID, startTime, newEndTime)
+	if err != nil {
+		return err
+	}
+	// 超出时间范围的正确提交 → 练习
+	_, err = db.Exec(`UPDATE submissions SET is_practice = true, score = 0 WHERE contest_id = $1 AND is_correct = true AND submitted_at > $2`,
+		contestID, newEndTime)
+	if err != nil {
+		return err
+	}
+
+	// 3. 删除该比赛全部 team_solves
+	_, err = db.Exec(`DELETE FROM team_solves WHERE contest_id = $1`, contestID)
+	if err != nil {
+		return err
+	}
+
+	// 4. 重建 team_solves
+	rows, err := db.Query(`SELECT DISTINCT ON (challenge_id, team_id) challenge_id, team_id, user_id, submitted_at
+		FROM submissions
+		WHERE contest_id = $1 AND is_correct = true AND is_practice = false
+		ORDER BY challenge_id, team_id, submitted_at ASC`, contestID)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	type solveRecord struct {
+		ChallengeID int64
+		TeamID      int64
+		UserID      int64
+		SubmittedAt time.Time
+	}
+
+	// 按 challenge 分组
+	challengeGroups := make(map[int64][]solveRecord)
+	for rows.Next() {
+		var r solveRecord
+		if err := rows.Scan(&r.ChallengeID, &r.TeamID, &r.UserID, &r.SubmittedAt); err != nil {
+			return err
+		}
+		challengeGroups[r.ChallengeID] = append(challengeGroups[r.ChallengeID], r)
+	}
+
+	// 按 challenge 分组，组内按 submitted_at 排序确定 solve_order
+	type solveWithOrder struct {
+		solveRecord
+		SolveOrder int
+	}
+	var allSolves []solveWithOrder
+
+	for _, records := range challengeGroups {
+		sort.Slice(records, func(i, j int) bool {
+			return records[i].SubmittedAt.Before(records[j].SubmittedAt)
+		})
+		for i, r := range records {
+			allSolves = append(allSolves, solveWithOrder{solveRecord: r, SolveOrder: i + 1})
+		}
+	}
+
+	// 逐条 INSERT
+	for _, s := range allSolves {
+		_, err = db.Exec(`INSERT INTO team_solves (contest_id, challenge_id, team_id, first_solver_id, solve_order, solved_at)
+			VALUES ($1, $2, $3, $4, $5, $6)`,
+			contestID, s.ChallengeID, s.TeamID, s.UserID, s.SolveOrder, s.SubmittedAt)
+		if err != nil {
+			return err
+		}
+	}
+
+	// 5. 全量重算 submissions.score
+	type challengeConfig struct {
+		ID           int64
+		InitialScore int
+		MinScore     int
+		Difficulty   int
+	}
+	configRows, err := db.Query(`SELECT id, initial_score, min_score, difficulty FROM contest_challenges WHERE contest_id = $1`, contestID)
+	if err != nil {
+		return err
+	}
+	defer configRows.Close()
+
+	var configs []challengeConfig
+	for configRows.Next() {
+		var c challengeConfig
+		if err := configRows.Scan(&c.ID, &c.InitialScore, &c.MinScore, &c.Difficulty); err != nil {
+			return err
+		}
+		configs = append(configs, c)
+	}
+
+	// 统计每题的解题人数
+	solveCountMap := make(map[int64]int)
+	for cid, records := range challengeGroups {
+		solveCountMap[cid] = len(records)
+	}
+
+	// 对每题计算分数并更新
+	for _, cfg := range configs {
+		solveCount := solveCountMap[cfg.ID]
+		baseScore := calculateDynamicScore(cfg.InitialScore, cfg.MinScore, cfg.Difficulty, solveCount)
+
+		solveRows, err := db.Query(`SELECT team_id, solve_order FROM team_solves WHERE contest_id = $1 AND challenge_id = $2`, contestID, cfg.ID)
+		if err != nil {
+			return err
+		}
+
+		type teamSolve struct {
+			TeamID     int64
+			SolveOrder int
+		}
+		var tSolves []teamSolve
+		for solveRows.Next() {
+			var ts teamSolve
+			if err := solveRows.Scan(&ts.TeamID, &ts.SolveOrder); err != nil {
+				solveRows.Close()
+				return err
+			}
+			tSolves = append(tSolves, ts)
+		}
+		solveRows.Close()
+
+		for _, ts := range tSolves {
+			score := calculateScoreWithBonus(baseScore, ts.SolveOrder, firstBonus, secondBonus, thirdBonus)
+			_, err = db.Exec(`UPDATE submissions SET score = $1 WHERE contest_id = $2 AND challenge_id = $3 AND team_id = $4 AND is_correct = true AND is_practice = false`,
+				score, contestID, cfg.ID, ts.TeamID)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 // HandleDeleteContest 删除比赛

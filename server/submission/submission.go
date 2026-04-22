@@ -1637,3 +1637,4 @@ func HandleGetChoiceAttempts(c *gin.Context, db *sql.DB) {
 
 	c.JSON(http.StatusOK, gin.H{"attempts": attempts})
 }
+

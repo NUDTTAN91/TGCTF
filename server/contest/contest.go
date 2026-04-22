@@ -528,7 +528,7 @@ func HandleUpdateContest(c *gin.Context, db *sql.DB) {
 	// 检测 endTime 变更，触发分数重算
 	if req.EndTime != "" {
 		newEndTime, err := time.ParseInLocation("2006-01-02T15:04", req.EndTime, time.Local)
-		if err == nil && !newEndTime.Equal(oldEndTime) {
+		if err == nil && !newEndTime.Equal(oldEndTime) && (oldStatus == "running" || oldStatus == "ended") {
 			idInt, _ := strconv.Atoi(id)
 			if err := recalculateOnEndTimeChange(db, int64(idInt), newEndTime); err != nil {
 				log.Printf("分数重算失败: %v", err)

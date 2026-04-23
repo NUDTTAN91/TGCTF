@@ -387,7 +387,7 @@
         .category-header.collapsed .collapse-icon { transform: rotate(-90deg); }
         .category-body {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
             gap: 15px;
             padding: 20px;
             transition: all 0.3s;
@@ -456,20 +456,20 @@
         .solved-badge { font-weight: 700; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
 
         /* 三血条 */
-        .blood-bar { display: flex; gap: 4px; padding-top: 10px; border-top: 1px solid var(--border-dim); }
+        .blood-bar { display: flex; flex-direction: column; gap: 4px; padding-top: 10px; border-top: 1px solid var(--border-dim); }
         .blood-item {
-            flex: 1;
             height: 22px;
             display: flex;
             align-items: center;
             gap: 4px;
-            font-size: 10px;
+            font-size: 11px;
             font-family: 'JetBrains Mono', monospace;
             color: var(--text-muted);
             background: rgba(255, 255, 255, 0.02);
             padding: 0 6px;
             overflow: hidden;
             white-space: nowrap;
+            text-overflow: ellipsis;
         }
         .medal-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
         .medal-gold { background: var(--gold); box-shadow: 0 0 5px var(--gold); }

@@ -455,27 +455,76 @@
         .card-solves { font-size: 13px; color: #aaa; font-weight: 600; font-family: 'JetBrains Mono', monospace; display: flex; justify-content: space-between; align-items: center; }
         .solved-badge { font-weight: 700; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
 
-        /* 三血条 */
+        /* 三血条 - 渐变底色条 */
         .blood-bar { display: flex; flex-direction: column; gap: 4px; padding-top: 10px; border-top: 1px solid var(--border-dim); }
         .blood-item {
-            height: 22px;
+            height: 32px;
             display: flex;
             align-items: center;
-            gap: 4px;
-            font-size: 11px;
+            gap: 0;
+            font-size: 13px;
             font-family: 'JetBrains Mono', monospace;
-            color: var(--text-muted);
-            background: rgba(255, 255, 255, 0.02);
-            padding: 0 6px;
+            border-radius: 4px;
             overflow: hidden;
-            white-space: nowrap;
-            text-overflow: ellipsis;
+            position: relative;
         }
-        .medal-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-        .medal-gold { background: var(--gold); box-shadow: 0 0 5px var(--gold); }
-        .medal-silver { background: var(--silver); }
-        .medal-bronze { background: var(--bronze); }
-        .medal-empty { background: #333; }
+        .blood-item::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 4px;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+        .blood-item:hover::before {
+            opacity: 1;
+        }
+        .medal-dot {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 1;
+            border-radius: 0;
+            background: none;
+            box-shadow: none;
+        }
+        .blood-item .bar-name {
+            flex: 1;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 0 10px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            position: relative;
+            z-index: 1;
+        }
+        /* Gold */
+        .medal-gold::before { content: '①'; }
+        .blood-item.blood-gold::before { background: linear-gradient(90deg, rgba(255, 215, 0, 0.18) 0%, rgba(255, 215, 0, 0.03) 100%); }
+        .blood-item.blood-gold .medal-dot { color: var(--gold); text-shadow: 0 0 8px rgba(255, 215, 0, 0.4); }
+        .blood-item.blood-gold .bar-name { color: rgba(255, 215, 0, 0.9); }
+        /* Silver */
+        .medal-silver::before { content: '②'; }
+        .blood-item.blood-silver::before { background: linear-gradient(90deg, rgba(192, 192, 192, 0.12) 0%, rgba(192, 192, 192, 0.02) 100%); }
+        .blood-item.blood-silver .medal-dot { color: var(--silver); text-shadow: 0 0 6px rgba(192, 192, 192, 0.3); }
+        .blood-item.blood-silver .bar-name { color: rgba(192, 192, 192, 0.85); }
+        /* Bronze */
+        .medal-bronze::before { content: '③'; }
+        .blood-item.blood-bronze::before { background: linear-gradient(90deg, rgba(205, 127, 50, 0.12) 0%, rgba(205, 127, 50, 0.02) 100%); }
+        .blood-item.blood-bronze .medal-dot { color: var(--bronze); text-shadow: 0 0 6px rgba(205, 127, 50, 0.3); }
+        .blood-item.blood-bronze .bar-name { color: rgba(205, 127, 50, 0.85); }
+        /* Empty */
+        .medal-empty::before { content: ''; }
+        .blood-item.blood-empty::before { background: rgba(255, 255, 255, 0.02); }
+        .blood-item.blood-empty .medal-dot { color: #333; }
+        .blood-item.blood-empty .bar-name { color: var(--text-muted); }
 
         /* === 右侧边栏 === */
         .sidebar-right { display: flex; flex-direction: column; gap: 20px; }
@@ -1640,10 +1689,13 @@
         const titleStyle = solved ? 'color: #6b7280;' : '';
         const solvedWatermark = solved ? `<div class="solved-watermark"><span style="color: ${catColor}20;">SOLVED</span></div>` : '';
         
-        const bloodDot = (team, medal, solvedCard) => {
-            if (solvedCard) return 'medal-empty';
-            return team ? medal : 'medal-empty';
+        const bloodClass = (team, medal, solvedCard) => {
+            if (solvedCard) return { dot: 'medal-empty', bar: 'blood-empty' };
+            return team ? { dot: medal, bar: 'blood-' + medal.replace('medal-', '') } : { dot: 'medal-empty', bar: 'blood-empty' };
         };
+        const b1 = bloodClass(ch.firstBlood, 'medal-gold', solved);
+        const b2 = bloodClass(ch.secondBlood, 'medal-silver', solved);
+        const b3 = bloodClass(ch.thirdBlood, 'medal-bronze', solved);
 
         return `
         <div class="challenge-card ${solved ? 'solved' : ''}" style="--card-color: ${catColor};" onclick="openModal(${ch.id})">
@@ -1658,9 +1710,9 @@
                 ${solved ? `<span class="solved-badge" style="color: ${catColor};">√ 已完成</span>` : ''}
             </div>
             <div class="blood-bar">
-                <div class="blood-item"><span class="medal-dot ${bloodDot(ch.firstBlood, 'medal-gold', solved)}"></span>${ch.firstBlood || '--'}</div>
-                <div class="blood-item"><span class="medal-dot ${bloodDot(ch.secondBlood, 'medal-silver', solved)}"></span>${ch.secondBlood || '--'}</div>
-                <div class="blood-item"><span class="medal-dot ${bloodDot(ch.thirdBlood, 'medal-bronze', solved)}"></span>${ch.thirdBlood || '--'}</div>
+                <div class="blood-item ${b1.bar}"><span class="medal-dot ${b1.dot}"></span><span class="bar-name">${ch.firstBlood || '--'}</span></div>
+                <div class="blood-item ${b2.bar}"><span class="medal-dot ${b2.dot}"></span><span class="bar-name">${ch.secondBlood || '--'}</span></div>
+                <div class="blood-item ${b3.bar}"><span class="medal-dot ${b3.dot}"></span><span class="bar-name">${ch.thirdBlood || '--'}</span></div>
             </div>
             <div class="status-bar"></div>
         </div>`;

@@ -480,19 +480,37 @@
             opacity: 1;
         }
         .medal-dot {
-            width: 32px;
-            height: 32px;
+            width: 26px;
+            height: 26px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 700;
             flex-shrink: 0;
             position: relative;
             z-index: 1;
-            border-radius: 0;
-            background: none;
-            box-shadow: none;
+            border-radius: 50%;
+            margin: 0 3px;
+            color: #1a1a0a;
+            font-family: Arial, sans-serif;
+        }
+        /* 奖牌数字 */
+        .medal-dot::before {
+            position: relative;
+            z-index: 2;
+        }
+        /* 金属高光伪元素 */
+        .medal-dot::after {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 6px;
+            top: 4px;
+            left: 5px;
+            border-radius: 50%;
+            background: radial-gradient(ellipse at center, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0) 100%);
+            pointer-events: none;
         }
         .blood-item .bar-name {
             flex: 1;
@@ -505,25 +523,40 @@
             position: relative;
             z-index: 1;
         }
-        /* Gold */
-        .medal-gold::before { content: '①'; }
+        /* Gold Medal */
+        .medal-gold {
+            background: linear-gradient(135deg, #8B6914 0%, #C5A028 20%, #FFD700 40%, #FFFACD 50%, #FFD700 60%, #C5A028 80%, #8B6914 100%);
+            box-shadow: 0 0 6px rgba(255, 215, 0, 0.35), inset 0 1px 1px rgba(255,250,205,0.3);
+        }
+        .medal-gold::before { content: '1'; }
         .blood-item.blood-gold::before { background: linear-gradient(90deg, rgba(255, 215, 0, 0.18) 0%, rgba(255, 215, 0, 0.03) 100%); }
-        .blood-item.blood-gold .medal-dot { color: var(--gold); text-shadow: 0 0 8px rgba(255, 215, 0, 0.4); }
         .blood-item.blood-gold .bar-name { color: rgba(255, 215, 0, 0.9); }
-        /* Silver */
-        .medal-silver::before { content: '②'; }
+        /* Silver Medal */
+        .medal-silver {
+            background: linear-gradient(135deg, #606060 0%, #A0A0A0 20%, #D0D0D0 40%, #F5F5F5 50%, #D0D0D0 60%, #A0A0A0 80%, #606060 100%);
+            box-shadow: 0 0 6px rgba(192, 192, 192, 0.3), inset 0 1px 1px rgba(245,245,245,0.3);
+        }
+        .medal-silver::before { content: '2'; }
         .blood-item.blood-silver::before { background: linear-gradient(90deg, rgba(192, 192, 192, 0.12) 0%, rgba(192, 192, 192, 0.02) 100%); }
-        .blood-item.blood-silver .medal-dot { color: var(--silver); text-shadow: 0 0 6px rgba(192, 192, 192, 0.3); }
         .blood-item.blood-silver .bar-name { color: rgba(192, 192, 192, 0.85); }
-        /* Bronze */
-        .medal-bronze::before { content: '③'; }
+        /* Bronze Medal */
+        .medal-bronze {
+            background: linear-gradient(135deg, #6B3A10 0%, #9B6A30 20%, #CD7F32 40%, #DDA06D 50%, #CD7F32 60%, #9B6A30 80%, #6B3A10 100%);
+            box-shadow: 0 0 6px rgba(205, 127, 50, 0.3), inset 0 1px 1px rgba(221,160,109,0.3);
+        }
+        .medal-bronze::before { content: '3'; }
         .blood-item.blood-bronze::before { background: linear-gradient(90deg, rgba(205, 127, 50, 0.12) 0%, rgba(205, 127, 50, 0.02) 100%); }
-        .blood-item.blood-bronze .medal-dot { color: var(--bronze); text-shadow: 0 0 6px rgba(205, 127, 50, 0.3); }
         .blood-item.blood-bronze .bar-name { color: rgba(205, 127, 50, 0.85); }
         /* Empty */
+        .medal-empty {
+            background: #1a1a1a;
+            border: 1px dashed #333;
+            color: #333;
+            box-shadow: none;
+        }
         .medal-empty::before { content: ''; }
+        .medal-empty::after { display: none; }
         .blood-item.blood-empty::before { background: rgba(255, 255, 255, 0.02); }
-        .blood-item.blood-empty .medal-dot { color: #333; }
         .blood-item.blood-empty .bar-name { color: var(--text-muted); }
 
         /* === 右侧边栏 === */

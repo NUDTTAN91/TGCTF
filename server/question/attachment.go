@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -62,7 +63,30 @@ func HandleDeleteAttachment(c *gin.Context, db *sql.DB) {
 		return
 	}
 
+	// 安全验证：拒绝包含路径分隔符或 .. 的文件名
+	if strings.Contains(filename, "..") || strings.Contains(filename, "/") || strings.Contains(filename, "\\") {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "非法文件名"})
+		return
+	}
+
 	filePath := filepath.Join("./attachments", filename)
+
+	// 二次验证：确保解析后的绝对路径仍在 attachments 目录内
+	absPath, err := filepath.Abs(filePath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "路径解析失败"})
+		return
+	}
+	baseDir, err := filepath.Abs("./attachments")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "路径解析失败"})
+		return
+	}
+	if !strings.HasPrefix(absPath, baseDir+string(os.PathSeparator)) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "非法文件名"})
+		return
+	}
+
 	if err := os.Remove(filePath); err != nil {
 		if os.IsNotExist(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "文件不存在"})

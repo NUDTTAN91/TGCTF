@@ -7,8 +7,11 @@ package main
 import (
 	"database/sql"
 	"log"
+	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -889,7 +892,25 @@ func main() {
 // serveAttachments 处理附件下载
 func serveAttachments(c *gin.Context) {
 	path := c.Request.URL.Path
-	filename := path[13:] // 去掉 /attachments/ 前缀
-	filePath := "./attachments/" + filename
+	filename := path[13:]
+
+	// 安全验证：使用 filepath.Clean 规范化，然后检查是否仍在 attachments 目录内
+	filePath := filepath.Join("./attachments", filepath.Clean(filename))
+
+	absPath, err := filepath.Abs(filePath)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "非法路径"})
+		return
+	}
+	baseDir, err := filepath.Abs("./attachments")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "服务器错误"})
+		return
+	}
+	if !strings.HasPrefix(absPath, baseDir+string(os.PathSeparator)) && absPath != baseDir {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "非法路径"})
+		return
+	}
+
 	c.File(filePath)
 }

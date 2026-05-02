@@ -5,6 +5,7 @@
 package submission
 
 import (
+	"context"
 	"database/sql"
 	"log"
 	"math"
@@ -65,6 +66,68 @@ func normalizeChoiceAnswer(answer string) string {
 }
 
 // HandleSubmitFlag 提交flag
+// recordTeamSolve 在事务中原子性地记录解题，返回 (solveOrder, isNewSolve, error)。
+// 通过锁定 challenge 行序列化同一题目的并发提交，确保 solve_order 准确。
+// 如果队伍已解过该题，返回 (0, false, nil)。
+func recordTeamSolve(db *sql.DB, contestID string, challengeID string, teamID int64, userID int64, isAWDF bool) (int, bool, error) {
+	tx, err := db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return 0, false, err
+	}
+	defer tx.Rollback()
+
+	// 锁定 challenge 行，序列化该题目的所有解题操作
+	if isAWDF {
+		_, err = tx.Exec(`SELECT id FROM contest_challenges_awdf WHERE id = $1 AND contest_id = $2 FOR UPDATE`, challengeID, contestID)
+	} else {
+		_, err = tx.Exec(`SELECT id FROM contest_challenges WHERE id = $1 AND contest_id = $2 FOR UPDATE`, challengeID, contestID)
+	}
+	if err != nil {
+		return 0, false, err
+	}
+
+	// 事务内再次检查是否已解题
+	var existID int64
+	if isAWDF {
+		err = tx.QueryRow(`SELECT id FROM team_solves_awdf WHERE contest_id = $1 AND challenge_id = $2 AND team_id = $3`,
+			contestID, challengeID, teamID).Scan(&existID)
+	} else {
+		err = tx.QueryRow(`SELECT id FROM team_solves WHERE contest_id = $1 AND challenge_id = $2 AND team_id = $3`,
+			contestID, challengeID, teamID).Scan(&existID)
+	}
+	if err == nil {
+		return 0, false, nil // 已解题
+	}
+
+	// 事务内统计解题人数（锁保证准确）
+	var solveCount int
+	if isAWDF {
+		tx.QueryRow(`SELECT COUNT(*) FROM team_solves_awdf WHERE contest_id = $1 AND challenge_id = $2`,
+			contestID, challengeID).Scan(&solveCount)
+	} else {
+		tx.QueryRow(`SELECT COUNT(*) FROM team_solves WHERE contest_id = $1 AND challenge_id = $2`,
+			contestID, challengeID).Scan(&solveCount)
+	}
+	solveOrder := solveCount + 1
+
+	// 事务内插入解题记录
+	if isAWDF {
+		_, err = tx.Exec(`INSERT INTO team_solves_awdf (contest_id, challenge_id, team_id, first_solver_id, solve_order) VALUES ($1, $2, $3, $4, $5)`,
+			contestID, challengeID, teamID, userID, solveOrder)
+	} else {
+		_, err = tx.Exec(`INSERT INTO team_solves (contest_id, challenge_id, team_id, first_solver_id, solve_order) VALUES ($1, $2, $3, $4, $5)`,
+			contestID, challengeID, teamID, userID, solveOrder)
+	}
+	if err != nil {
+		return 0, false, err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return 0, false, err
+	}
+	return solveOrder, true, nil
+}
+
 func HandleSubmitFlag(c *gin.Context, db *sql.DB) {
 	contestID := c.Param("id")
 	challengeID := c.Param("challengeId")
@@ -199,11 +262,19 @@ func HandleSubmitFlag(c *gin.Context, db *sql.DB) {
 		firstBlood, secondBlood, thirdBlood := false, false, false
 		
 		if isCorrect {
-			var solveCount int
-			db.QueryRow(`SELECT COUNT(*) FROM team_solves WHERE contest_id = $1 AND challenge_id = $2`, contestID, challengeID).Scan(&solveCount)
-			solveOrder = solveCount + 1
-			
-			// 计算动态分数
+			// 原子性插入解题记录
+			var isNewSolve bool
+			solveOrder, isNewSolve, err = recordTeamSolve(db, contestID, challengeID, teamID.Int64, userID, false)
+			if err != nil {
+				log.Printf("recordTeamSolve error: %v", err)
+			}
+			if !isNewSolve {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "ALREADY_SOLVED", "message": "您的队伍已解出该题"})
+				return
+			}
+
+			// 计算动态分数（solveOrder - 1 等价于原来的 solveCount）
+			solveCount := solveOrder - 1
 			score = initialScore
 			for i := 0; i < solveCount; i++ {
 				score = int(float64(score) * 0.9)
@@ -215,13 +286,13 @@ func HandleSubmitFlag(c *gin.Context, db *sql.DB) {
 			var firstBonus, secondBonus, thirdBonus int
 			db.QueryRow(`SELECT COALESCE(first_blood_bonus, 5), COALESCE(second_blood_bonus, 3), COALESCE(third_blood_bonus, 1) FROM contests WHERE id = $1`, contestID).Scan(&firstBonus, &secondBonus, &thirdBonus)
 			
-			if solveCount == 0 {
+			if solveOrder == 1 {
 				firstBlood = true
 				bonusScore = score * firstBonus / 100
-			} else if solveCount == 1 {
+			} else if solveOrder == 2 {
 				secondBlood = true
 				bonusScore = score * secondBonus / 100
-			} else if solveCount == 2 {
+			} else if solveOrder == 3 {
 				thirdBlood = true
 				bonusScore = score * thirdBonus / 100
 			}
@@ -237,15 +308,6 @@ func HandleSubmitFlag(c *gin.Context, db *sql.DB) {
 		}
 		
 		if isCorrect {
-			// 插入解题记录
-			_, err = db.Exec(`INSERT INTO team_solves (contest_id, challenge_id, team_id, first_solver_id, solve_order)
-				VALUES ($1, $2, $3, $4, $5)
-				ON CONFLICT (contest_id, challenge_id, team_id) DO NOTHING`,
-				contestID, challengeID, teamID.Int64, userID, solveOrder)
-			if err != nil {
-				log.Printf("insert team_solve error: %v", err)
-			}
-			
 			// 广播大屏更新
 			go func() {
 				data := monitor.GetMonitorDataForBroadcast(db, contestID)
@@ -416,17 +478,20 @@ func HandleSubmitFlag(c *gin.Context, db *sql.DB) {
 	solveOrder := 0
 	firstBlood, secondBlood, thirdBlood := false, false, false
 	if isCorrect && !isPracticeSubmission {
-		var solveCount int
-		if contestMode == "awd-f" {
-			db.QueryRow(`SELECT COUNT(*) FROM team_solves_awdf WHERE contest_id = $1 AND challenge_id = $2`, contestID, challengeID).Scan(&solveCount)
-		} else {
-			db.QueryRow(`SELECT COUNT(*) FROM team_solves WHERE contest_id = $1 AND challenge_id = $2`, contestID, challengeID).Scan(&solveCount)
+		// 原子性插入解题记录
+		isAWDF := contestMode == "awd-f"
+		var isNewSolve bool
+		solveOrder, isNewSolve, err = recordTeamSolve(db, contestID, challengeID, teamID.Int64, userID, isAWDF)
+		if err != nil {
+			log.Printf("recordTeamSolve error: %v", err)
+		}
+		if !isNewSolve {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "ALREADY_SOLVED", "message": "您的队伍已解出该题"})
+			return
 		}
 
-		// 计算解题顺序（用于动态分数计算）
-		solveOrder = solveCount + 1
-
-		// 计算当前题目动态分数（用于即时反馈，实际分数会动态更新）
+		// 计算动态分数（solveOrder - 1 等价于原来的 solveCount）
+		solveCount := solveOrder - 1
 		score = initialScore
 		for i := 0; i < solveCount; i++ {
 			score = int(float64(score) * 0.9)
@@ -438,13 +503,13 @@ func HandleSubmitFlag(c *gin.Context, db *sql.DB) {
 		var firstBonus, secondBonus, thirdBonus int
 		db.QueryRow(`SELECT COALESCE(first_blood_bonus, 5), COALESCE(second_blood_bonus, 3), COALESCE(third_blood_bonus, 1) FROM contests WHERE id = $1`, contestID).Scan(&firstBonus, &secondBonus, &thirdBonus)
 
-		if solveCount == 0 {
+		if solveOrder == 1 {
 			firstBlood = true
 			bonusScore = score * firstBonus / 100
-		} else if solveCount == 1 {
+		} else if solveOrder == 2 {
 			secondBlood = true
 			bonusScore = score * secondBonus / 100
-		} else if solveCount == 2 {
+		} else if solveOrder == 3 {
 			thirdBlood = true
 			bonusScore = score * thirdBonus / 100
 		}
@@ -479,22 +544,6 @@ func HandleSubmitFlag(c *gin.Context, db *sql.DB) {
 	}()
 
 	if isCorrect && !isPracticeSubmission {
-		// AWD-F 和普通模式使用不同的解题记录表
-		if contestMode == "awd-f" {
-			_, err = db.Exec(`INSERT INTO team_solves_awdf (contest_id, challenge_id, team_id, first_solver_id, solve_order)
-				VALUES ($1, $2, $3, $4, $5)
-				ON CONFLICT (contest_id, challenge_id, team_id) DO NOTHING`,
-				contestID, challengeID, teamID.Int64, userID, solveOrder)
-		} else {
-			_, err = db.Exec(`INSERT INTO team_solves (contest_id, challenge_id, team_id, first_solver_id, solve_order)
-				VALUES ($1, $2, $3, $4, $5)
-				ON CONFLICT (contest_id, challenge_id, team_id) DO NOTHING`,
-				contestID, challengeID, teamID.Int64, userID, solveOrder)
-		}
-		if err != nil {
-			log.Printf("insert team_solve error: %v", err)
-		}
-
 		if (firstBlood || secondBlood || thirdBlood) && AnnounceBlood != nil {
 			var challengeName string
 			if contestMode == "awd-f" {

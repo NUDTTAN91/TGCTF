@@ -5,12 +5,12 @@
 package docker
 
 import (
+	"crypto/rand"
 	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -110,19 +110,19 @@ func GenerateFlagsForChallengeInContest(db *sql.DB, contestID string, challengeI
 // GenerateFlag 根据格式生成flag
 // format 支持 [GUID] 占位符，例如: "flag{[GUID]}" -> "flag{xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}"
 func GenerateFlag(format string) string {
-	uuid := fmt.Sprintf("%08x-%04x-4%03x-%04x-%012x",
-		time.Now().UnixNano()&0xffffffff,
-		time.Now().UnixNano()>>32&0xffff,
-		time.Now().UnixNano()>>48&0x0fff,
-		0x8000|(time.Now().UnixNano()>>60&0x3fff),
-		time.Now().UnixNano())
-	
+	uuid := make([]byte, 16)
+	rand.Read(uuid)
+	uuid[6] = (uuid[6] & 0x0f) | 0x40
+	uuid[8] = (uuid[8] & 0x3f) | 0x80
+	uuidStr := fmt.Sprintf("%08x-%04x-%04x-%04x-%012x",
+		uuid[0:4], uuid[4:6], uuid[6:8], uuid[8:10], uuid[10:16])
+
 	if format == "" {
 		format = "flag{[GUID]}"
 	}
-	
+
 	// 替换占位符
-	result := strings.Replace(format, "[GUID]", uuid, 1)
+	result := strings.Replace(format, "[GUID]", uuidStr, 1)
 	return result
 }
 

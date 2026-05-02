@@ -96,8 +96,10 @@ func HandleGetSuspiciousRecords(c *gin.Context, db *sql.DB) {
 		JOIN contests c ON cc.contest_id = c.id
 		WHERE s.is_correct = true AND s.ip_address IS NOT NULL AND s.ip_address != ''
 	`
+	sameIPArgs := []interface{}{}
 	if contestID != "" {
-		sameIPQuery += " AND cc.contest_id = " + contestID
+		sameIPQuery += " AND cc.contest_id = $1"
+		sameIPArgs = append(sameIPArgs, contestID)
 	}
 	sameIPQuery += `
 		GROUP BY s.ip_address, s.challenge_id, cc.contest_id, q.title, cc.inline_title, c.name
@@ -107,7 +109,7 @@ func HandleGetSuspiciousRecords(c *gin.Context, db *sql.DB) {
 	`
 	
 	if riskLevel == "" || riskLevel == "high" {
-		rows, err := db.Query(sameIPQuery)
+		rows, err := db.Query(sameIPQuery, sameIPArgs...)
 		if err == nil {
 			defer rows.Close()
 			for rows.Next() {
@@ -146,8 +148,10 @@ func HandleGetSuspiciousRecords(c *gin.Context, db *sql.DB) {
 		WHERE s.is_correct = false AND s.is_cheating = false
 		  AND LENGTH(s.flag) > 10
 	`
+	sameWrongFlagArgs := []interface{}{}
 	if contestID != "" {
-		sameWrongFlagQuery += " AND cc.contest_id = " + contestID
+		sameWrongFlagQuery += " AND cc.contest_id = $1"
+		sameWrongFlagArgs = append(sameWrongFlagArgs, contestID)
 	}
 	sameWrongFlagQuery += `
 		GROUP BY s.flag, s.challenge_id, cc.contest_id, q.title, cc.inline_title, c.name
@@ -157,7 +161,7 @@ func HandleGetSuspiciousRecords(c *gin.Context, db *sql.DB) {
 	`
 	
 	if riskLevel == "" || riskLevel == "high" {
-		rows, err := db.Query(sameWrongFlagQuery)
+		rows, err := db.Query(sameWrongFlagQuery, sameWrongFlagArgs...)
 		if err == nil {
 			defer rows.Close()
 			for rows.Next() {
@@ -200,8 +204,10 @@ func HandleGetSuspiciousRecords(c *gin.Context, db *sql.DB) {
 		JOIN contests c ON cc.contest_id = c.id
 		WHERE s.ip_address IS NOT NULL AND s.ip_address != ''
 	`
+	multiIPArgs := []interface{}{}
 	if contestID != "" {
-		multiIPQuery += " AND cc.contest_id = " + contestID
+		multiIPQuery += " AND cc.contest_id = $1"
+		multiIPArgs = append(multiIPArgs, contestID)
 	}
 	multiIPQuery += `
 		GROUP BY s.team_id, t.name, cc.contest_id, c.name
@@ -211,7 +217,7 @@ func HandleGetSuspiciousRecords(c *gin.Context, db *sql.DB) {
 	`
 	
 	if riskLevel == "" || riskLevel == "medium" {
-		rows, err := db.Query(multiIPQuery)
+		rows, err := db.Query(multiIPQuery, multiIPArgs...)
 		if err == nil {
 			defer rows.Close()
 			for rows.Next() {
@@ -530,12 +536,14 @@ func HandleGetCheatingBannedTeams(c *gin.Context, db *sql.DB) {
 		JOIN contests c ON ct.contest_id = c.id
 		WHERE ct.status = 'cheating_banned'
 	`
+	args := []interface{}{}
 	if contestID != "" {
-		query += " AND ct.contest_id = " + contestID
+		query += " AND ct.contest_id = $1"
+		args = append(args, contestID)
 	}
 	query += " ORDER BY ct.updated_at DESC"
 	
-	rows, err := db.Query(query)
+	rows, err := db.Query(query, args...)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "DB_ERROR"})
 		return

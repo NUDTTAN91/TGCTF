@@ -184,7 +184,7 @@ func HandleAdminDestroyInstance(c *gin.Context, db *sql.DB) {
 	exec.CommandContext(ctx, "docker", "rm", "-f", containerID).Run()
 
 	// 更新数据库状态
-	_, err = db.Exec(`UPDATE team_instances SET status = 'destroyed', updated_at = CURRENT_TIMESTAMP WHERE id = $1`, instanceID)
+	_, err = db.Exec(`UPDATE team_instances SET status = 'destroyed', ports = '{}', updated_at = CURRENT_TIMESTAMP WHERE id = $1`, instanceID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新状态失败"})
 		return
@@ -237,7 +237,7 @@ func HandleAdminCleanExpired(c *gin.Context, db *sql.DB) {
 		}
 
 		// 更新状态
-		db.Exec(`UPDATE team_instances SET status = 'destroyed', updated_at = CURRENT_TIMESTAMP WHERE id = $1`, id)
+		db.Exec(`UPDATE team_instances SET status = 'destroyed', ports = '{}', updated_at = CURRENT_TIMESTAMP WHERE id = $1`, id)
 		cleaned++
 	}
 
@@ -355,7 +355,7 @@ func HandleAdminBatchDestroy(c *gin.Context, db *sql.DB) {
 			continue
 		}
 
-		db.Exec(`UPDATE team_instances SET status = 'destroyed', updated_at = CURRENT_TIMESTAMP WHERE id = $1`, id)
+		db.Exec(`UPDATE team_instances SET status = 'destroyed', ports = '{}', updated_at = CURRENT_TIMESTAMP WHERE id = $1`, id)
 		success++
 	}
 

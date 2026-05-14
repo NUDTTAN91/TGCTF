@@ -597,7 +597,7 @@ func HandleAdminCommonDestroyOrgDockerInstance(c *gin.Context, db *sql.DB) {
 	exec.CommandContext(ctx, "docker", "rm", "-f", containerID).Run()
 
 	// 更新数据库状态（两张表都尝试更新）
-	db.Exec(`UPDATE team_instances SET status = 'destroyed', updated_at = CURRENT_TIMESTAMP WHERE id = $1`, instanceID)
+	db.Exec(`UPDATE team_instances SET status = 'destroyed', ports = '{}', updated_at = CURRENT_TIMESTAMP WHERE id = $1`, instanceID)
 	db.Exec(`UPDATE team_instances_awdf SET status = 'destroyed', updated_at = CURRENT_TIMESTAMP WHERE id = $1`, instanceID)
 
 	c.JSON(http.StatusOK, gin.H{"message": "容器已销毁"})

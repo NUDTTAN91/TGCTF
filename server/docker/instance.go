@@ -151,7 +151,7 @@ func HandleCreateUserInstance(c *gin.Context, db *sql.DB) {
 				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				exec.CommandContext(ctx, "docker", "rm", "-f", ownContainerID).Run()
 				cancel()
-				db.Exec(`UPDATE team_instances SET status = 'destroyed', updated_at = CURRENT_TIMESTAMP WHERE id = $1`, ownInstanceID)
+				db.Exec(`UPDATE team_instances SET status = 'destroyed', ports = '{}', updated_at = CURRENT_TIMESTAMP WHERE id = $1`, ownInstanceID)
 				runningCount--
 				// 继续创建新容器
 			} else {
@@ -580,7 +580,7 @@ func HandleDestroyUserInstance(c *gin.Context, db *sql.DB) {
 	defer cancel()
 	exec.CommandContext(ctx, "docker", "rm", "-f", containerID).Run()
 
-	db.Exec(`UPDATE team_instances SET status = 'destroyed', updated_at = CURRENT_TIMESTAMP WHERE team_id = $1 AND challenge_id = $2`,
+	db.Exec(`UPDATE team_instances SET status = 'destroyed', ports = '{}', updated_at = CURRENT_TIMESTAMP WHERE team_id = $1 AND challenge_id = $2`,
 		teamID.Int64, challengeID)
 
 	// 记录容器销毁日志

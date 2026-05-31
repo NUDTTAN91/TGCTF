@@ -192,9 +192,18 @@ func HandleGetTeam(c *gin.Context, db *sql.DB) {
 func HandleUpdateTeam(c *gin.Context, db *sql.DB) {
 	id := c.Param("id")
 
-	// 检查是否为管理员队伍
+	// 检查是否为管理员队伍。查询失败时必须中断，
+	// 否则 isAdminTeam 会保持零值 false，使这道守卫被静默绕过。
 	var isAdminTeam bool
-	db.QueryRow(`SELECT is_admin_team FROM teams WHERE id = $1`, id).Scan(&isAdminTeam)
+	if err := db.QueryRow(`SELECT is_admin_team FROM teams WHERE id = $1`, id).Scan(&isAdminTeam); err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusNotFound, gin.H{"error": "TEAM_NOT_FOUND"})
+		} else {
+			log.Printf("query team is_admin_team error: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "INTERNAL_ERROR"})
+		}
+		return
+	}
 	if isAdminTeam {
 		c.JSON(http.StatusForbidden, gin.H{"error": "CANNOT_MODIFY_ADMIN_TEAM"})
 		return

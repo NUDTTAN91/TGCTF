@@ -17,8 +17,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/websocket"
+
+	"tgctf/server/authz"
 )
 
 // WebSocket 连接管理（按比赛ID分组）
@@ -97,28 +98,12 @@ func HandleMonitorWebSocket(c *gin.Context, jwtSecret []byte, db *sql.DB) {
 	contestID := c.Param("id")
 	
 	// 从 URL 参数获取 token 并验证
-	tokenStr := c.Query("token")
-	if tokenStr == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "MISSING_TOKEN"})
-		return
-	}
-	
-	// 验证 JWT token
-	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
-		return jwtSecret, nil
-	})
-	if err != nil || !token.Valid {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "INVALID_TOKEN"})
+	// 校验身份：选手做题页也依赖该推送，故只确认账号有效、不限角色
+	if _, authErr := authz.Authenticate(c, db, jwtSecret, true); authErr != nil {
+		authz.Abort(c, authErr)
 		return
 	}
 
-	// 验证 claims 有效性
-	if _, ok := token.Claims.(jwt.MapClaims); !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "INVALID_CLAIMS"})
-		return
-	}
-
-	
 	conn, err := monitorUpgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		return
@@ -380,38 +365,20 @@ func HandleGetMonitorData(c *gin.Context, db *sql.DB, jwtSecret []byte) {
 	contestID := c.Param("id")
 
 	// 验证 token 和权限
-	tokenStr := c.Query("token")
-	if tokenStr == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "MISSING_TOKEN"})
+	identity, authErr := authz.Authenticate(c, db, jwtSecret, true)
+	if authErr != nil {
+		authz.Abort(c, authErr)
 		return
 	}
 
-	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
-		return jwtSecret, nil
-	})
-	if err != nil || !token.Valid {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "INVALID_TOKEN"})
-		return
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "INVALID_CLAIMS"})
-		return
-	}
-
-	role, _ := claims["role"].(string)
+	role := identity.Role
 	if role != "super" && role != "admin" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "FORBIDDEN", "message": "仅管理员可访问数据大屏"})
 		return
 	}
 
 	if role == "admin" {
-		var userID int64
-		if sub, ok := claims["sub"].(float64); ok {
-			userID = int64(sub)
-		}
-		if !checkMonitorPermission(db, userID, contestID) {
+		if !checkMonitorPermission(db, identity.UserID, contestID) {
 			c.JSON(http.StatusForbidden, gin.H{"error": "NO_PERMISSION", "message": "您没有查看此比赛数据大屏的权限"})
 			return
 		}
@@ -422,7 +389,7 @@ func HandleGetMonitorData(c *gin.Context, db *sql.DB, jwtSecret []byte) {
 	var startTime, endTime time.Time
 	var status, contestMode string
 	var firstBonus, secondBonus, thirdBonus int
-	err = db.QueryRow(`SELECT name, start_time, end_time, status, COALESCE(mode, 'jeopardy'), COALESCE(first_blood_bonus, 5), COALESCE(second_blood_bonus, 3), COALESCE(third_blood_bonus, 1) FROM contests WHERE id = $1`, contestID).
+	err := db.QueryRow(`SELECT name, start_time, end_time, status, COALESCE(mode, 'jeopardy'), COALESCE(first_blood_bonus, 5), COALESCE(second_blood_bonus, 3), COALESCE(third_blood_bonus, 1) FROM contests WHERE id = $1`, contestID).
 		Scan(&contestName, &startTime, &endTime, &status, &contestMode, &firstBonus, &secondBonus, &thirdBonus)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "CONTEST_NOT_FOUND"})

@@ -243,7 +243,7 @@ func main() {
 
 		// 超级管理员后台API
 		adminAPI := api.Group("/admin")
-		adminAPI.Use(authMiddleware([]byte(jwtSecret)))
+		adminAPI.Use(authMiddleware([]byte(jwtSecret), db))
 		{
 			adminAPI.GET("/overview", func(c *gin.Context) {
 				admin.HandleAdminOverview(c, db)

@@ -2,3 +2,4 @@
 data/postgres/
 data/uploads/
 data/attachments/
+docker_images/

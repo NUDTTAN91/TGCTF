@@ -5,6 +5,7 @@
 package awdf
 
 import (
+	"archive/zip"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
@@ -19,6 +20,14 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+)
+
+// 补丁体积限制。补丁本质是若干源码文件，正常体积远小于这些上限；
+// 上传与解压两侧都要限制，避免选手用超大文件或高压缩比的 ZIP 打满服务器磁盘。
+const (
+	maxPatchUploadSize  = 10 << 20 // 补丁包上传上限 10MB
+	maxPatchExtractSize = 64 << 20 // 解压后总体积上限 64MB
+	maxPatchFileCount   = 512      // 解压后文件数上限
 )
 
 // AddPatchEventFunc 补丁事件记录函数（由 main.go 注入）
@@ -112,8 +121,17 @@ func HandleUploadPatch(c *gin.Context, db *sql.DB) {
 	defer file.Close()
 
 	// 验证文件后缀
-	if !strings.HasSuffix(header.Filename, ".zip") {
+	if !strings.HasSuffix(strings.ToLower(header.Filename), ".zip") {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "INVALID_FILE_TYPE", "message": "补丁文件必须是.zip格式"})
+		return
+	}
+
+	// 先按声明的体积快速拒绝，避免整份大文件白写一遍
+	if header.Size > maxPatchUploadSize {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "FILE_TOO_LARGE",
+			"message": fmt.Sprintf("补丁文件不能超过 %d MB", maxPatchUploadSize>>20),
+		})
 		return
 	}
 
@@ -127,11 +145,21 @@ func HandleUploadPatch(c *gin.Context, db *sql.DB) {
 	defer os.Remove(tempFile.Name())
 
 	multiWriter := io.MultiWriter(tempFile, hasher)
-	if _, err := io.Copy(multiWriter, file); err != nil {
+	// header.Size 由客户端声明，实际写入仍需按上限截断兜底
+	written, err := io.Copy(multiWriter, io.LimitReader(file, maxPatchUploadSize+1))
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "FILE_ERROR"})
 		return
 	}
 	tempFile.Close()
+
+	if written > maxPatchUploadSize {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "FILE_TOO_LARGE",
+			"message": fmt.Sprintf("补丁文件不能超过 %d MB", maxPatchUploadSize>>20),
+		})
+		return
+	}
 
 	patchHash := hex.EncodeToString(hasher.Sum(nil))
 
@@ -224,9 +252,8 @@ func applyPatch(db *sql.DB, patchID int64, patchPath, whitelist string, teamID i
 	}
 	defer os.RemoveAll(tempDir)
 
-	cmd := exec.Command("unzip", "-o", patchPath, "-d", tempDir)
-	if err := cmd.Run(); err != nil {
-		updatePatchStatus(db, patchID, "failed", "补丁文件解压失败，请确保是有效的ZIP文件")
+	if err := extractPatchZip(patchPath, tempDir); err != nil {
+		updatePatchStatus(db, patchID, "failed", err.Error())
 		if AddPatchEventFunc != nil {
 			AddPatchEventFunc(db, contestID, "patch_rejected", teamName, "ZIP无效", challengeName)
 		}
@@ -304,6 +331,79 @@ func applyPatch(db *sql.DB, patchID int64, patchPath, whitelist string, teamID i
 	if AddPatchEventFunc != nil {
 		AddPatchEventFunc(db, contestID, "patch_applied", teamName, "", challengeName)
 	}
+}
+
+// extractPatchZip 将补丁包解压到 destDir。
+// 改用标准库而非 unzip 命令，以便限制解压后的总体积与文件数（防高压缩比 ZIP 打满磁盘），
+// 并拒绝指向目标目录之外的条目。
+func extractPatchZip(zipPath, destDir string) error {
+	r, err := zip.OpenReader(zipPath)
+	if err != nil {
+		return fmt.Errorf("补丁文件解压失败，请确保是有效的ZIP文件")
+	}
+	defer r.Close()
+
+	if len(r.File) > maxPatchFileCount {
+		return fmt.Errorf("补丁包内文件数不能超过 %d 个", maxPatchFileCount)
+	}
+
+	var totalWritten int64
+	fileCount := 0
+
+	for _, f := range r.File {
+		// 拒绝绝对路径与跳出目标目录的条目
+		name := filepath.Clean(filepath.FromSlash(f.Name))
+		if filepath.IsAbs(name) || name == ".." || strings.HasPrefix(name, ".."+string(os.PathSeparator)) {
+			return fmt.Errorf("补丁包内存在非法路径: %s", f.Name)
+		}
+		target := filepath.Join(destDir, name)
+
+		if f.FileInfo().IsDir() {
+			if err := os.MkdirAll(target, 0755); err != nil {
+				return fmt.Errorf("解压失败")
+			}
+			continue
+		}
+
+		// 只接受常规文件，跳过符号链接等特殊条目
+		if !f.Mode().IsRegular() {
+			continue
+		}
+
+		fileCount++
+		if fileCount > maxPatchFileCount {
+			return fmt.Errorf("补丁包内文件数不能超过 %d 个", maxPatchFileCount)
+		}
+
+		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+			return fmt.Errorf("解压失败")
+		}
+
+		src, err := f.Open()
+		if err != nil {
+			return fmt.Errorf("解压失败")
+		}
+		dst, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+		if err != nil {
+			src.Close()
+			return fmt.Errorf("解压失败")
+		}
+
+		// 条目声明的 UncompressedSize64 不可信，按剩余额度截断读取
+		written, copyErr := io.Copy(dst, io.LimitReader(src, maxPatchExtractSize-totalWritten+1))
+		dst.Close()
+		src.Close()
+		if copyErr != nil {
+			return fmt.Errorf("解压失败")
+		}
+
+		totalWritten += written
+		if totalWritten > maxPatchExtractSize {
+			return fmt.Errorf("补丁解压后体积不能超过 %d MB", maxPatchExtractSize>>20)
+		}
+	}
+
+	return nil
 }
 
 // updatePatchStatus 更新补丁状态

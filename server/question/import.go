@@ -17,11 +17,23 @@ import (
 	"tgctf/server/docker"
 )
 
+// maxImportFileSize 导入用 Excel 的体积上限。xlsx 实为压缩包，
+// 解析时展开在内存中，不限制体积可被单个请求耗尽内存。
+const maxImportFileSize = 16 << 20 // 16MB
+
 // HandleImportQuestions 批量导入题库题目
 func HandleImportQuestions(c *gin.Context, db *sql.DB) {
 	file, err := c.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "NO_FILE", "message": "请上传Excel文件"})
+		return
+	}
+
+	if file.Size > maxImportFileSize {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "FILE_TOO_LARGE",
+			"message": fmt.Sprintf("导入文件不能超过 %d MB", maxImportFileSize>>20),
+		})
 		return
 	}
 

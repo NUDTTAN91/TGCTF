@@ -21,6 +21,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// maxImportFileSize 导入用 Excel 的体积上限。xlsx 实为压缩包，
+// 解析时展开在内存中，不限制体积可被单个请求耗尽内存。
+const maxImportFileSize = 16 << 20 // 16MB
+
 // ImportUserRow 导入用户数据行
 type ImportUserRow struct {
 	Username     string `json:"username"`
@@ -56,12 +60,20 @@ func HandleImportUsers(c *gin.Context, db *sql.DB) {
 
 // HandleImportUsersExcel 通过Excel导入用户
 func HandleImportUsersExcel(c *gin.Context, db *sql.DB) {
-	file, _, err := c.Request.FormFile("file")
+	file, fileHeader, err := c.Request.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "FILE_REQUIRED", "message": "请上传Excel文件"})
 		return
 	}
 	defer file.Close()
+
+	if fileHeader.Size > maxImportFileSize {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "FILE_TOO_LARGE",
+			"message": fmt.Sprintf("导入文件不能超过 %d MB", maxImportFileSize>>20),
+		})
+		return
+	}
 
 	// 读取Excel文件
 	f, err := excelize.OpenReader(file)
@@ -456,12 +468,20 @@ func uniqueStrings(strs []string) []string {
 
 // HandlePreviewImportUsers 预览导入数据
 func HandlePreviewImportUsers(c *gin.Context, db *sql.DB) {
-	file, _, err := c.Request.FormFile("file")
+	file, fileHeader, err := c.Request.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "FILE_REQUIRED", "message": "请上传Excel文件"})
 		return
 	}
 	defer file.Close()
+
+	if fileHeader.Size > maxImportFileSize {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "FILE_TOO_LARGE",
+			"message": fmt.Sprintf("导入文件不能超过 %d MB", maxImportFileSize>>20),
+		})
+		return
+	}
 
 	content, err := io.ReadAll(file)
 	if err != nil {

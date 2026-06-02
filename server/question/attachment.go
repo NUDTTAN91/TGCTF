@@ -8,6 +8,7 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -16,6 +17,33 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+// maxAttachmentSize 附件体积上限。CTF 附件可能是镜像或流量包，上限给得宽松，
+// 仅用于避免单次上传把磁盘写满。
+const maxAttachmentSize = 512 << 20 // 512MB
+
+// sanitizeExt 提取并清洗扩展名，只保留字母与数字。
+// 该扩展名会进入落盘文件名和对外的下载 URL，不能直接采用上传方提供的内容。
+func sanitizeExt(filename string) string {
+	ext := strings.ToLower(filepath.Ext(filename))
+	if ext == "" {
+		return ""
+	}
+
+	var b strings.Builder
+	b.WriteByte('.')
+	for _, r := range ext[1:] {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+			b.WriteRune(r)
+		}
+	}
+
+	// 只剩下一个点，或长得不像扩展名，则不保留
+	if b.Len() == 1 || b.Len() > 12 {
+		return ""
+	}
+	return b.String()
+}
 
 // HandleUploadAttachment 上传附件
 func HandleUploadAttachment(c *gin.Context, db *sql.DB) {
@@ -26,26 +54,48 @@ func HandleUploadAttachment(c *gin.Context, db *sql.DB) {
 	}
 	defer file.Close()
 
+	// 先按声明的体积快速拒绝，避免整份大文件白写一遍
+	if header.Size > maxAttachmentSize {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": fmt.Sprintf("附件不能超过 %d MB", maxAttachmentSize>>20),
+		})
+		return
+	}
+
 	// 生成随机文件名
 	randBytes := make([]byte, 16)
-	rand.Read(randBytes)
-	ext := filepath.Ext(header.Filename)
-	newFilename := hex.EncodeToString(randBytes) + ext
+	if _, err := rand.Read(randBytes); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "无法生成文件名"})
+		return
+	}
+	newFilename := hex.EncodeToString(randBytes) + sanitizeExt(header.Filename)
 
 	// 确保目录存在
 	uploadDir := "./attachments"
 	os.MkdirAll(uploadDir, 0755)
 
 	// 保存文件
-	dst, err := os.Create(filepath.Join(uploadDir, newFilename))
+	dstPath := filepath.Join(uploadDir, newFilename)
+	dst, err := os.Create(dstPath)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "无法保存文件"})
 		return
 	}
-	defer dst.Close()
 
-	if _, err := io.Copy(dst, file); err != nil {
+	// header.Size 由客户端声明，实际写入仍需按上限截断兜底
+	written, copyErr := io.Copy(dst, io.LimitReader(file, maxAttachmentSize+1))
+	dst.Close()
+
+	if copyErr != nil {
+		os.Remove(dstPath)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "保存文件失败"})
+		return
+	}
+	if written > maxAttachmentSize {
+		os.Remove(dstPath)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": fmt.Sprintf("附件不能超过 %d MB", maxAttachmentSize>>20),
+		})
 		return
 	}
 

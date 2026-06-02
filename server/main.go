@@ -861,6 +861,11 @@ func main() {
 			c.Header("Pragma", "no-cache")
 			c.Header("Expires", "0")
 		}
+		// 用户上传的内容（头像等）禁止浏览器嗅探 MIME，
+		// 避免伪装成图片的文件被当作页面渲染
+		if strings.HasPrefix(path, "/uploads/") {
+			c.Header("X-Content-Type-Options", "nosniff")
+		}
 		c.File("./web" + path)
 	})
 
@@ -911,6 +916,13 @@ func serveAttachments(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "非法路径"})
 		return
 	}
+
+	// 附件一律以下载方式返回：即使内容是 HTML/SVG 也不会在浏览器中作为页面执行，
+	// 避免上传的附件成为同源 XSS 载体。ServeFile 只在未预设 Content-Type 时才自行推断，
+	// 因此这里显式设置可确保不被覆盖。
+	c.Header("Content-Disposition", `attachment; filename="`+filepath.Base(absPath)+`"`)
+	c.Header("X-Content-Type-Options", "nosniff")
+	c.Header("Content-Type", "application/octet-stream")
 
 	c.File(filePath)
 }

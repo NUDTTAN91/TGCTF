@@ -549,10 +549,16 @@
                     }
                     return;
                 }
-                showMessage('密码修改成功');
+                showMessage('密码修改成功，请重新登录');
                 document.getElementById('oldPassword').value = '';
                 document.getElementById('newPassword').value = '';
                 document.getElementById('confirmPassword').value = '';
+
+                // 改密码会使所有旧登录失效（含当前这一个），稍后回到登录页
+                setTimeout(() => {
+                    localStorage.removeItem('tg_token');
+                    window.location.href = '/login.html';
+                }, 1500);
             } catch (e) {
                 showMessage('修改失败: ' + e.message);
             }

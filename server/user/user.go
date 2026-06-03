@@ -255,8 +255,10 @@ func HandleChangePassword(c *gin.Context, db *sql.DB) {
 		return
 	}
 
-	// 更新密码并清除 must_change_password 标记
-	_, err = db.Exec(`UPDATE users SET password_hash = $1, must_change_password = FALSE, updated_at = NOW() WHERE id = $2`, string(newHash), userID)
+	// 更新密码并清除 must_change_password 标记。
+	// 同时递增 token_version 使所有旧 token 立即失效，否则账号被盗后即使改了密码，
+	// 对方手上的 token 仍可继续使用到自然过期；行为与管理员重置密码保持一致。
+	_, err = db.Exec(`UPDATE users SET password_hash = $1, must_change_password = FALSE, token_version = COALESCE(token_version, 1) + 1, updated_at = NOW() WHERE id = $2`, string(newHash), userID)
 	if err != nil {
 		log.Printf("update password error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "INTERNAL_ERROR"})

@@ -28,6 +28,22 @@ import (
 	"tgctf/server/user"
 )
 
+// setupGinMode 设置 Gin 运行模式。
+// 默认使用 release 模式，避免生产环境输出调试日志和额外开销；
+// 开发调试时可通过环境变量 GIN_MODE=debug 显式开启。
+// 传入未知值时回退到 release，而不是让 gin.SetMode 直接 panic。
+func setupGinMode() {
+	switch mode := os.Getenv("GIN_MODE"); mode {
+	case "":
+		gin.SetMode(gin.ReleaseMode)
+	case gin.DebugMode, gin.ReleaseMode, gin.TestMode:
+		gin.SetMode(mode)
+	default:
+		log.Printf("unknown GIN_MODE %q, falling back to %s", mode, gin.ReleaseMode)
+		gin.SetMode(gin.ReleaseMode)
+	}
+}
+
 func main() {
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
@@ -94,6 +110,8 @@ func main() {
 		data := monitor.GetMonitorDataForBroadcast(db, contestID)
 		monitor.BroadcastMonitorUpdate(contestID, data)
 	}
+
+	setupGinMode()
 
 	r := gin.Default()
 

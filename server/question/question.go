@@ -7,9 +7,12 @@ package question
 import (
 	"database/sql"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
+
+	"tgctf/server/pagination"
 )
 
 // QuestionBank 题库题目
@@ -97,11 +100,52 @@ func NullIfEmpty(s string) interface{} {
 	return s
 }
 
-// HandleListQuestions 获取题库列表
+// HandleListQuestions 获取题库列表。
+// 默认返回全部题目（JSON 数组），兼容挑题弹窗等需要完整列表的页面；
+// 传入 page 或 pageSize 时改为分页返回，并附带总数与总页数。
 func HandleListQuestions(c *gin.Context, db *sql.DB) {
 	categoryID := c.Query("categoryId")
 	questionType := c.Query("type")
 	difficulty := c.Query("difficulty")
+	search := c.Query("search")
+
+	// 过滤条件对计数查询和数据查询通用，只引用 question_bank 的列，
+	// 这样计数时不必 JOIN categories
+	where := " WHERE 1=1"
+	args := []interface{}{}
+	argIndex := 1
+
+	if categoryID != "" {
+		where += " AND q.category_id = $" + strconv.Itoa(argIndex)
+		args = append(args, categoryID)
+		argIndex++
+	}
+	if questionType != "" {
+		where += " AND q.type = $" + strconv.Itoa(argIndex)
+		args = append(args, questionType)
+		argIndex++
+	}
+	if difficulty != "" {
+		where += " AND q.difficulty = $" + strconv.Itoa(argIndex)
+		args = append(args, difficulty)
+		argIndex++
+	}
+	if search != "" {
+		where += " AND q.title ILIKE $" + strconv.Itoa(argIndex)
+		args = append(args, "%"+search+"%")
+		argIndex++
+	}
+
+	page := pagination.Parse(c, 20, 200)
+
+	// 分页时先取满足条件的总数，用于前端计算页码
+	var total int
+	if page.Enabled {
+		if err := db.QueryRow(`SELECT COUNT(*) FROM question_bank q`+where, args...).Scan(&total); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "DATABASE_ERROR"})
+			return
+		}
+	}
 
 	query := `
 		SELECT q.id, q.title, q.type, q.category_id, c.name as category_name,
@@ -112,32 +156,16 @@ func HandleListQuestions(c *gin.Context, db *sql.DB) {
 			q.created_at, q.updated_at
 		FROM question_bank q
 		LEFT JOIN categories c ON q.category_id = c.id
-		WHERE 1=1
-	`
-	args := []interface{}{}
-	argIndex := 1
+	` + where + " ORDER BY q.created_at ASC"
 
-	if categoryID != "" {
-		query += " AND q.category_id = $" + string(rune('0'+argIndex))
-		args = append(args, categoryID)
-		argIndex++
+	if page.Enabled {
+		query += " LIMIT $" + strconv.Itoa(argIndex) + " OFFSET $" + strconv.Itoa(argIndex+1)
+		args = append(args, page.PageSize, page.Offset)
 	}
-	if questionType != "" {
-		query += " AND q.type = $" + string(rune('0'+argIndex))
-		args = append(args, questionType)
-		argIndex++
-	}
-	if difficulty != "" {
-		query += " AND q.difficulty = $" + string(rune('0'+argIndex))
-		args = append(args, difficulty)
-		argIndex++
-	}
-
-	query += " ORDER BY q.created_at ASC"
 
 	rows, err := db.Query(query, args...)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "DATABASE_ERROR", "details": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "DATABASE_ERROR"})
 		return
 	}
 	defer rows.Close()
@@ -178,6 +206,17 @@ func HandleListQuestions(c *gin.Context, db *sql.DB) {
 
 	if questions == nil {
 		questions = []QuestionBank{}
+	}
+
+	if page.Enabled {
+		c.JSON(http.StatusOK, gin.H{
+			"questions":  questions,
+			"total":      total,
+			"page":       page.Page,
+			"pageSize":   page.PageSize,
+			"totalPages": page.TotalPages(total),
+		})
+		return
 	}
 
 	c.JSON(http.StatusOK, questions)

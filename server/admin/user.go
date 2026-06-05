@@ -13,6 +13,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
+
+	"tgctf/server/pagination"
 )
 
 // UserDetail 用户详情
@@ -56,9 +58,55 @@ type ResetPasswordRequest struct {
 	NewPassword string `json:"newPassword" binding:"required"`
 }
 
-// HandleListUsers 获取用户列表
+// HandleListUsers 获取用户列表。
+// 默认返回全部用户；传入 page 或 pageSize 时分页返回，
+// 额外附带 total/page/pageSize/totalPages。stats 始终统计全库，不受分页与筛选影响。
 func HandleListUsers(c *gin.Context, db *sql.DB) {
-	rows, err := db.Query(`
+	search := c.Query("search")
+	role := c.Query("role")
+	status := c.Query("status")
+	organizationID := c.Query("organizationId")
+
+	where := " WHERE 1=1"
+	args := []interface{}{}
+	argIdx := 1
+
+	if search != "" {
+		// 用户名、显示名、UID 任一匹配即可（与前端原有的客户端搜索行为保持一致）
+		where += " AND (u.username ILIKE $" + strconv.Itoa(argIdx) +
+			" OR u.display_name ILIKE $" + strconv.Itoa(argIdx) +
+			" OR CAST(u.id AS TEXT) LIKE $" + strconv.Itoa(argIdx) + ")"
+		args = append(args, "%"+search+"%")
+		argIdx++
+	}
+	if role != "" {
+		where += " AND u.role = $" + strconv.Itoa(argIdx)
+		args = append(args, role)
+		argIdx++
+	}
+	if status != "" {
+		where += " AND u.status = $" + strconv.Itoa(argIdx)
+		args = append(args, status)
+		argIdx++
+	}
+	if organizationID != "" {
+		where += " AND u.organization_id = $" + strconv.Itoa(argIdx)
+		args = append(args, organizationID)
+		argIdx++
+	}
+
+	page := pagination.Parse(c, 20, 200)
+
+	var filteredTotal int
+	if page.Enabled {
+		if err := db.QueryRow(`SELECT COUNT(*) FROM users u`+where, args...).Scan(&filteredTotal); err != nil {
+			log.Printf("count users error: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "INTERNAL_ERROR"})
+			return
+		}
+	}
+
+	query := `
 		SELECT u.id, u.username, u.display_name, u.email, u.role, u.status, 
 		       u.team_id, t.name as team_name, u.organization_id, o.name as org_name,
 		       u.last_login_ip, 
@@ -68,7 +116,14 @@ func HandleListUsers(c *gin.Context, db *sql.DB) {
 		FROM users u
 		LEFT JOIN teams t ON u.team_id = t.id
 		LEFT JOIN organizations o ON u.organization_id = o.id
-		ORDER BY u.id ASC`)
+	` + where + " ORDER BY u.id ASC"
+
+	if page.Enabled {
+		query += " LIMIT $" + strconv.Itoa(argIdx) + " OFFSET $" + strconv.Itoa(argIdx+1)
+		args = append(args, page.PageSize, page.Offset)
+	}
+
+	rows, err := db.Query(query, args...)
 	if err != nil {
 		log.Printf("list users error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "INTERNAL_ERROR"})
@@ -87,6 +142,10 @@ func HandleListUsers(c *gin.Context, db *sql.DB) {
 		users = append(users, u)
 	}
 
+	if users == nil {
+		users = []UserDetail{}
+	}
+
 	// 统计
 	var total, adminCount, activeToday, bannedCount int64
 	db.QueryRow(`SELECT COUNT(*) FROM users`).Scan(&total)
@@ -94,7 +153,7 @@ func HandleListUsers(c *gin.Context, db *sql.DB) {
 	db.QueryRow(`SELECT COUNT(*) FROM users WHERE last_login_at >= CURRENT_DATE`).Scan(&activeToday)
 	db.QueryRow(`SELECT COUNT(*) FROM users WHERE status = 'banned'`).Scan(&bannedCount)
 
-	c.JSON(http.StatusOK, gin.H{
+	resp := gin.H{
 		"users": users,
 		"stats": gin.H{
 			"total":       total,
@@ -102,7 +161,15 @@ func HandleListUsers(c *gin.Context, db *sql.DB) {
 			"activeToday": activeToday,
 			"bannedCount": bannedCount,
 		},
-	})
+	}
+	if page.Enabled {
+		resp["total"] = filteredTotal
+		resp["page"] = page.Page
+		resp["pageSize"] = page.PageSize
+		resp["totalPages"] = page.TotalPages(filteredTotal)
+	}
+
+	c.JSON(http.StatusOK, resp)
 }
 
 // HandleCreateUser 创建用户

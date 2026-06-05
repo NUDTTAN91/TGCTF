@@ -12,6 +12,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+
+	"tgctf/server/pagination"
 )
 
 // TeamDetail 队伍详情
@@ -58,9 +60,42 @@ type AddMemberRequest struct {
 	UserID int64 `json:"userId" binding:"required"`
 }
 
-// HandleListTeams 获取队伍列表
+// HandleListTeams 获取队伍列表。
+// 默认返回全部队伍；传入 page 或 pageSize 时分页返回，
+// 额外附带 total/page/pageSize/totalPages。stats 始终统计全库，不受分页与筛选影响。
 func HandleListTeams(c *gin.Context, db *sql.DB) {
-	rows, err := db.Query(`
+	search := c.Query("search")
+	status := c.Query("status")
+
+	where := " WHERE 1=1"
+	args := []interface{}{}
+	argIdx := 1
+
+	if search != "" {
+		// 队伍名与队伍 ID 任一匹配即可（与前端原有的客户端搜索行为保持一致）
+		where += " AND (t.name ILIKE $" + strconv.Itoa(argIdx) +
+			" OR CAST(t.id AS TEXT) LIKE $" + strconv.Itoa(argIdx) + ")"
+		args = append(args, "%"+search+"%")
+		argIdx++
+	}
+	if status != "" {
+		where += " AND t.status = $" + strconv.Itoa(argIdx)
+		args = append(args, status)
+		argIdx++
+	}
+
+	page := pagination.Parse(c, 20, 200)
+
+	var filteredTotal int
+	if page.Enabled {
+		if err := db.QueryRow(`SELECT COUNT(*) FROM teams t`+where, args...).Scan(&filteredTotal); err != nil {
+			log.Printf("count teams error: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "INTERNAL_ERROR"})
+			return
+		}
+	}
+
+	query := `
 		SELECT t.id, t.name, COALESCE(t.description, ''), t.captain_id, 
 		       COALESCE(u.display_name, '') as captain_name,
 		       t.is_admin_team, t.status,
@@ -69,7 +104,14 @@ func HandleListTeams(c *gin.Context, db *sql.DB) {
 		       COALESCE(TO_CHAR(t.updated_at, 'YYYY-MM-DD HH24:MI'), '') as updated_at
 		FROM teams t
 		LEFT JOIN users u ON t.captain_id = u.id
-		ORDER BY t.id ASC`)
+	` + where + " ORDER BY t.id ASC"
+
+	if page.Enabled {
+		query += " LIMIT $" + strconv.Itoa(argIdx) + " OFFSET $" + strconv.Itoa(argIdx+1)
+		args = append(args, page.PageSize, page.Offset)
+	}
+
+	rows, err := db.Query(query, args...)
 	if err != nil {
 		log.Printf("list teams error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "INTERNAL_ERROR"})
@@ -93,20 +135,32 @@ func HandleListTeams(c *gin.Context, db *sql.DB) {
 		teams = append(teams, t)
 	}
 
+	if teams == nil {
+		teams = []TeamDetail{}
+	}
+
 	// 统计
 	var total, activeCount, bannedCount int64
 	db.QueryRow(`SELECT COUNT(*) FROM teams`).Scan(&total)
 	db.QueryRow(`SELECT COUNT(*) FROM teams WHERE status = 'active'`).Scan(&activeCount)
 	db.QueryRow(`SELECT COUNT(*) FROM teams WHERE status = 'banned'`).Scan(&bannedCount)
 
-	c.JSON(http.StatusOK, gin.H{
+	resp := gin.H{
 		"teams": teams,
 		"stats": gin.H{
 			"total":       total,
 			"activeCount": activeCount,
 			"bannedCount": bannedCount,
 		},
-	})
+	}
+	if page.Enabled {
+		resp["total"] = filteredTotal
+		resp["page"] = page.Page
+		resp["pageSize"] = page.PageSize
+		resp["totalPages"] = page.TotalPages(filteredTotal)
+	}
+
+	c.JSON(http.StatusOK, resp)
 }
 
 // HandleCreateTeam 创建队伍

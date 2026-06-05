@@ -101,7 +101,7 @@
                 <table class="w-full tactical-table">
                     <thead>
                         <tr>
-                            <th class="w-10 text-center"><input type="checkbox" id="select-all-users" onclick="toggleSelectAll()" class="cursor-pointer"></th>
+                            <th class="w-10 text-center"><input type="checkbox" id="select-all-users" onclick="toggleSelectAll()" title="全选/取消全选本页" class="cursor-pointer"></th>
                             <th class="w-12 text-center">#</th>
                             <th>用户 (User)</th>
                             <th>联系方式 (Email)</th>
@@ -119,8 +119,13 @@
                     </tbody>
                 </table>
                 </div>
-                <div class="p-4 border-t border-[#333] flex justify-between items-center bg-[#151515]">
-                    <div id="pagination-info" class="text-xs text-gray-500 font-mono">显示 0 条记录</div>
+                <div class="p-4 border-t border-[#333] flex justify-between items-center bg-[#151515] text-xs font-mono text-gray-500">
+                    <div id="pagination-info">共 0 条记录</div>
+                    <div class="flex items-center gap-4">
+                        <button onclick="prevPage()" id="prev-btn" class="hover:text-white disabled:opacity-30 disabled:hover:text-gray-500">&lt; 上一页</button>
+                        <span id="page-info">PAGE 1 / 1</span>
+                        <button onclick="nextPage()" id="next-btn" class="hover:text-white disabled:opacity-30 disabled:hover:text-gray-500">下一页 &gt;</button>
+                    </div>
                 </div>
             </div>
 
@@ -258,26 +263,61 @@
         let teamUserId = null;
         let allTeams = [];
         let allOrganizations = [];
-        let selectedUsers = new Set(); // 已选择的用户ID集合
+        let selectedUsers = new Set(); // 已选择的用户ID集合（跳页时保留）
+        let currentPage = 1;
+        let totalPages = 1;
+        let totalCount = 0;
+        const pageSize = 20;
 
-        // 加载用户列表
+        // 筛选与分页均由服务端完成，每次只拉取当前页的数据
         async function loadUsers() {
+            const params = new URLSearchParams({ page: currentPage, pageSize: pageSize });
+            const search = document.getElementById('search-input').value.trim();
+            const role = document.getElementById('role-filter').value;
+            const status = document.getElementById('status-filter').value;
+            const org = document.getElementById('org-filter').value;
+            if (search) params.set('search', search);
+            if (role) params.set('role', role);
+            if (status) params.set('status', status);
+            if (org) params.set('organizationId', org);
+
             try {
-                const res = await fetch('/api/admin/users', {
+                const res = await fetch(`/api/admin/users?${params.toString()}`, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
-                if (!res.ok) throw new Error('Failed');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
                 const data = await res.json();
                 allUsers = data.users || [];
+                totalCount = data.total || 0;
+                totalPages = data.totalPages || 1;
+
+                // 删除掉末页最后一条后当前页可能已越界，回退一页重拉
+                if (allUsers.length === 0 && currentPage > 1 && currentPage > totalPages) {
+                    currentPage = Math.max(1, totalPages);
+                    return loadUsers();
+                }
+
                 updateStats(data.stats);
                 renderUsers();
+                renderPagination();
             } catch (e) {
                 console.error(e);
                 document.getElementById('users-tbody').innerHTML = '<tr><td colspan="11" class="text-center py-12 text-red-500 font-mono">加载失败</td></tr>';
             }
         }
 
+        function renderPagination() {
+            document.getElementById('pagination-info').textContent = `共 ${totalCount} 条记录`;
+            document.getElementById('page-info').textContent = `PAGE ${currentPage} / ${totalPages || 1}`;
+            document.getElementById('prev-btn').disabled = currentPage <= 1;
+            document.getElementById('next-btn').disabled = currentPage >= totalPages;
+        }
+
+        function prevPage() { if (currentPage > 1) { currentPage--; loadUsers(); } }
+        function nextPage() { if (currentPage < totalPages) { currentPage++; loadUsers(); } }
+
         function updateStats(stats) {
+            if (!stats) return;
             document.getElementById('stat-total').textContent = stats.total || 0;
             document.getElementById('stat-admin').textContent = stats.adminCount || 0;
             document.getElementById('stat-active').textContent = stats.activeToday || 0;
@@ -286,27 +326,18 @@
 
         function renderUsers() {
             const tbody = document.getElementById('users-tbody');
-            const searchTerm = document.getElementById('search-input').value.toLowerCase();
-            const roleFilter = document.getElementById('role-filter').value;
-            const statusFilter = document.getElementById('status-filter').value;
-            const orgFilter = document.getElementById('org-filter').value;
 
-            let filtered = allUsers.filter(u => {
-                const matchSearch = !searchTerm || u.username.toLowerCase().includes(searchTerm) || u.displayName.toLowerCase().includes(searchTerm) || String(u.id).includes(searchTerm);
-                const matchRole = !roleFilter || u.role === roleFilter;
-                const matchStatus = !statusFilter || u.status === statusFilter;
-                const matchOrg = !orgFilter || String(u.organizationId) === orgFilter;
-                return matchSearch && matchRole && matchStatus && matchOrg;
-            });
-
-            if (filtered.length === 0) {
+            // 数据已经由服务端筛选分页，此处直接渲染
+            if (allUsers.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="11" class="text-center py-12 text-gray-500 font-mono">暂无用户数据</td></tr>';
-                document.getElementById('pagination-info').textContent = '显示 0 条记录';
+                updateSelectAllCheckbox();
                 return;
             }
 
-            tbody.innerHTML = filtered.map((u, idx) => renderUserRow(u, idx + 1)).join('');
-            document.getElementById('pagination-info').textContent = `显示 ${filtered.length} 条记录`;
+            // 序号跟随全局位置，而不是每页从 1 重新开始
+            const offset = (currentPage - 1) * pageSize;
+            tbody.innerHTML = allUsers.map((u, idx) => renderUserRow(u, offset + idx + 1)).join('');
+            updateSelectAllCheckbox();
         }
 
         function renderUserRow(u, idx) {
@@ -550,11 +581,23 @@
             }
         }
 
-        // 筛选事件
-        document.getElementById('search-input').addEventListener('input', renderUsers);
-        document.getElementById('role-filter').addEventListener('change', renderUsers);
-        document.getElementById('status-filter').addEventListener('change', renderUsers);
-        document.getElementById('org-filter').addEventListener('change', renderUsers);
+        // 筛选事件：条件变更后回到第一页重新拉取
+        // 搜索改为服务端执行，加防抖避免每敲一个字符就发一次请求
+        let searchTimer = null;
+        document.getElementById('search-input').addEventListener('input', () => {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => {
+                currentPage = 1;
+                loadUsers();
+            }, 300);
+        });
+
+        ['role-filter', 'status-filter', 'org-filter'].forEach(id => {
+            document.getElementById(id).addEventListener('change', () => {
+                currentPage = 1;
+                loadUsers();
+            });
+        });
 
         // 模态框点击背景关闭
         document.getElementById('modal-overlay').addEventListener('click', function(e) {
@@ -567,10 +610,8 @@
             if (e.target === this) closeTeamModal();
         });
 
-        // 页面加载
-        loadUsers();
-        loadAllTeams();
-        loadAllOrganizations();
+        // 页面加载：先把组织与队伍下拉数据就位，再拉第一页用户
+        Promise.all([loadAllTeams(), loadAllOrganizations()]).then(loadUsers);
 
         // ========== 加载组织列表 ==========
         async function loadAllOrganizations() {
@@ -661,22 +702,27 @@
             updateSelectAllCheckbox();
         }
 
-        // 全选/取消全选
+        // 全选/取消全选本页
+        // 分页后只作用于当前页已渲染的行；跳页时已选中的用户仍保留在 selectedUsers 中，
+        // 可以跳多页累积选择后一次批量操作
         function toggleSelectAll() {
             const selectAllCheckbox = document.getElementById('select-all-users');
             const checkboxes = document.querySelectorAll('#users-tbody input[type="checkbox"]');
-            
+
             if (selectAllCheckbox.checked) {
-                // 全选（排除超级管理员）
+                // 全选本页（超级管理员行不渲染复选框，自然排除）
                 checkboxes.forEach(cb => {
                     const userId = parseInt(cb.getAttribute('data-user-id'));
                     selectedUsers.add(userId);
                     cb.checked = true;
                 });
             } else {
-                // 取消全选
-                selectedUsers.clear();
-                checkboxes.forEach(cb => cb.checked = false);
+                // 仅取消本页的选择，不影响其他页已选中的用户
+                checkboxes.forEach(cb => {
+                    const userId = parseInt(cb.getAttribute('data-user-id'));
+                    selectedUsers.delete(userId);
+                    cb.checked = false;
+                });
             }
             updateBatchActionsVisibility();
         }

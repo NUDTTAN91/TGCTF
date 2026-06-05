@@ -99,8 +99,13 @@
                     </tbody>
                 </table>
                 </div>
-                <div class="p-4 border-t border-[#333] flex justify-between items-center bg-[#151515]">
-                    <div id="pagination-info" class="text-xs text-gray-500 font-mono">显示 0 支队伍</div>
+                <div class="p-4 border-t border-[#333] flex justify-between items-center bg-[#151515] text-xs font-mono text-gray-500">
+                    <div id="pagination-info">共 0 支队伍</div>
+                    <div class="flex items-center gap-4">
+                        <button onclick="prevPage()" id="prev-btn" class="hover:text-white disabled:opacity-30 disabled:hover:text-gray-500">&lt; 上一页</button>
+                        <span id="page-info">PAGE 1 / 1</span>
+                        <button onclick="nextPage()" id="next-btn" class="hover:text-white disabled:opacity-30 disabled:hover:text-gray-500">下一页 &gt;</button>
+                    </div>
                 </div>
             </div>
 
@@ -209,25 +214,56 @@
         let allTeams = [];
         let editingTeamId = null;
         let currentMemberTeamId = null;
+        let currentPage = 1;
+        let totalPages = 1;
+        let totalCount = 0;
+        const pageSize = 20;
 
-        // 加载队伍列表
+        // 筛选与分页均由服务端完成，每次只拉取当前页的数据
         async function loadTeams() {
+            const params = new URLSearchParams({ page: currentPage, pageSize: pageSize });
+            const search = document.getElementById('search-input').value.trim();
+            const status = document.getElementById('status-filter').value;
+            if (search) params.set('search', search);
+            if (status) params.set('status', status);
+
             try {
-                const res = await fetch('/api/admin/teams', {
+                const res = await fetch(`/api/admin/teams?${params.toString()}`, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
-                if (!res.ok) throw new Error('Failed');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
                 const data = await res.json();
                 allTeams = data.teams || [];
+                totalCount = data.total || 0;
+                totalPages = data.totalPages || 1;
+
+                // 解散掉末页最后一支队伍后当前页可能已越界，回退一页重拉
+                if (allTeams.length === 0 && currentPage > 1 && currentPage > totalPages) {
+                    currentPage = Math.max(1, totalPages);
+                    return loadTeams();
+                }
+
                 updateStats(data.stats);
                 renderTeams();
+                renderPagination();
             } catch (e) {
                 console.error(e);
                 document.getElementById('teams-tbody').innerHTML = '<tr><td colspan="7" class="text-center py-12 text-red-500 font-mono">加载失败</td></tr>';
             }
         }
 
+        function renderPagination() {
+            document.getElementById('pagination-info').textContent = `共 ${totalCount} 支队伍`;
+            document.getElementById('page-info').textContent = `PAGE ${currentPage} / ${totalPages || 1}`;
+            document.getElementById('prev-btn').disabled = currentPage <= 1;
+            document.getElementById('next-btn').disabled = currentPage >= totalPages;
+        }
+
+        function prevPage() { if (currentPage > 1) { currentPage--; loadTeams(); } }
+        function nextPage() { if (currentPage < totalPages) { currentPage++; loadTeams(); } }
+
         function updateStats(stats) {
+            if (!stats) return;
             document.getElementById('stat-total').textContent = stats.total || 0;
             document.getElementById('stat-active').textContent = stats.activeCount || 0;
             document.getElementById('stat-banned').textContent = stats.bannedCount || 0;
@@ -235,23 +271,14 @@
 
         function renderTeams() {
             const tbody = document.getElementById('teams-tbody');
-            const searchTerm = document.getElementById('search-input').value.toLowerCase();
-            const statusFilter = document.getElementById('status-filter').value;
 
-            let filtered = allTeams.filter(t => {
-                const matchSearch = !searchTerm || t.name.toLowerCase().includes(searchTerm) || String(t.id).includes(searchTerm);
-                const matchStatus = !statusFilter || t.status === statusFilter;
-                return matchSearch && matchStatus;
-            });
-
-            if (filtered.length === 0) {
+            // 数据已经由服务端筛选分页，此处直接渲染
+            if (allTeams.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="7" class="text-center py-12 text-gray-500 font-mono">暂无队伍数据</td></tr>';
-                document.getElementById('pagination-info').textContent = '显示 0 支队伍';
                 return;
             }
 
-            tbody.innerHTML = filtered.map((t, idx) => renderTeamRow(t)).join('');
-            document.getElementById('pagination-info').textContent = `显示 ${filtered.length} 支队伍`;
+            tbody.innerHTML = allTeams.map(t => renderTeamRow(t)).join('');
         }
 
         function renderTeamRow(t) {
@@ -576,9 +603,21 @@
             }
         }
 
-        // 筛选事件
-        document.getElementById('search-input').addEventListener('input', renderTeams);
-        document.getElementById('status-filter').addEventListener('change', renderTeams);
+        // 筛选事件：条件变更后回到第一页重新拉取
+        // 搜索改为服务端执行，加防抖避免每敲一个字符就发一次请求
+        let searchTimer = null;
+        document.getElementById('search-input').addEventListener('input', () => {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => {
+                currentPage = 1;
+                loadTeams();
+            }, 300);
+        });
+
+        document.getElementById('status-filter').addEventListener('change', () => {
+            currentPage = 1;
+            loadTeams();
+        });
 
         // 模态框点击背景关闭
         document.getElementById('modal-overlay').addEventListener('click', function(e) {

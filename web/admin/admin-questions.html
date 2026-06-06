@@ -240,10 +240,19 @@
             'hard': 'HARD'
         };
 
+        // 转义后再拼进 innerHTML。同时转义引号，以便在属性值里也能安全使用
+        function escapeHtml(text) {
+            return String(text == null ? '' : text).replace(/[&<>"']/g, ch => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[ch]);
+        }
+
         // 根据类别ID获取发光颜色
         function getCategoryColor(categoryId) {
             const cat = categories.find(c => c.id === categoryId);
-            return cat && cat.glowColor ? cat.glowColor : '#ff6b00';
+            const color = cat && cat.glowColor ? cat.glowColor : '#ff6b00';
+            // 颜色会被拼进 style 属性，只接受合法的颜色字面量，避免属性逐出
+            return /^(#[0-9a-fA-F]{3,8}|[a-zA-Z]+|rgba?\([\d\s.,%]+\))$/.test(color) ? color : '#ff6b00';
         }
 
         // 类别列表只在初始化时加载一次，
@@ -305,7 +314,7 @@
         function renderCategoryFilter() {
             const select = document.getElementById('filter-category');
             select.innerHTML = '<option value="">全部类别</option>' + 
-                categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+                categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
         }
 
         function renderQuestions() {
@@ -348,12 +357,12 @@
                 <tr>
                     <td class="font-mono text-gray-500 whitespace-nowrap">${q.id}</td>
                     <td class="whitespace-nowrap">
-                        <div class="font-bold text-white">${q.title}</div>
+                        <div class="font-bold text-white">${escapeHtml(q.title)}</div>
                     </td>
-                    <td class="whitespace-nowrap"><span class="type-badge type-${q.type.replace('_', '-')}">${typeLabels[q.type]}</span></td>
-                    <td class="whitespace-nowrap"><span class="font-mono text-xs" style="color: ${getCategoryColor(q.categoryId)};">${q.categoryName || '--'}</span></td>
+                    <td class="whitespace-nowrap"><span class="type-badge type-${escapeHtml(q.type).replace('_', '-')}">${typeLabels[q.type] || escapeHtml(q.type)}</span></td>
+                    <td class="whitespace-nowrap"><span class="font-mono text-xs" style="color: ${getCategoryColor(q.categoryId)};">${escapeHtml(q.categoryName || '--')}</span></td>
                     <td class="whitespace-nowrap"><span class="font-mono text-xs">${q.difficulty || '--'}⭐</span></td>
-                    <td class="whitespace-nowrap font-mono text-xs text-gray-400">${(() => { try { return JSON.parse(q.ports || '[]').join(', ') || '--'; } catch(e) { return q.ports || '--'; } })()}</td>
+                    <td class="whitespace-nowrap font-mono text-xs text-gray-400">${escapeHtml((() => { try { return JSON.parse(q.ports || '[]').join(', ') || '--'; } catch(e) { return q.ports || '--'; } })())}</td>
                     <td class="whitespace-nowrap text-xs">${imageStatus}</td>
                     <td class="whitespace-nowrap">
                         ${q.needsEdit ? '<span class="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 text-xs font-mono rounded">待编辑</span>' : '<span class="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs font-mono rounded">完成</span>'}
@@ -362,7 +371,7 @@
                     <td class="whitespace-nowrap">
                         <div class="flex gap-2">
                             <button onclick="editQuestion(${q.id})" class="btn-action btn-edit">编辑</button>
-                            <button onclick="deleteQuestion(${q.id}, '${q.title}')" class="btn-action btn-delete">删除</button>
+                            <button onclick="deleteQuestion(${q.id})" class="btn-action btn-delete">删除</button>
                         </div>
                     </td>
                 </tr>
@@ -373,7 +382,11 @@
             window.location.href = `/admin/admin-question-edit.html?id=${id}`;
         }
 
-        async function deleteQuestion(id, title) {
+        async function deleteQuestion(id) {
+            // 标题从当前页数据里取，不拼进 onclick 属性，
+            // 避免标题包含引号时截断属性导致按钮失效
+            const target = questions.find(item => item.id === id);
+            const title = target ? target.title : '';
             if (!confirm(`确定要删除题目"${title}"吗？`)) return;
             
             try {
@@ -480,8 +493,8 @@
                         ${d.success ? '✓' : '✗'}
                     </span>
                     <span class="text-gray-400 ml-2">第${d.row || i+1}行:</span>
-                    <span class="text-white ml-2">${d.title || '--'}</span>
-                    ${!d.success ? `<div class="text-[#ef4444] text-xs mt-1 ml-6">${d.error || ''}</div>` : ''}
+                    <span class="text-white ml-2">${escapeHtml(d.title || '--')}</span>
+                    ${!d.success ? `<div class="text-[#ef4444] text-xs mt-1 ml-6">${escapeHtml(d.error || '')}</div>` : ''}
                 </div>
             `).join('');
             
@@ -569,13 +582,13 @@
                             <span class="${r.exists ? 'text-[#22c55e]' : 'text-[#ef4444]'}">
                                 ${r.exists ? '✓' : '✗'}
                             </span>
-                            <span class="text-white ml-2">${r.title || '--'}</span>
+                            <span class="text-white ml-2">${escapeHtml(r.title || '--')}</span>
                             <span class="text-gray-500 ml-2">#${r.questionId}</span>
                         </div>
                         <span class="text-gray-400 text-xs">${r.exists ? '镜像存在' : '镜像不存在'}</span>
                     </div>
-                    <div class="text-gray-500 text-xs mt-1 ml-6 truncate">${r.image || '--'}</div>
-                    ${r.error ? `<div class="text-[#ef4444] text-xs mt-1 ml-6">${r.error}</div>` : ''}
+                    <div class="text-gray-500 text-xs mt-1 ml-6 truncate">${escapeHtml(r.image || '--')}</div>
+                    ${r.error ? `<div class="text-[#ef4444] text-xs mt-1 ml-6">${escapeHtml(r.error)}</div>` : ''}
                 </div>
             `).join('');
             

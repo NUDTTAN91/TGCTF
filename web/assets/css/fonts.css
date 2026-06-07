@@ -1,24 +1,27 @@
+/* 全站公共字体定义（本地字体，不依赖外部 CDN）
+   字体文件统一存放于 web/assets/fonts/ */
+
 /* Chakra Petch */
 @font-face {
   font-family: 'Chakra Petch';
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/assets/fonts/ChakraPetch-Regular.woff2') format('woff2');
+  src: url('../fonts/ChakraPetch-Regular.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Chakra Petch';
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url('/assets/fonts/ChakraPetch-SemiBold.woff2') format('woff2');
+  src: url('../fonts/ChakraPetch-SemiBold.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Chakra Petch';
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url('/assets/fonts/ChakraPetch-Bold.woff2') format('woff2');
+  src: url('../fonts/ChakraPetch-Bold.woff2') format('woff2');
 }
 
 /* JetBrains Mono */
@@ -27,14 +30,14 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/assets/fonts/JetBrainsMono-Regular.woff2') format('woff2');
+  src: url('../fonts/JetBrainsMono-Regular.woff2') format('woff2');
 }
 @font-face {
   font-family: 'JetBrains Mono';
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url('/assets/fonts/JetBrainsMono-Bold.woff2') format('woff2');
+  src: url('../fonts/JetBrainsMono-Bold.woff2') format('woff2');
 }
 
 /* Noto Sans SC */
@@ -43,19 +46,19 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/assets/fonts/NotoSansSC-Regular.woff2') format('woff2');
+  src: url('../fonts/NotoSansSC-Regular.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Noto Sans SC';
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url('/assets/fonts/NotoSansSC-Bold.woff2') format('woff2');
+  src: url('../fonts/NotoSansSC-Bold.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Noto Sans SC';
   font-style: normal;
   font-weight: 900;
   font-display: swap;
-  src: url('/assets/fonts/NotoSansSC-Black.woff2') format('woff2');
+  src: url('../fonts/NotoSansSC-Black.woff2') format('woff2');
 }

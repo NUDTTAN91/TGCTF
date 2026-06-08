@@ -5,7 +5,6 @@
     <meta name="author" content="tan91">
     <link rel="icon" type="image/svg+xml" href="../TeamIco.svg">
     <title>编辑赛事 - TG 管理后台</title>
-    <script src="/assets/js/tailwind.min.js"></script>
     <link rel="stylesheet" href="/assets/css/fonts.css">
     <link rel="stylesheet" href="/assets/css/admin-sidebar.css">
     <style>
@@ -74,6 +73,8 @@
         @keyframes toastIn { from { opacity: 0; transform: translateX(100px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes toastOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(100px); } }
     </style>
+    <!-- Tailwind 预编译产物；置于内联样式之后以保持原有层叠顺序 -->
+    <link rel="stylesheet" href="/assets/css/tailwind.css">
 </head>
 <body class="selection:bg-[#ff6b00] selection:text-black">
     <!-- Toast 容器 -->

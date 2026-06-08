@@ -879,6 +879,14 @@ func main() {
 			c.Header("Pragma", "no-cache")
 			c.Header("Expires", "0")
 		}
+		// 静态资源（CSS/JS/字体/图片）允许浏览器缓存，但每次使用前必须回源校验。
+		// c.File 会带上 Last-Modified，命中时浏览器拿到 304，几乎不增加流量；
+		// 不加这个头时浏览器会按启发式规则长期缓存，导致前端更新后老用户仍看到旧文件。
+		switch strings.ToLower(filepath.Ext(path)) {
+		case ".css", ".js", ".woff", ".woff2", ".ttf", ".otf", ".eot",
+			".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".webp":
+			c.Header("Cache-Control", "no-cache")
+		}
 		// 用户上传的内容（头像等）禁止浏览器嗅探 MIME，
 		// 避免伪装成图片的文件被当作页面渲染
 		if strings.HasPrefix(path, "/uploads/") {

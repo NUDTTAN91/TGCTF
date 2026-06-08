@@ -5,7 +5,6 @@
     <link rel="icon" type="image/svg+xml" href="TeamIco.svg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TG GLOBAL MONITOR // 全球态势感知</title>
-    <script src="/assets/js/tailwind.min.js"></script>
     <script src="/assets/js/chart.min.js"></script>
     <link rel="stylesheet" href="/assets/css/fonts.css">
     <style>
@@ -103,6 +102,8 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
     </style>
+    <!-- Tailwind 预编译产物；置于内联样式之后以保持原有层叠顺序 -->
+    <link rel="stylesheet" href="/assets/css/tailwind.css">
 </head>
 <body class="h-screen w-screen overflow-hidden">
 

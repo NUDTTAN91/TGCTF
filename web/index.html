@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="author" content="tan91">
     <link rel="icon" type="image/svg+xml" href="TeamIco.svg">
-    <script src="/assets/js/tailwind.min.js"></script>
     <link rel="stylesheet" href="/assets/css/fonts.css">
     <style>
         :root {
@@ -106,6 +105,8 @@
         .delay-2 { animation-delay: 1s; }
         @keyframes fadeIn { to { opacity: 1; } }
     </style>
+    <!-- Tailwind 预编译产物；置于内联样式之后以保持原有层叠顺序 -->
+    <link rel="stylesheet" href="/assets/css/tailwind.css">
 </head>
 <body class="h-screen flex flex-col relative selection:bg-[#ff6b00] selection:text-black">
 

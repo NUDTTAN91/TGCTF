@@ -37,7 +37,11 @@
   src: url('/assets/fonts/JetBrainsMono-Bold.woff2') format('woff2');
 }
 
-/* Noto Sans SC */
+/* Noto Sans SC
+   Regular 为完整版（30890 字形，含繁体与假名）；
+   Bold / Black 采用 simplified-chinese 单文件版（各约 1.1MB，7946 个常用字形），
+   生僻字会由浏览器逐字回退到从 Regular 合成粗体，属可接受降级。
+   注：这三个文件曾在首次提交时因下载失败而是 HTML 404 页面，现已全部替换为真实字体。 */
 @font-face {
   font-family: 'Noto Sans SC';
   font-style: normal;
